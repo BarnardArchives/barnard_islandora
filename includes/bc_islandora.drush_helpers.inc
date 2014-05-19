@@ -118,16 +118,205 @@ ISSUE_RDF;
   return $pid;
 }
 
-function create_page_object($file_path, $data, $collection_pid, $page_pid) {
-  $connection = islandora_get_tuque_connection();
+function create_book_object($pid, $data) {
+  module_load_include('inc', 'islandora', 'RestConnection');
+  
+  $tuque = islandora_get_tuque_connection();
+  $connection = $tuque->connection;
 
-  $page_number = $data[3];
+  $date = $data[0];
+  $title = $date . ' ' . $data[3];
+  //$date_short = date('Ymd', strtotime($date));
+  $extent = $data[12] . ' pages';
+  $description = $data[7];
+
+  $dsid = 'MODS';
+
+  $content_model_pid = 'islandora:bookCModel';
+
+  // TODO add book collection pid to 
+  $collection_pid = variable_get('bc_islandora_yearbook_pid', 'islandora:bookCollection');
+
+  $xml = <<<BOOK_MODS
+    <mods xmlns="http://www.loc.gov/mods/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/mods/v3/mods-3-5.xsd">
+      <titleInfo>
+        <title>$title</title>
+      </titleInfo>
+
+      <name type="corporate">
+        <namePart>Barnard College</namePart>
+        <role>
+          <roleTerm type="text" authority="marcrelator">Publisher</roleTerm>
+        </role>
+      </name>
+
+      <typeOfResource>text</typeOfResource>
+
+      <genre authority="marcgt">yearbook</genre>
+  
+      <originInfo eventType="publication">
+        <place>
+          <placeTerm type="code" authority="marccountry">nyu</placeTerm>
+          <placeTerm type="text">New York, N.Y.</placeTerm>
+        </place>
+        <publisher>Barnard College</publisher>
+        <dateIssued encoding="iso8601" keyDate="yes">$date</dateIssued>
+        <issuance>continuing</issuance>
+      </originInfo>
+
+      <language>
+        <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+      </language>
+
+      <physicalDescription>
+        <form authority="marcform">print</form>
+        <form authority="marcform">electronic</form>
+        <extent>$extent</extent>
+        <internetMediaType>image/jpeg2000</internetMediaType>
+        <digitalOrigin>reformatted digital</digitalOrigin>
+      </physicalDescription>
+
+      <abstract>$description</abstract>
+
+      <subject authority="lcsh">
+        <topic>Women's colleges</topic>
+        <topic>College students</topic>
+        <topic>Student activities</topic>
+      </subject>
+
+      <subject>
+        <name type="corporate" authority="naf">
+          <namePart>Barnard College</namePart>
+        </name>
+      </subject>
+
+      <relatedItem type="host"> 
+        <titleInfo> 
+          <title>Mortarboard</title> 
+        </titleInfo> 
+        <typeOfResource>text</typeOfResource> 
+        <identifier type="local">BC12.01</identifier> 
+      </relatedItem> 
+
+      <identifier type="local">BC12-01_$date</identifier>
+
+      <location> 
+        <physicalLocation authority="marcorg">NNC</physicalLocation> 
+        <physicalLocation authority="marcorg">NyNyBAW</physicalLocation> 
+        <physicalLocation>Barnard College Library (New York, N.Y.)</physicalLocation> 
+      </location> 
+
+      <accessCondition type="useAndReproduction">This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License. Contact the Archives at archives@barnard.edu for more information on access and use, including commercial uses.</accessCondition>
+
+      <recordInfo>
+        <recordContentSource>Barnard Archives and Special Collections</recordContentSource>
+        <recordContentSource authority="marcorg">NNC</recordContentSource>
+        <recordContentSource authority="marcorg">NyNyBAW</recordContentSource>
+        <languageOfCataloging>
+          <languageTerm authority="iso639-2b">eng</languageTerm>
+        </languageOfCataloging>
+      </recordInfo>
+    </mods>
+BOOK_MODS;
+  
+  $rdf_string = <<<BOOK_RDF
+    <rdf:RDF xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+      <rdf:Description rdf:about="info:fedora/$pid">
+        <fedora-model:hasModel rdf:resource="info:fedora/$content_model_pid"></fedora-model:hasModel>
+        <fedora:isMemberOf rdf:resource="info:fedora/$collection_pid"></fedora:isMemberOf>
+        <islandora:isSequenceNumber>1</islandora:isSequenceNumber>
+        <islandora:dateIssued>1901-01-07</islandora:dateIssued>
+      </rdf:Description>
+    </rdf:RDF>
+BOOK_RDF;
+ 
+  $mods_xml = new DOMDocument();
+  $mods_xml->loadXML($xml);
+
+  $transform_xsl = new DOMDocument();
+  $xsl_file = DRUPAL_ROOT . '/' . drupal_get_path('module', 'islandora_importer') . '/xsl/mods_to_dc.xsl';
+  $transform_xsl->load($xsl_file);
+
+  $proc = new XSLTProcessor();
+  $proc->importStylesheet($transform_xsl);
+  $dc = $proc->transformToXML($mods_xml);
+
+  $object = new NewFedoraObject($pid, $connection->repository);
+  
+  $object->label = $title; 
+ 
+  $dc_datastream = new NewFedoraDatastream('DC', 'X', $object, $connection->repository);
+
+  $dc_datastream->content = $dc;
+  $dc_datastream->mimetype = 'text/xml';
+  $dc_datastream->label = 'Dublin Core Record for this object';
+
+  $object->ingestDatastream($dc_datastream);
+
+  $mods_datastream = new NewFedoraDatastream('MODS', 'X', $object, $connection->repository);
+  
+  $mods_datastream->setContentFromString($xml);
+  $mods_datastream->mimetype = 'text/xml';
+  $mods_datastream->label = 'MODS record';
+  $mods_datastream->checksum = TRUE;
+  $mods_datastream->checksumType = 'MD5';
+  $mods_datastream->logMessage = 'MODS datastream created using Newspapers batch ingest script || SUCCESS';
+
+  $object->ingestDatastream($mods_datastream);
+  
+  $rels_datastream = new NewFedoraDatastream('RELS-EXT', 'X', $object, $connection->repository);
+  $rels_datastream->setContentFromString($rdf_string);
+  $rels_datastream->label = 'RELS-EXT';
+  $rels_datastream->mimetype = 'text/xml';
+  $rels_datastream->logMessage = 'RELS-EXT datastream created using Newspapers batch ingest script || SUCCESS';
+
+  $object->ingestDatastream($rels_datastream);  
+  try {
+    $ingest = $tuque->repository->ingestObject($object);
+  }
+  catch(Exception $e) {
+    unset($object);
+    throw($e);
+  }
+
+  if ($ingest == TRUE) {
+    drush_log(dt("Book object @pid created successfully\n", array('@pid' => $pid)), 'success');
+  }
+  else {
+    drush_log(dt("There was an error creating the book object!\n", 'warning'));
+  }
+  unset($object);
+  unset($mods_datastream);
+  unset($rels_datastream);
+  unset($dc_datastream);
+  
+  return $pid;
+}
+
+function create_page_object($file_path, $data, $collection_pid, $page_pid, $type) {
+  $connection = islandora_get_tuque_connection();
+  
   $date = $data[1];
   $date_short = date('Ymd', strtotime($date));
-  $title = $data[0];
   $pid = $page_pid;
   
-  $file_name = $file_path . '/' . $data[2];
+  switch ($type) {
+    case 'newspaper':
+      $page_number = $data[3];
+      $label = 'Barnard Bulletin, ' . $date . ', page ' . $page_number;
+      $id_short = 'BC12.03';
+      $id_long = 'BC12-03_' . $date_short . '-' . $page_number;
+      $file_name = $file_path . '/' . $data[2];
+      $content_model_pid = 'islandora:newspaperPageCModel';
+    break;
+    case 'book':
+      $label = $data[0] . ' ' . $data[3];
+      $id_short = 'BC12.01';
+      $id_long = 'BC12-01_' . $page_number;
+      $file_name = $file_path;
+      $content_model_pid = 'islandora:pageCModel';
+    break;
+  }
 
   if ($page_number == 1) {
     $rand = rand('100', '999');
@@ -145,28 +334,11 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid) {
       $tn_datastream->logMessage = "TN derivative created by ImageMagick with command - $command || SUCCESS";
       $book_item->ingestDatastream($tn_datastream);
       unlink($tmp_file);
-    }  
+    }
   }
-  $label = 'Barnard Bulletin, ' . $title . ', page ' . $page_number;
 
   $dsid = 'MODS';
 
-  $content_model_pid = 'islandora:newspaperPageCModel';
-
-  /*$xml = <<<PAGE_MODS
-<?xml version="1.0" encoding="UTF-8"?>
-  <mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <titleInfo>
-      <title>$label</title>
-    </titleInfo>
-    <part>
-      <detail type="page number">
-        <number>$page_number</number>
-      </detail>
-    </part>
-    <identifier type="PID">$pid</identifier>
-  </mods>
-PAGE_MODS;*/
   $xml = <<<PAGE_MODS
     <mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <titleInfo>
@@ -177,9 +349,9 @@ PAGE_MODS;*/
           <title>Barnard Bulletin</title> 
         </titleInfo> 
         <typeOfResource>text</typeOfResource> 
-        <identifier type="local">BC12.03</identifier> 
+        <identifier type="local">$id_short</identifier> 
       </relatedItem> 
-      <identifier type="local">BC12-03_$date_short-$page_number</identifier>
+      <identifier type="local">$id_long</identifier>
     </mods>
 PAGE_MODS;
   
@@ -238,15 +410,15 @@ PAGE_RDF;
   $image_datastream->checksum = TRUE;
   $image_datastream->checksumType = 'MD5';
   $image_datastream->logMessage = 'OBJ datastream created using Newspapers batch ingest script || SUCCESS';
-  
+
   $object->ingestDatastream($image_datastream);
-  
+
   $rels_datastream = new NewFedoraDatastream('RELS-EXT', 'X', $object, $connection->repository);
   $rels_datastream->setContentFromString($rdf_string);
   $rels_datastream->label = 'Fedora Object to Object Relationship Metadata.';
   $rels_datastream->mimetype = 'text/xml';
   $rels_datastream->logMessage = 'RELS-EXT datastream created using Newspapers batch ingest script || SUCCESS';
-  
+
   $object->ingestDatastream($rels_datastream);
   try {
     $ingest = $connection->repository->ingestObject($object);
@@ -262,8 +434,8 @@ PAGE_RDF;
   else {
     drush_log(dt("There was an error creating the page object!\n"), 'error');
   }
-  
-  unset($object);//make sure destructors are called as this script can run for a long time.
+
+  unset($object); // make sure destructors are called as this script can run for a long time.
   unset($image_datastream);
   unset($mods_datastream);
   unset($rels_datastream);

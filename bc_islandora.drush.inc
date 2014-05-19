@@ -40,6 +40,24 @@ function bc_islandora_drush_command() {
       'aliases' => array('bciin'),
       'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_LOGIN, // we can pass in users id on the command line using drush -u.
     ),
+    'bc_islandora_ingest_books' => array(
+      'description' => 'Ingests books.',
+      'arguments' => array(
+        'query_file' => 'A csv file containing information about the books to be ingested.'
+      ),
+      'options' => array(
+        'derivatives' => 'Whether to create derivatives.',
+        'overwrite-existing' => 'Whether to overwrite existing objects.',
+        // TODO move this
+        'purge' => 'Whether to purge instead of ingesting.',
+        'year' => 'Whether to import a specific year\'s book.',
+      ),
+      'examples' => array(
+        'drush -u 1 --uri=http://localhost bciib /path/to/pages.csv',
+      ),
+      'aliases' => array('bciib'),
+      'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_LOGIN, // we can pass in users id on the command line using drush -u.
+    ),
     'bc_islandora_generate_newspaper_csv' => array(
       'description' => 'Generates csv files for ingesting newspapers.',
       'arguments' => array(
@@ -76,7 +94,6 @@ function drush_bc_islandora_ingest_newspapers($query_file) {
 
   $path_name = dirname($query_file);
   $fh = fopen($query_file, 'r');
-  var_export($fh);
   $line_number = 0;
   $issues = array();
 
@@ -120,7 +137,7 @@ function drush_bc_islandora_ingest_newspapers($query_file) {
         }
         elseif (!islandora_object_load($page_pid)) {
           try {
-            create_page_object($path_name, $data, $issue_pid, $page_pid);
+            create_page_object($path_name, $data, $issue_pid, $page_pid, 'newspaper');
           }
           catch (Exception $e) {
             drush_log(dt('Caught exception: @e', array('@e' => $e->getMessage())), 'warning');
@@ -132,7 +149,7 @@ function drush_bc_islandora_ingest_newspapers($query_file) {
         elseif (drush_get_option('overwrite-existing')) {
           try {
             drush_bc_islandora_purge_object($page_pid);
-            create_page_object($path_name, $data, $issue_pid, $page_pid);
+            create_page_object($path_name, $data, $issue_pid, $page_pid, 'newspaper');
           }
           catch (Exception $e) {
             drush_log(dt('Caught exception: @e', array('@e' => $e->getMessage())), 'warning');
@@ -159,6 +176,92 @@ function drush_bc_islandora_ingest_newspapers($query_file) {
       batch_set($ocr_batch);
     }
     drush_backend_batch_process();
+  }
+}
+
+function drush_bc_islandora_ingest_books($query_file) {
+  module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
+  module_load_include('inc', 'islandora_paged_content', 'includes/batch');
+
+  ini_set("auto_detect_line_endings", "1");
+  
+  $fh = fopen($query_file, 'r');
+  $year = drush_get_option('year');
+  $books = array();
+
+  while (($data = fgetcsv($fh)) !== FALSE) {
+    $csv_year = array_pop(explode(' ', $data[1]));
+    if ($year && $year != $csv_year) {
+      continue;
+    }
+    $book_pid = 'bc:yearbook-' . $csv_year;
+    $pages = $data[12];
+    if (drush_get_option('purge')) {
+      drush_bc_islandora_purge_object($book_pid);
+    }
+    elseif (!islandora_object_load($book_pid)) {
+      try {
+        print "Got book pid: $book_pid\n";
+        $book_pid = create_book_object($book_pid, $data);
+      }
+      catch (Exception $e) {
+        drush_log(dt('Caught exception: @e', array('@e' => $e->getMessage())), 'warning');
+      }
+    }
+    elseif (drush_get_option('overwrite-existing')) {
+      try {
+        drush_bc_islandora_purge_object($book_pid);
+        create_book_object($book_pid, $data);
+      }
+      catch (Exception $e) {
+        drush_log(dt('Caught exception: @e', array('@e' => $e->getMessage())), 'warning');
+      }
+    }
+    else {
+      drush_log(dt('Issue exists at pid = @pid; skipping...', array('@pid' => $book_pid)), 'warning');
+      continue;
+    }
+    $books[] = $book_pid;
+
+    // Create each page.
+    $file_path = dirname($query_file) . '/' . $csv_year;
+    if (file_exists($file_path)) {
+      $files = explode("\n", `ls $file_path/*.jp2`);
+      foreach ($files as $fn) {
+        if (!empty($fn)) {
+          $page_number = preg_replace('/^0+/', '', preg_replace('/\.jp2$/', '', array_pop(explode('_', $fn))));
+          // var_export($page_number);
+          $page_pid = $book_pid . '-' . $page_number;
+          if (drush_get_option('overwrite-existing') || drush_get_option('purge')) {
+            try {
+              drush_bc_islandora_purge_object($page_pid);
+            }
+            catch (Exception $e) {
+              drush_log(dt('Caught exception: @e', array('@e' => $e->getMessage())), 'warning');
+            }
+          }
+          if (!drush_get_option('purge')) {
+            create_page_object($fn, $data, $book_pid, $page_pid, 'book'); 
+          }
+        }        
+      }
+    }
+  
+    // Create derivatives.
+    if (drush_get_option('derivatives')) {
+      // TODO check if datastreams already exist before attempting to create them.
+      foreach ($books as $pid) {
+        $book = islandora_object_load($pid);
+        $pages = array_keys(islandora_paged_content_get_pages($book));
+        $img_batch = islandora_paged_content_create_images_batch($book, $pages);
+        $pdf_batch = islandora_paged_content_create_pdf_batch($book, $pages);
+        $ocr_batch = islandora_paged_content_create_ocr_batch($book, $pages, array('language' => 'eng', 'preprocess' => FALSE));
+        batch_set($img_batch);
+        batch_set($pdf_batch);
+        batch_set($ocr_batch);
+      }
+      drush_backend_batch_process();
+    }
   }
 }
 
