@@ -313,9 +313,9 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid, $type
     case 'book':
       $title = $data[0];
       $page_number = array_pop($data);
-      $label = $title . ' ' . $data[3];
+      $label = $title . ' ' . $data[3] . ', page ' . $page_number;
       $id_short = 'BC12.01';
-      $id_long = 'BC12-01_' . $page_number;
+      $id_long = 'BC12-01_' . str_pad($page_number, 3, '0', STR_PAD_LEFT);
       $file_name = $file_path;
       $content_model_pid = 'islandora:pageCModel';
     break;
