@@ -310,6 +310,7 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid, $type
       $content_model_pid = 'islandora:newspaperPageCModel';
     break;
     case 'book':
+      $page_number = array_pop($data);
       $label = $data[0] . ' ' . $data[3];
       $id_short = 'BC12.01';
       $id_long = 'BC12-01_' . $page_number;

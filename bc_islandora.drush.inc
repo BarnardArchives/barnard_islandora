@@ -161,21 +161,10 @@ function drush_bc_islandora_ingest_newspapers($query_file) {
       }
     }
   }    
-  
+
   // Create derivatives.
   if (drush_get_option('derivatives')) {
-    // TODO check if datastreams already exist before attempting to create them.
-    foreach ($issues as $pid) {
-      $issue = islandora_object_load($pid);
-      $pages = array_keys(islandora_paged_content_get_pages($issue));
-      $img_batch = islandora_paged_content_create_images_batch($issue, $pages);
-      $pdf_batch = islandora_paged_content_create_pdf_batch($issue, $pages);
-      $ocr_batch = islandora_paged_content_create_ocr_batch($issue, $pages, array('language' => 'eng', 'preprocess' => FALSE));
-      batch_set($img_batch);
-      batch_set($pdf_batch);
-      batch_set($ocr_batch);
-    }
-    drush_backend_batch_process();
+    _bc_islandora_create_derivatives($issues);
   }
 }
 
@@ -230,6 +219,7 @@ function drush_bc_islandora_ingest_books($query_file) {
       foreach ($files as $fn) {
         if (!empty($fn)) {
           $page_number = preg_replace('/^0+/', '', preg_replace('/\.jp2$/', '', array_pop(explode('_', $fn))));
+          $data[] = $page_number;
           // var_export($page_number);
           $page_pid = $book_pid . '-' . $page_number;
           if (drush_get_option('overwrite-existing') || drush_get_option('purge')) {
@@ -249,18 +239,7 @@ function drush_bc_islandora_ingest_books($query_file) {
   
     // Create derivatives.
     if (drush_get_option('derivatives')) {
-      // TODO check if datastreams already exist before attempting to create them.
-      foreach ($books as $pid) {
-        $book = islandora_object_load($pid);
-        $pages = array_keys(islandora_paged_content_get_pages($book));
-        $img_batch = islandora_paged_content_create_images_batch($book, $pages);
-        $pdf_batch = islandora_paged_content_create_pdf_batch($book, $pages);
-        $ocr_batch = islandora_paged_content_create_ocr_batch($book, $pages, array('language' => 'eng', 'preprocess' => FALSE));
-        batch_set($img_batch);
-        batch_set($pdf_batch);
-        batch_set($ocr_batch);
-      }
-      drush_backend_batch_process();
+      _bc_islandora_create_derivatives($books);
     }
   }
 }
@@ -309,4 +288,18 @@ function drush_bc_islandora_generate_newspaper_csv($directory = '/home/BCIT/dsav
     fputcsv($csv, $line);
   }
   fclose($csv);
+}
+
+function _bc_islandora_create_derivatives($objects) {
+  foreach ($objects as $pid) {
+    $book = islandora_object_load($pid);
+    $pages = array_keys(islandora_paged_content_get_pages($book));
+    $img_batch = islandora_paged_content_create_images_batch($book, $pages);
+    $pdf_batch = islandora_paged_content_create_pdf_batch($book, $pages);
+    $ocr_batch = islandora_paged_content_create_ocr_batch($book, $pages, array('language' => 'eng', 'preprocess' => FALSE));
+    batch_set($img_batch);
+    batch_set($pdf_batch);
+    batch_set($ocr_batch);
+  }
+  drush_backend_batch_process();
 }
