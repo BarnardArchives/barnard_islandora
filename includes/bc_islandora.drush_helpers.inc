@@ -124,8 +124,10 @@ function create_book_object($pid, $data) {
   $tuque = islandora_get_tuque_connection();
   $connection = $tuque->connection;
 
-  $date = $data[0];
-  $title = $date . ' ' . $data[3];
+  $date = $data[3];
+  $title = $data[0] . ' ' . $date;
+  $vol = explode(' ', $data[1]);
+  $id_date = $vol[1];
   //$date_short = date('Ymd', strtotime($date));
   $extent = $data[12] . ' pages';
   $description = $data[7];
@@ -198,7 +200,7 @@ function create_book_object($pid, $data) {
         <identifier type="local">BC12.01</identifier> 
       </relatedItem> 
 
-      <identifier type="local">BC12-01_$date</identifier>
+      <identifier type="local">BC12-01_$id_date</identifier>
 
       <location> 
         <physicalLocation authority="marcorg">NNC</physicalLocation> 
