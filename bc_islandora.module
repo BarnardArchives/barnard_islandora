@@ -46,10 +46,16 @@ function bc_islandora_theme($existing, $type, $theme, $path) {
   return array(
     'bc_islandora_object' => array(
       'variables' => array(
-        'solr_obj' => NULL,
+        'pid' => NULL,
         'title' => NULL,
-        'paged' => TRUE,
+        'paged' => FALSE,
         'start_page' => NULL,
+      ),
+      'file' => 'includes/bc_islandora.theme.inc',
+    ),
+    'bc_islandora_exhibit' => array(
+      'variables' => array(
+        'node' => NULL,
       ),
       'file' => 'includes/bc_islandora.theme.inc',
     ),
@@ -57,22 +63,14 @@ function bc_islandora_theme($existing, $type, $theme, $path) {
 }
 
 function bc_islandora_page_view($pid) {
-  $output = '';
-  if ($results = _bc_islandora_solr_query(array('PID:"' . BASE_NAMESPACE . ':' . $pid . '"'))) {
-    $solr_obj = array_shift($results['response']['objects']);
-    $output .= theme('bc_islandora_object', array('solr_obj' => $solr_obj));
-  }
-  else {
-    drupal_not_found();
-  }
-  return $output;
+  return theme('bc_islandora_object', array('pid' => BASE_NAMESPACE . ':' . $pid));
 }
 
 function bc_islandora_download_datastream($pid, $dsid) {
   module_load_include('inc', 'islandora', 'includes/datastream');
 
-  $object = islandora_object_load($pid);
-  $xml = simplexml_load_string($object['MODS']->getContent(NULL));
+  $mods = _bc_islandora_mods_object($pid);
+  $xml = $mods['mods'];
   if ($id  = (string) $xml->identifier) {
     $object[$dsid]->label = $id;
     //bc_islandora_view_datastream($object[$dsid]);
@@ -120,6 +118,12 @@ function bc_islandora_block_info() {
       'pages' => array('bulletin'),
       'region' => 'content',
     ),
+    'bc_islandora_yearbook' => array(
+      'info' => t('Book Collection'),
+      'status' => BLOCK_VISIBILITY_LISTED,
+      'pages' => array('yearbook'),
+      'region' => 'content',
+    ),
   );
   return $blocks;
 }
@@ -138,58 +142,85 @@ function bc_islandora_block_save($delta = '') {
  * Implements hook_block_view().
  */
 function bc_islandora_block_view($delta = '') {
-  if (preg_match('/^bc_islandora_/', $delta) !== FALSE) {
-    $variable = $delta . '_pid';
-    if ($collection_pid = variable_get($variable, 'islandora:1')) {
-      module_load_include('inc', 'islandora_newspaper', 'includes/utilities');
-      $years_output = '<div class="years">';
-      $months_output = '<div class="months">';
-      $issues_output = '<div class="issues">';
-      $months_sort = array();
-      $issues_sort = array();
+  $block = array();
+  switch ($delta) {
+    case 'bc_islandora_newspaper':
+      if ($collection_pid = variable_get($delta . '_pid', 'islandora:1')) {
+        module_load_include('inc', 'islandora_newspaper', 'includes/utilities');
+        $years_output = '<div class="years">';
+        $months_output = '<div class="months">';
+        $issues_output = '<div class="issues">';
+        $months_sort = array();
+        $issues_sort = array();
 
-      $paper = islandora_object_load($collection_pid);
-      $issues = islandora_newspaper_get_issues($paper);
-      $grouped_issues = islandora_newspaper_group_issues($issues);
-      $years_output .= '<ul class="years">';
-      foreach ($grouped_issues as $year => $months) {
-        $years_output .= '<li class="year" id="' . $year . '"><a href="#">' . $year . '</a></li>';
+        $paper = islandora_object_load($collection_pid);
+        $issues = islandora_newspaper_get_issues($paper);
+        $grouped_issues = islandora_newspaper_group_issues($issues);
+        $years_output .= '<ul class="years">';
+        foreach ($grouped_issues as $year => $months) {
+          $years_output .= '<li class="year" id="' . $year . '"><a href="#">' . $year . '</a></li>';
 
-        foreach ($months as $month => $issues) {
-          $month_display = date('F', strtotime($year . '-' . $month));
-          $months_sort[$year][$month] = '<li class="month" id="' . $month . '"><a href="#">' . $month_display . '</a></li>';
-          foreach ($issues as $day => $issue) {
-            $issue_url = 'view/' . str_replace(BASE_NAMESPACE . ':', '', $issue[0]['pid']);
-            $issues_sort[$month][$day] = '<li class="issue">' . l(preg_replace('/^0/', '', $day), $issue_url) . '</li>';
+          foreach ($months as $month => $issues) {
+            $month_display = date('F', strtotime($year . '-' . $month));
+            $months_sort[$year][$month] = '<li class="month" id="' . $month . '"><a href="#">' . $month_display . '</a></li>';
+            foreach ($issues as $day => $issue) {
+              $issue_url = 'view/' . str_replace(BASE_NAMESPACE . ':', '', $issue[0]['pid']);
+              $issues_sort[$month][$day] = '<li class="issue">' . l(preg_replace('/^0/', '', $day), $issue_url) . '</li>';
+            }
           }
         }
-      }
 
-      $years_output .= '</ul></div>';
-      foreach ($months_sort as $year => $month) {
-        ksort($month);
-        $months_output .= '<ul class="months-' . $year . '">';
-        $months_output .= implode("\n", $month);
-        $months_output .= '</ul>';
-        foreach ($issues_sort as $issue_month => $day) {
-          ksort($day);
-          $issues_output .= '<ul class="issues-' . $year . '-' . $issue_month . '">';
-          $issues_output .= implode("\n", $day);
-          $issues_output .= '</ul>';
+        $years_output .= '</ul></div>';
+        foreach ($months_sort as $year => $month) {
+          ksort($month);
+          $months_output .= '<ul class="months-' . $year . '">';
+          $months_output .= implode("\n", $month);
+          $months_output .= '</ul>';
+          foreach ($issues_sort as $issue_month => $day) {
+            ksort($day);
+            $issues_output .= '<ul class="issues-' . $year . '-' . $issue_month . '">';
+            $issues_output .= implode("\n", $day);
+            $issues_output .= '</ul>';
+          }
         }
+
+        $months_output .= '</div>';
+        $issues_output .= '</div>';
+
+        $output = '<div class="bulletin-nav">
+            <span class="browse">Browse</span><span class="month"></span><span class="day"></span><span class="year"><a id="nav" href="#"></a></span>
+          </div>';
+        $output .= '<div class="bulletin-calendar">' . $years_output . $months_output . $issues_output . '</div>';
+        $block['content'] = $output;
       }
-
-      $months_output .= '</div>';
-      $issues_output .= '</div>';
-
-      $output = '<div class="bulletin-nav">
-          <span class="browse">Browse</span><span class="month"></span><span class="day"></span><span class="year"><a id="nav" href="#"></a></span>
-        </div>';
-      $output .= '<div class="bulletin-calendar">' . $years_output . $months_output . $issues_output . '</div>';
-      $block['content'] = $output;
-    }
-    return $block;
+    break;
+    // TODO
+    case 'bc_islandora_yearbook':
+      if ($collection_pid = variable_get($delta . '_pid', 'islandora:bookCollection')) {
+        $output = '<div id="yearbook-nav">';
+        $book_collection = islandora_object_load($collection_pid);
+        $query = <<<EOQ
+PREFIX islandora-rels-ext: <http://islandora.ca/ontology/relsext#>
+PREFIX fedora-rels-ext: <info:fedora/fedora-system:def/relations-external#>
+SELECT ?object
+FROM <#ri>
+WHERE {
+  ?object fedora-rels-ext:isMemberOf <info:fedora/{$collection_pid}> ;
+       <fedora-model:hasModel> <info:fedora/islandora:bookCModel> ;
+}
+EOQ;
+        $results = $book_collection->repository->ri->sparqlQuery($query);
+        foreach ($results as $r) {
+          $pid = $r['object']['value'];
+          $year = array_pop(explode('-', $pid));
+          $output .= '<span class="year">' . l($year, 'view/' . str_replace(BASE_NAMESPACE . ':', '', $pid)) . '</span>';
+        }
+        $output .= '</div>';
+        $block['content'] = $output;
+      }
+    break;
   }
+  return $block;
 }
 
 function bc_islandora_preprocess_islandora_solr(&$variables) {
@@ -202,4 +233,13 @@ function _bc_islandora_solr_query($fq) {
   $qp = new IslandoraSolrQueryProcessor();
   $qp->buildAndExecuteQuery('', array('f' => $fq));
   return $qp->islandoraSolrResult;
+}
+
+function _bc_islandora_mods_object($pid) {
+  if ($object = islandora_object_load($pid)) {
+    return array(
+      'object' => $object,
+      'mods' => simplexml_load_string($object['MODS']->getContent(NULL))
+    );
+  }
 }

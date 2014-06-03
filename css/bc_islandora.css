@@ -1,7 +1,9 @@
-.bulletin-calendar .inactive {
+.bulletin-calendar .inactive,
+.exhibition-object.inactive {
     display: none;
 }
-.bulletin-calendar .active {
+.bulletin-calendar .active,
+.exhibition-object.active {
     display: block;
 }
 .bulletin-calendar ul {
@@ -10,4 +12,28 @@
 .bulletin-calendar li {
     display: inline;
     margin: 0 0 10px 10px;
+}
+
+#dl-links {
+  margin-bottom: 10px;
+}
+
+#yearbook-nav span.year {
+  margin:  0 10px 10px 0;
+}
+
+.exhibition {
+  text-align: center;
+}
+
+.exhibition-object span.caption {
+  text-align: left;
+}
+
+#exhibition-nav {
+  position: relative;
+}
+
+.exhibition-next {
+  margin-left: 940px;
 }

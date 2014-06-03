@@ -227,7 +227,7 @@ BOOK_MODS;
         <fedora-model:hasModel rdf:resource="info:fedora/$content_model_pid"></fedora-model:hasModel>
         <fedora:isMemberOf rdf:resource="info:fedora/$collection_pid"></fedora:isMemberOf>
         <islandora:isSequenceNumber>1</islandora:isSequenceNumber>
-        <islandora:dateIssued>1901-01-07</islandora:dateIssued>
+        <islandora:dateIssued>$date</islandora:dateIssued>
       </rdf:Description>
     </rdf:RDF>
 BOOK_RDF;
