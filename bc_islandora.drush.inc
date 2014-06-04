@@ -179,7 +179,8 @@ function drush_bc_islandora_ingest_books($query_file) {
   $books = array();
 
   while (($data = fgetcsv($fh)) !== FALSE) {
-    $csv_year = array_pop(explode(' ', $data[1]));
+    //$csv_year = array_pop(explode(' ', $data[1]));
+    $csv_year = $data[3];
     if ($year && $year != $csv_year) {
       continue;
     }
