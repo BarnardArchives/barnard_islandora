@@ -181,10 +181,11 @@ function drush_bc_islandora_ingest_books($query_file) {
   while (($data = fgetcsv($fh)) !== FALSE) {
     //$csv_year = array_pop(explode(' ', $data[1]));
     $csv_year = $data[3];
+    $pid_year = array_pop(explode(' ', $data[1]));
     if ($year && $year != $csv_year) {
       continue;
     }
-    $book_pid = 'bc:yearbook-' . $csv_year;
+    $book_pid = 'bc:yearbook-' . $pid_year;
     $pages = $data[12];
     if (drush_get_option('purge')) {
       drush_bc_islandora_purge_object($book_pid);
