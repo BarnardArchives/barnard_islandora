@@ -68,7 +68,7 @@ ISSUE_RDF;
 
   $object = new NewFedoraObject($pid, $connection->repository);
   
-  $object->label = $title; 
+  $object->label = $title;
  
   $dc_datastream = new NewFedoraDatastream('DC', 'X', $object, $connection->repository);
 
@@ -97,6 +97,7 @@ ISSUE_RDF;
 
   $object->ingestDatastream($rels_datastream);  
   try {
+    $object->state = 'A';
     $ingest = $tuque->repository->ingestObject($object);
   }
   catch(Exception $e) {
@@ -275,6 +276,7 @@ BOOK_RDF;
 
   $object->ingestDatastream($rels_datastream);  
   try {
+    $object->state = 'A';
     $ingest = $tuque->repository->ingestObject($object);
   }
   catch(Exception $e) {
@@ -427,6 +429,7 @@ PAGE_RDF;
 
   $object->ingestDatastream($rels_datastream);
   try {
+    $object->state = 'A';
     $ingest = $connection->repository->ingestObject($object);
   }
   catch (Exception $e) {
