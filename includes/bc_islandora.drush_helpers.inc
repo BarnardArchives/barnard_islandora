@@ -147,7 +147,7 @@ function create_book_object($pid, $data) {
         <title>$title</title>
       </titleInfo>
 
-      <name type="corporate">
+      <name type="corporate" authority=”naf” authorityURI=”http://id.loc.gov/authorities/names” valueURI=”http://id.loc.gov/authorities/names/n79065105”>
         <namePart>Barnard College</namePart>
         <role>
           <roleTerm type="text" authority="marcrelator">Publisher</roleTerm>
@@ -161,7 +161,7 @@ function create_book_object($pid, $data) {
       <originInfo eventType="publication">
         <place>
           <placeTerm type="code" authority="marccountry">nyu</placeTerm>
-          <placeTerm type="text">New York, N.Y.</placeTerm>
+          <placeTerm type="text">New York (N.Y.)</placeTerm>
         </place>
         <publisher>Barnard College</publisher>
         <dateIssued encoding="iso8601" keyDate="yes">$date</dateIssued>
@@ -182,15 +182,19 @@ function create_book_object($pid, $data) {
 
       <abstract>$description</abstract>
 
-      <subject authority="lcsh">
+      <subject authority="lcsh" authorityURI=”http://id.loc.gov/authorities/subjects” valueURI=”http://id.loc.gov/authorities/subjects/sh85147738”>
         <topic>Women's colleges</topic>
-        <topic>College students</topic>
+      </subject>
+      <subject authority="lcsh" authorityURI=”http://id.loc.gov/authorities/subjects” valueURI=”http://id.loc.gov/authorities/subjects/sh85147501”>
+        <topic>Women college students</topic>
+      </subject>
+
+      <subject authority="lcsh" authorityURI=”http://id.loc.gov/authorities/subjects” valueURI=”http://id.loc.gov/authorities/subjects/sh85129244”>
         <topic>Student activities</topic>
       </subject>
 
       <subject>
-        <name type="corporate" authority="naf">
-          <namePart>Barnard College</namePart>
+        <name type="corporate" authority=”naf” authorityURI=”http://id.loc.gov/authorities/names” valueURI=”http://id.loc.gov/authorities/names/n79065105”>
         </name>
       </subject>
 
