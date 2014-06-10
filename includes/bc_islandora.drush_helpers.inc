@@ -147,7 +147,7 @@ function create_book_object($pid, $data) {
         <title>$title</title>
       </titleInfo>
 
-      <name type="corporate" authority=”naf” authorityURI=”http://id.loc.gov/authorities/names” valueURI=”http://id.loc.gov/authorities/names/n79065105”>
+      <name type="corporate" authority="naf" authorityURI="http://id.loc.gov/authorities/names" valueURI="http://id.loc.gov/authorities/names/n79065105">
         <namePart>Barnard College</namePart>
         <role>
           <roleTerm type="text" authority="marcrelator">Publisher</roleTerm>
@@ -182,19 +182,19 @@ function create_book_object($pid, $data) {
 
       <abstract>$description</abstract>
 
-      <subject authority="lcsh" authorityURI=”http://id.loc.gov/authorities/subjects” valueURI=”http://id.loc.gov/authorities/subjects/sh85147738”>
+      <subject authority="lcsh" authorityURI="http://id.loc.gov/authorities/subjects" valueURI="http://id.loc.gov/authorities/subjects/sh85147738">
         <topic>Women's colleges</topic>
       </subject>
-      <subject authority="lcsh" authorityURI=”http://id.loc.gov/authorities/subjects” valueURI=”http://id.loc.gov/authorities/subjects/sh85147501”>
+      <subject authority="lcsh" authorityURI="http://id.loc.gov/authorities/subjects" valueURI="http://id.loc.gov/authorities/subjects/sh85147501">
         <topic>Women college students</topic>
       </subject>
 
-      <subject authority="lcsh" authorityURI=”http://id.loc.gov/authorities/subjects” valueURI=”http://id.loc.gov/authorities/subjects/sh85129244”>
+      <subject authority="lcsh" authorityURI="http://id.loc.gov/authorities/subjects" valueURI="http://id.loc.gov/authorities/subjects/sh85129244">
         <topic>Student activities</topic>
       </subject>
 
       <subject>
-        <name type="corporate" authority=”naf” authorityURI=”http://id.loc.gov/authorities/names” valueURI=”http://id.loc.gov/authorities/names/n79065105”>
+        <name type="corporate" authority="naf" authorityURI="http://id.loc.gov/authorities/names" valueURI="http://id.loc.gov/authorities/names/n79065105">
         </name>
       </subject>
 
