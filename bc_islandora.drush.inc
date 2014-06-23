@@ -72,6 +72,15 @@ function bc_islandora_drush_command() {
       ),
       'aliases' => array('bcignc'),
     ),
+    'bc_islandora_fix_metadata' => array(
+      'arguments' => array(
+        'type' => 'The type of record to fix.',
+      ),
+      'examples' => array(
+        'drush bcifm newspaper',
+      ),
+      'aliases' => array('bcifm'),
+    ),
   );
 }
 
@@ -290,6 +299,66 @@ function drush_bc_islandora_generate_newspaper_csv($directory = '/home/BCIT/dsav
     fputcsv($csv, $line);
   }
   fclose($csv);
+}
+
+function drush_bc_islandora_fix_metadata($type, $collection_pid = '') {
+  module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
+  module_load_include('inc', 'islandora_newspaper', 'includes/utilities');
+
+  $tuque = islandora_get_tuque_connection();
+
+  switch($type) {
+    case 'newspaper':
+      $collection_pid = variable_get('bc_islandora_newspaper_pid', 'islandora:74');
+      $paper = islandora_object_load($collection_pid);
+      $compound = islandora_newspaper_get_issues($paper);
+    break;
+    case 'yearbook':
+      $collection_pid = variable_get('bc_islandora_yearbook_pid', 'islandora:bookCollection');
+      $compound = islandora_paged_content_get_pages(islandora_object_load($collection_pid));
+    break;
+  }
+
+  $pages = array();
+  $new_mods = array();
+  foreach ($compound as $pid => $o) {
+    // TODO different operations for different objects?
+    $parent_object = islandora_object_load($pid);
+    if ($type == 'newspaper' && isset($parent_object['MODS']) && $parent_mods_xml = simplexml_load_string($parent_object['MODS']->getContent(NULL))) {
+      $date = (string) $parent_mods_xml->originInfo->dateIssued;
+      $new_date = date('Y-m-d', strtotime($date));
+      unset($parent_mods_xml->originInfo->dateIssued);
+      $parent_mods_xml->originInfo->addChild('dateIssued', $new_date)->addAttribute('encoding', 'w3cdtf');
+      $new_mods[$pid] = $parent_mods_xml->asXML();
+    }
+    elseif ($type == 'yearbook') {
+      foreach (islandora_paged_content_get_pages(islandora_object_load($pid)) as $child_pid => $page) {
+        $parent_mods_xml = simplexml_load_string($parent_object['MODS']->getContent(NULL));
+        $parent_date = (string) $parent_mods_xml->originInfo->dateIssued;
+        $child_object = islandora_object_load($page['pid']);
+        $child_mods_xml = simplexml_load_string($child_object['MODS']->getContent(NULL));
+        $child_mods_xml->addChild('originInfo')->addChild('dateIssued', $parent_date)->addAttribute('encoding', 'iso639-2b');
+        $new_mods[$child_pid] = $child_mods_xml->asXML();
+      }
+    }
+  }
+  // purge the existing MODS datastreams.
+  foreach ($new_mods as $pid => $mods) {
+    drush_log(dt('Doing object (purge): @pid', array('@pid' => $pid)), 'ok');
+
+    $object = islandora_object_load($pid);
+    $object->purgeDatastream('MODS');
+  }
+  // then create new MODS datastreams.
+  foreach ($new_mods as $pid => $mods) {
+    drush_log(dt('Doing object (add): @pid', array('@pid' => $pid)), 'ok');
+
+    $new_object = islandora_object_load($pid);
+    $new_ds = $new_object->constructDatastream('MODS');
+    $new_ds->label = 'MODS';
+    $new_ds->setContentFromString($mods);
+    $new_object->ingestDatastream($new_ds);
+  }
 }
 
 function _bc_islandora_create_derivatives($objects) {

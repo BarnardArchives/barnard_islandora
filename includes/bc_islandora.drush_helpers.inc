@@ -7,7 +7,7 @@ function create_issue_object($pid, $data) {
   $connection = $tuque->connection;
   
   $title = $data[0];
-  $date = $data[1];
+  $date = date('Y-m-d', strtotime($data[1]));
   $date_short = date('Ymd', strtotime($date));
   $extent = $data[5];
  
@@ -50,7 +50,7 @@ ISSUE_MODS;
         <fedora-model:hasModel rdf:resource="info:fedora/$content_model_pid"></fedora-model:hasModel>
         <fedora:isMemberOf rdf:resource="info:fedora/$collection_pid"></fedora:isMemberOf>
         <islandora:isSequenceNumber>1</islandora:isSequenceNumber>
-        <islandora:dateIssued>1901-01-07</islandora:dateIssued>
+        <islandora:dateIssued>$date</islandora:dateIssued>
       </rdf:Description>
     </rdf:RDF>
 ISSUE_RDF;
@@ -314,6 +314,7 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid, $type
       $page_number = $data[3];
       $title = 'Barnard Bulletin';
       $label = $title . ', ' . $date . ', page ' . $page_number;
+      $dateIssued = '<dateIssued encoding="w3cdtf">' . date('Y-m-d', strtotime($date)) . '</dateIssued>';
       $id_short = 'BC12.03';
       $id_long = 'BC12-03_' . $date_short . '-' . $page_number;
       $file_name = $file_path . '/' . $data[2];
@@ -323,6 +324,7 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid, $type
       $title = $data[0];
       $page_number = array_pop($data);
       $label = $title . ' ' . $data[3] . ', page ' . $page_number;
+      $dateIssued = '<dateIssued encoding="iso8601">' . $data[3] . '</dateIssued>';
       $id_short = 'BC12.01';
       $id_long = 'BC12-01_' . str_pad($page_number, 3, '0', STR_PAD_LEFT);
       $file_name = $file_path;
@@ -356,6 +358,9 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid, $type
       <titleInfo>
         <title>$label</title>
       </titleInfo>
+      <originInfo>
+        $dateIssued
+      </originInfo>
       <relatedItem type="host"> 
         <titleInfo> 
           <title>$title</title> 
