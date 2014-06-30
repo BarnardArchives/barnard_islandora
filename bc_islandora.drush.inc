@@ -312,47 +312,82 @@ function drush_bc_islandora_fix_metadata($type, $collection_pid = '') {
       $collection_pid = variable_get('bc_islandora_newspaper_pid', 'islandora:74');
       $paper = islandora_object_load($collection_pid);
       $compound = islandora_newspaper_get_issues($paper);
+      $genre = $type;
+      $enctype = 'w3cdtf';
     break;
     case 'yearbook':
       $collection_pid = variable_get('bc_islandora_yearbook_pid', 'islandora:bookCollection');
       $compound = islandora_paged_content_get_pages(islandora_object_load($collection_pid));
+      $genre = $type;
+      $enctype = 'iso639-2b';
     break;
   }
 
   $pages = array();
   $new_mods = array();
   foreach ($compound as $pid => $o) {
-    // TODO different operations for different objects?
     $parent_object = islandora_object_load($pid);
-    if ($type == 'newspaper' && isset($parent_object['MODS']) && $parent_mods_xml = simplexml_load_string($parent_object['MODS']->getContent(NULL))) {
+    // Parent object, newspaper or book.
+    if (isset($parent_object['MODS']) && $parent_mods_xml = simplexml_load_string($parent_object['MODS']->getContent(NULL))) {
+      $id_old = (string) $parent_mods_xml->relatedItem->identifier;
+      unset($parent_mods_xml->relatedItem->identifier);
+      $parent_mods_xml->relatedItem->addChild('identifier', str_replace('.', '-', $id_old))->addAttribute('type', 'local');
+    }
+    // Parent object, newspaper only.
+    if ($type == 'newspaper' && $parent_mods_xml) {
       $date = (string) $parent_mods_xml->originInfo->dateIssued;
       $new_date = date('Y-m-d', strtotime($date));
       unset($parent_mods_xml->originInfo->dateIssued);
-      $parent_mods_xml->originInfo->addChild('dateIssued', $new_date)->addAttribute('encoding', 'w3cdtf');
-      $new_mods[$pid] = $parent_mods_xml->asXML();
+      if (!isset($parent_mods_xml->genre)) {
+        $parent_mods_xml->addChild('genre', $genre)->addAttribute('authority', 'marcgt');
+      }
+      $parent_mods_xml->originInfo->addChild('dateIssued', $new_date)->addAttribute('encoding', $enctype);
     }
-    elseif ($type == 'yearbook') {
-      foreach (islandora_paged_content_get_pages(islandora_object_load($pid)) as $child_pid => $page) {
-        $parent_mods_xml = simplexml_load_string($parent_object['MODS']->getContent(NULL));
-        $parent_date = (string) $parent_mods_xml->originInfo->dateIssued;
-        $child_object = islandora_object_load($page['pid']);
-        $child_mods_xml = simplexml_load_string($child_object['MODS']->getContent(NULL));
-        $child_mods_xml->addChild('originInfo')->addChild('dateIssued', $parent_date)->addAttribute('encoding', 'iso639-2b');
+    $new_mods[$pid] = $parent_mods_xml->asXML();
+    // Child (page) objects.
+    foreach (islandora_paged_content_get_pages(islandora_object_load($pid)) as $child_pid => $page) {
+      $parent_date = (string) $parent_mods_xml->originInfo->dateIssued;
+      $child_object = islandora_object_load($page['pid']);
+      if (isset($child_object['MODS']) && $child_mods_xml = simplexml_load_string($child_object['MODS']->getContent(NULL))) {
+        // identifier (book page)
+        $id_top = (string) $child_mods_xml->identifier;
+        if (($type == 'yearbook') && (strpos($id_top, $parent_date) === FALSE)) {
+          unset($child_mods_xml->identifier);
+          $page_number = str_pad(array_pop(explode(' ', (string) $child_mods_xml->titleInfo->title)), 3, '0', STR_PAD_LEFT);
+          $id_top_parts = explode('_', $id_top);
+          $id_top_new = implode('_', array($id_top_parts[0], $parent_date, $page_number));
+          $child_mods_xml->addChild('identifier', $id_top_new)->addAttribute('type', 'local');
+        }
+        // relatedItem identifier
+        $id_old = (string) $child_mods_xml->relatedItem->identifier;
+        if (strpos($id_old, '.') !== FALSE) {
+          unset($child_mods_xml->relatedItem->identifier);
+          $child_mods_xml->relatedItem->addChild('identifier', str_replace('.', '-', $id_old))->addAttribute('type', 'local');
+        }
+        // genre
+        if (!isset($child_mods_xml->genre)) {
+          $child_mods_xml->addChild('genre', $genre)->addAttribute('authority', 'marcgt');
+        }
+        // originInfo dateIssued
+        if (!isset($child_mods_xml->originInfo)) {
+          $child_mods_xml->addChild('originInfo')->addChild('dateIssued', $parent_date)->addAttribute('encoding', $enctype);
+        }
         $new_mods[$child_pid] = $child_mods_xml->asXML();
+      }
+      else {
+        print "FAIL at pid = $pid :(\n";
       }
     }
   }
   // purge the existing MODS datastreams.
   foreach ($new_mods as $pid => $mods) {
     drush_log(dt('Doing object (purge): @pid', array('@pid' => $pid)), 'ok');
-
     $object = islandora_object_load($pid);
     $object->purgeDatastream('MODS');
   }
   // then create new MODS datastreams.
   foreach ($new_mods as $pid => $mods) {
     drush_log(dt('Doing object (add): @pid', array('@pid' => $pid)), 'ok');
-
     $new_object = islandora_object_load($pid);
     $new_ds = $new_object->constructDatastream('MODS');
     $new_ds->label = 'MODS';

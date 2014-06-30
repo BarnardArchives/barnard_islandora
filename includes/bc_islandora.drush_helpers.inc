@@ -23,6 +23,7 @@ function create_issue_object($pid, $data) {
       <titleInfo>
         <title>$title</title>
       </titleInfo>
+      <genre authority="marcgt">newspaper</genre>
       <physicalDescription>
         <form authority="marcform">print</form>
         <form authority="marcform">electronic</form>
@@ -35,7 +36,7 @@ function create_issue_object($pid, $data) {
           <title>Barnard Bulletin</title> 
         </titleInfo> 
         <typeOfResource>text</typeOfResource> 
-        <identifier type="local">BC12.03</identifier> 
+        <identifier type="local">BC12-03</identifier> 
       </relatedItem> 
       <originInfo>
         <dateIssued encoding="w3cdtf">$date</dateIssued>
@@ -203,7 +204,7 @@ function create_book_object($pid, $data) {
           <title>Mortarboard</title> 
         </titleInfo> 
         <typeOfResource>text</typeOfResource> 
-        <identifier type="local">BC12.01</identifier> 
+        <identifier type="local">BC12-01</identifier> 
       </relatedItem> 
 
       <identifier type="local">BC12-01_$id_date</identifier>
@@ -315,20 +316,22 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid, $type
       $title = 'Barnard Bulletin';
       $label = $title . ', ' . $date . ', page ' . $page_number;
       $dateIssued = '<dateIssued encoding="w3cdtf">' . date('Y-m-d', strtotime($date)) . '</dateIssued>';
-      $id_short = 'BC12.03';
+      $id_short = 'BC12-03';
       $id_long = 'BC12-03_' . $date_short . '-' . $page_number;
       $file_name = $file_path . '/' . $data[2];
       $content_model_pid = 'islandora:newspaperPageCModel';
+      $genre = 'newspaper';
     break;
     case 'book':
       $title = $data[0];
       $page_number = array_pop($data);
       $label = $title . ' ' . $data[3] . ', page ' . $page_number;
       $dateIssued = '<dateIssued encoding="iso8601">' . $data[3] . '</dateIssued>';
-      $id_short = 'BC12.01';
-      $id_long = 'BC12-01_' . str_pad($page_number, 3, '0', STR_PAD_LEFT);
+      $id_short = 'BC12-01';
+      $id_long = 'BC12-01_' . $data[3] . '_' . str_pad($page_number, 3, '0', STR_PAD_LEFT);
       $file_name = $file_path;
       $content_model_pid = 'islandora:pageCModel';
+      $genre = 'yearbook';
     break;
   }
 
@@ -358,6 +361,7 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid, $type
       <titleInfo>
         <title>$label</title>
       </titleInfo>
+      <genre authority="marcgt">$genre</genre>
       <originInfo>
         $dateIssued
       </originInfo>
