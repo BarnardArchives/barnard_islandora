@@ -319,7 +319,7 @@ function drush_bc_islandora_fix_metadata($type, $collection_pid = '') {
       $collection_pid = variable_get('bc_islandora_yearbook_pid', 'islandora:bookCollection');
       $compound = islandora_paged_content_get_pages(islandora_object_load($collection_pid));
       $genre = $type;
-      $enctype = 'iso639-2b';
+      $enctype = 'iso8601';
     break;
   }
 
@@ -337,11 +337,20 @@ function drush_bc_islandora_fix_metadata($type, $collection_pid = '') {
     if ($type == 'newspaper' && $parent_mods_xml) {
       $date = (string) $parent_mods_xml->originInfo->dateIssued;
       $new_date = date('Y-m-d', strtotime($date));
-      unset($parent_mods_xml->originInfo->dateIssued);
       if (!isset($parent_mods_xml->genre)) {
         $parent_mods_xml->addChild('genre', $genre)->addAttribute('authority', 'marcgt');
       }
-      $parent_mods_xml->originInfo->addChild('dateIssued', $new_date)->addAttribute('encoding', $enctype);
+      if (!isset($parent_mods_xml->originInfo->dateIssued)) {
+        $parent_mods_xml->originInfo->addChild('dateIssued', $new_date)->addAttribute('encoding', $enctype);
+      }
+      if (!isset($parent_mods_xml->originInfo->dateCreated)) {
+        $parent_mods_xml->originInfo->addChild('dateCreated', $new_date)->addAttribute('encoding', $enctype);
+      }
+    }
+    // Parent object, book only.
+    elseif ($type == 'yearbook' && $parent_mods_xml) {
+      unset($parent_mods_xml->originInfo->dateCreated);
+      $parent_mods_xml->originInfo->addChild('dateCreated', (string) $parent_mods_xml->originInfo->dateIssued)->addAttribute('encoding', $enctype);
     }
     $new_mods[$pid] = $parent_mods_xml->asXML();
     // Child (page) objects.
@@ -368,14 +377,19 @@ function drush_bc_islandora_fix_metadata($type, $collection_pid = '') {
         if (!isset($child_mods_xml->genre)) {
           $child_mods_xml->addChild('genre', $genre)->addAttribute('authority', 'marcgt');
         }
-        // originInfo dateIssued
+        // originInfo
         if (!isset($child_mods_xml->originInfo)) {
           $child_mods_xml->addChild('originInfo')->addChild('dateIssued', $parent_date)->addAttribute('encoding', $enctype);
         }
+        else {
+          // dateIssued
+          unset($child_mods_xml->originInfo->dateIssued);
+          $child_mods_xml->originInfo->addChild('dateIssued', $parent_date)->addAttribute('encoding', $enctype);
+          // dateCreated
+          unset($child_mods_xml->originInfo->dateCreated);
+          $child_mods_xml->originInfo->addChild('dateCreated', $parent_date)->addAttribute('encoding', $enctype);
+        }
         $new_mods[$child_pid] = $child_mods_xml->asXML();
-      }
-      else {
-        print "FAIL at pid = $pid :(\n";
       }
     }
   }

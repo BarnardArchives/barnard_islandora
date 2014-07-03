@@ -40,6 +40,7 @@ function create_issue_object($pid, $data) {
       </relatedItem> 
       <originInfo>
         <dateIssued encoding="w3cdtf">$date</dateIssued>
+        <dateCreated encoding="w3cdtf">$date</dateCreated>
       </originInfo>
       <identifier type="local">BC12-03_$date_short</identifier>
     </mods> 
@@ -166,6 +167,7 @@ function create_book_object($pid, $data) {
         </place>
         <publisher>Barnard College</publisher>
         <dateIssued encoding="iso8601" keyDate="yes">$date</dateIssued>
+        <dateCreated encoding="iso8601" keyDate="yes">$date</dateCreated>
         <issuance>continuing</issuance>
       </originInfo>
 
@@ -316,6 +318,7 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid, $type
       $title = 'Barnard Bulletin';
       $label = $title . ', ' . $date . ', page ' . $page_number;
       $dateIssued = '<dateIssued encoding="w3cdtf">' . date('Y-m-d', strtotime($date)) . '</dateIssued>';
+      $dateCreated = '<dateCreated encoding="w3cdtf">' . date('Y-m-d', strtotime($date)) . '</dateCreated>';
       $id_short = 'BC12-03';
       $id_long = 'BC12-03_' . $date_short . '-' . $page_number;
       $file_name = $file_path . '/' . $data[2];
@@ -327,6 +330,7 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid, $type
       $page_number = array_pop($data);
       $label = $title . ' ' . $data[3] . ', page ' . $page_number;
       $dateIssued = '<dateIssued encoding="iso8601">' . $data[3] . '</dateIssued>';
+      $dateCreated = '<dateCreated encoding="iso8601">' . $data[3] . '</dateCreated>';
       $id_short = 'BC12-01';
       $id_long = 'BC12-01_' . $data[3] . '_' . str_pad($page_number, 3, '0', STR_PAD_LEFT);
       $file_name = $file_path;
@@ -364,6 +368,7 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid, $type
       <genre authority="marcgt">$genre</genre>
       <originInfo>
         $dateIssued
+        $dateCreated
       </originInfo>
       <relatedItem type="host"> 
         <titleInfo> 
