@@ -1,3 +1,8 @@
+.breadcrumb {
+  margin-bottom: 15px;
+}
+
+/* newspaper landing page */
 .bulletin-calendar .inactive,
 .exhibition-object.inactive {
     display: none;
@@ -8,6 +13,7 @@
 }
 .bulletin-calendar ul {
     list-style-type: none;
+    margin-left: 0px;
 }
 .bulletin-calendar li {
     display: inline;
@@ -18,16 +24,45 @@
   margin-bottom: 10px;
 }
 
+
+/* yearbook landing page */
 #yearbook-nav span.year {
   margin:  0 10px 10px 0;
 }
 
+/* exhibitions */
 .exhibition {
-  text-align: center;
+  width: 960px;
+  height: 850px;
+  float: left;
+  overflow: hidden;
 }
 
-.exhibition-object span.caption {
-  text-align: left;
+.exhibition-object {
+  width: 960px;
+  position: absolute;
+}
+
+.exhibition-object .object-description {
+  float: left;
+  margin-right: 20px;
+  max-width: 340px;
+}
+
+.exhibition-object .object-image {
+  float: right;
+  max-width: 600px;
+}
+
+.exhibition .object-image .caption {
+  font-size: 0.9em;
+  display: block;
+  margin-top: 5px;
+}
+
+.exhibition-object span.dc-link {
+  display: block;
+  margin-top: 5px;
 }
 
 #exhibition-nav {
@@ -35,5 +70,17 @@
 }
 
 .exhibition-next {
-  margin-left: 940px;
+  margin-left: 10px;
+}
+
+
+/* In case the viewer is openseadragon */
+.islandora-newspaper-issue .islandora-openseadragon {
+  height: 800px;
+}
+
+/* newspaper issue */
+.islandora-newspaper-issue-navigator {
+  display: block;
+  margin-bottom: 10px;
 }

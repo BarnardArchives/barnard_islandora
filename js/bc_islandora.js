@@ -21,7 +21,7 @@
             self.toggle_list('ul.years', '.months-' + year);
             self.nav_display('.year #nav', year);
             self.nav_display('.year', year);
-            self.nav_display('.browse', '<a href="#" id="nav">Browse</a>&nbsp;&gt;&nbsp;');
+            self.nav_display('.browse', '<a href="#" id="nav">Browse issues</a>&nbsp;&gt;&nbsp;');
           });
           // month click
           $('.months li.month a').click(function () {
@@ -47,7 +47,7 @@
             self.toggle_list(active_list, $('.years ul.years'));
             self.nav_display('.year', '');
             self.nav_display('.month', '');
-            self.nav_display('.browse', 'Browse');
+            self.nav_display('.browse', 'Browse issues');
           });
       },
       nav_display: function (selector, text) {
@@ -64,35 +64,28 @@
     };
     
     var exhibition = {
-      show_hide_all: function () {
+      show_hide_all: function() {
         $('.exhibition-object').each(function() {
-          $(this).addClass('inactive');
+          $(this).css('left', '960px').addClass('inactive');
         })
-        $('.exhibition-object:first').removeClass('inactive').addClass('active');
+        // $('.exhibition-object:first').removeClass('inactive').addClass('active');
+        $('.exhibition-object:first').css('left', '0px').addClass('active');
       },
-      css_positioning: function () {
-        $('.exhibition-object').each(function() {
-          var $img = $(this).find('img'), img = new Image();
-          var $caption = $(this).find('span.caption');
-          img.onload = function() {
-            var caption_left = (960 - $img.attr('width'))/2 + 'px';
-            $caption.css('margin-left', caption_left);
-          }
-          img.src = $img.attr('src');
-        });
-      },
-      listeners: function () {
+      listeners: function() {
         $('.exhibition-next a').click(function(event) {
           event.preventDefault();
           var $active = $('.exhibition').find('.active');
           var $next = $active.next();
           var $first = $('.exhibition').children().first();
           $active.removeClass('active').addClass('inactive');
+          $active.css('left', '960px');
           if ($next.length != 0) {
             $next.removeClass('inactive').addClass('active');
+            $next.css('left', '0px');
           }
           else {
             $first.removeClass('inactive').addClass('active');
+            $first.css('left', '0px');
           }
         });
         $('.exhibition-prev a').click(function(event) {
@@ -101,17 +94,19 @@
           var $prev = $active.prev();
           var $last = $('.exhibition').children().last();
           $active.removeClass('active').addClass('inactive');
+          $active.css('left', '960px');
           if ($prev.length != 0) {
             $prev.removeClass('inactive').addClass('active');
+            $prev.css('left', '0px');
           }
           else {
             $last.removeClass('inactive').addClass('active');
+            $last.css('left', '0px');
           }
         });
       },
-      run: function () {
+      run: function() {
         this.show_hide_all();
-        this.css_positioning();
         this.listeners();
       }
     };
@@ -123,6 +118,17 @@
 
     if (window.location.href.indexOf('exhibitions') !== -1) {
       exhibition.run();
+    }
+    
+    // yuk!
+    if (typeof Drupal.settings.featured_img_path !== 'undefined' && Drupal.settings.featured_img_path.length != 0) {
+      var featured_img = new Image();
+      featured_img.src = Drupal.settings.featured_img_path;
+      featured_img.onload = function() {
+        $('#featured_image').css('background', 'url(' + Drupal.settings.featured_img_path + ')');
+        $('#featured_image').css('height', this.height);
+        $('#featured_image').css('width', this.width);
+      }
     }
   });
 }) (jQuery);
