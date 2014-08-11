@@ -1,6 +1,5 @@
 <?php
 
-
 function theme_bc_islandora_exhibit($vars) {
   global $base_url;
   $node = isset($vars['node']) ? $vars['node'] : NULL;
@@ -362,6 +361,32 @@ function theme_bc_islandora_openseadragon_viewer(&$variables) {
   drupal_add_js("$module_path/js/djtilesource.js");
   drupal_add_css("$module_path/css/islandora_openseadragon.theme.css");
   return "<div id=\"osd-toolbar\"></div>\n<div id=\"{$variables['viewer_id']}\" class=\"islandora-openseadragon\"></div>";
+}
+
+function theme_bc_islandora_breadcrumb(&$vars) {
+  $output = '';
+  $bc = $vars['breadcrumb'];
+  if (arg(2) && $object = islandora_object_load(arg(2))) {
+    // Should this logic be based on the model of the object? Parent
+    // collection? Both???
+    //$results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOfCollection');
+    $results = $object->relationships->get(FEDORA_MODEL_URI, 'hasModel');
+    if (!empty($results) && $parent_collection = $results[0]['object']['value']) {
+      switch ($parent_collection) {
+        // Do something based on what the parent collection is.
+        // (If there is a landing page, add it to the breadcrumb!)
+        default:
+          dpm($parent_collection);
+          break;
+      }
+    }
+  }
+  else {
+    // Do something else if we couldn't load an object?
+  }
+  $bc[] = menu_get_active_title();
+  $output .= '<div class="breadcrumb">' . implode(' » ', $bc) . '</div>';
+  return $output;
 }
 
 function _bc_islandora_breadcrumb() {
