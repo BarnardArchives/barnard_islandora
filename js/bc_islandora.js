@@ -122,13 +122,18 @@
     
     // yuk!
     if (typeof Drupal.settings.featured_img_path !== 'undefined' && Drupal.settings.featured_img_path.length != 0) {
-      var featured_img = new Image();
+      /*var featured_img = new Image();
       featured_img.src = Drupal.settings.featured_img_path;
       featured_img.onload = function() {
         $('#featured_image').css('background', 'url(' + Drupal.settings.featured_img_path + ')');
         $('#featured_image').css('height', this.height);
         $('#featured_image').css('width', this.width);
-      }
+      }*/
+      console.log($('body').css('background'));
+      console.log(Drupal.settings.featured_img_path);
+      $('body').css('background', 'url("' + Drupal.settings.featured_img_path + '") no-repeat center center center fixed');
+      console.log($('body').css('background'));
+      
     }
   });
 }) (jQuery);

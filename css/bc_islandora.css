@@ -24,6 +24,9 @@
   margin-bottom: 10px;
 }
 
+#book-page-viewer {
+  margin-top: 10px;
+}
 
 /* yearbook landing page */
 #yearbook-nav span.year {
@@ -40,7 +43,7 @@
 
 .exhibition-object {
   width: 960px;
-  position: absolute;
+  /*position: absolute;*/
 }
 
 .exhibition-object .object-description {
@@ -74,13 +77,12 @@
 }
 
 
-/* In case the viewer is openseadragon */
-.islandora-newspaper-issue .islandora-openseadragon {
-  height: 800px;
-}
-
 /* newspaper issue */
 .islandora-newspaper-issue-navigator {
   display: block;
   margin-bottom: 10px;
+}
+
+.islandora-newspaper-object {
+  margin-top: 0 !important;
 }

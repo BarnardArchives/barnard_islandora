@@ -81,6 +81,13 @@ function bc_islandora_drush_command() {
       ),
       'aliases' => array('bcifm'),
     ),
+    'bc_islandora_generate_url_aliases' => array(
+      'examples' => array(
+        'drush -u 1 bcigua',
+      ),
+      'aliases' => array('bcigua'),
+      'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_LOGIN, // we can pass in users id on the command line using drush -u.
+    ),
   );
 }
 
@@ -422,4 +429,39 @@ function _bc_islandora_create_derivatives($objects) {
     batch_set($ocr_batch);
   }
   drush_backend_batch_process();
+}
+
+function drush_bc_islandora_generate_url_aliases() {
+  $everything_query = <<<SPARQL
+    SELECT DISTINCT ?object
+    FROM <#ri>
+    WHERE {
+      ?object <fedora-model:hasModel> ?model
+    }
+SPARQL;
+  $tuque = islandora_get_tuque_connection();
+  $results = $tuque->repository->ri->query($everything_query, 'sparql');
+  foreach ($results as $result) {
+    $pid = $result['object']['value'];
+    if ($object = islandora_object_load($pid)) {
+      // Make the alias (if it doesn't already exist).
+      $default_path = "islandora/object/{$pid}";
+      if (drupal_get_path_alias($default_path) == $default_path) {
+        $rels = $object->relationships->get();
+        foreach ($rels as $rdf) {
+          if (preg_match('/isMemberOf/', $rdf['predicate']['value']) && !in_array($rdf['object']['value'], array('islandora:root', 'islandora:collectionCModel'))) {
+            drush_log(dt('Creating alias for @pid :)', array('@pid' => $object->id)), 'ok');
+            islandora_pathauto_create_alias($object, 'bulkupdate');
+            break;
+          }
+        }
+      }
+      else {
+        drush_log(dt('Alias already exists at pid = @pid', array('@pid' => $object->id)), 'warning');
+      }
+    }
+    else {
+      drush_log(dt('Couldn\'t load object at pid = @pid', array('@pid' => $pid)), 'warning');
+    }
+  }
 }
