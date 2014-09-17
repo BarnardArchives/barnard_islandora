@@ -235,7 +235,7 @@ function theme_bc_islandora_featured(&$vars) {
       ->fields('n', array('nid'))
       ->condition('type', 'featured_object');
     $nid = $node_q->execute()->fetchField();
-    var_export($nid);
+    //var_export($nid);
     if (!$nid) {
       return $output;
     }
@@ -281,7 +281,7 @@ function _bc_islandora_featured() {
       ->fields('n', array('nid'))
       ->condition('type', 'featured_object');
     $nid = $node_q->execute()->fetchField();
-    var_export($nid);
+    //var_export($nid);
     if (!$nid) {
       return $output;
     }
