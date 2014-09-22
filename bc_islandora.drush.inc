@@ -452,7 +452,6 @@ SPARQL;
           if (preg_match('/isMemberOf/', $rdf['predicate']['value']) && !in_array($rdf['object']['value'], array('islandora:root', 'islandora:collectionCModel'))) {
             drush_log(dt('Creating alias for @pid :)', array('@pid' => $object->id)), 'ok');
             islandora_pathauto_create_alias($object, 'bulkupdate');
-            break;
           }
         }
       }

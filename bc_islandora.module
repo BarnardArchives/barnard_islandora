@@ -63,6 +63,7 @@ function bc_islandora_theme($existing, $type, $theme, $path) {
       'variables' => array(
         'object' => NULL,
         'start_page' => 1,
+        'context' => 'issue',
       ),
       'file' => 'includes/bc_islandora.theme.inc',
     ),
@@ -206,6 +207,7 @@ function bc_islandora_block_view($delta = '') {
         $paper = islandora_object_load($collection_pid);
         $issues = $paper ? islandora_newspaper_get_issues($paper) : array();
         $grouped_issues = islandora_newspaper_group_issues($issues);
+        ksort($grouped_issues);
         $years_output .= '<ul class="years">';
         foreach ($grouped_issues as $year => $months) {
           $years_output .= '<li class="year" id="' . $year . '"><a href="#">' . $year . '</a></li>';
@@ -239,7 +241,7 @@ function bc_islandora_block_view($delta = '') {
         $issues_output .= '</div>';
 
         $output = '<div class="bulletin-nav">
-            <span class="browse">Browse issues</span><span class="month"></span><span class="day"></span><span class="year"><a id="nav" href="#"></a></span>
+            <span class="browse"></span><span class="month"></span><span class="day"></span><span class="year"><a id="nav" href="#"></a></span>
           </div>';
         $output .= '<div class="bulletin-calendar">' . $years_output . $months_output . $issues_output . '</div>';
         $block['content'] = $output;

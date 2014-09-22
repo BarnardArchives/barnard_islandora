@@ -90,3 +90,48 @@ body {
 .islandora-newspaper-object {
   margin-top: 0 !important;
 }
+
+/* collections landing page */
+.landingpage-icon {
+  float:left;
+  width: 220px;
+  height: 225px;
+  margin-right: 50px;
+  margin-bottom: 50px;
+  text-align: center;
+}
+
+.landingpage-icon h1 {
+  font-size: 1.6em;
+}
+
+.landingpage-icon p {
+  width: 190px;
+  padding-left: 15px;
+}
+
+.landingpage-icon a {
+  text-decoration: none;
+}
+
+.landingpage-link {
+  width: 200px;
+}
+
+.landingpage-icon#photos {
+  background: url(http://160.39.115.62/sites/all/modules/bc_islandora/img/photographsicon.jpg) no-repeat top left;
+  height: 225px;
+  width: 225px;
+}
+
+.landingpage-icon#bulletin {
+  background: url(http://160.39.115.62/sites/all/modules/bc_islandora/img/bulletinicon.jpg) no-repeat;
+}
+
+.landingpage-icon#yearbook {
+  background: url(http://160.39.115.62/sites/all/modules/bc_islandora/img/yearbookicon.jpg) no-repeat;
+}
+
+.landingpage-icon#exhibits {
+  background: url(http://160.39.115.62/sites/all/modules/bc_islandora/img/exhibiticon.jpg) no-repeat;
+}

@@ -19,7 +19,6 @@ function theme_bc_islandora_exhibit($vars) {
         $title = $obj['node']->title;
         $f_o = $pid ? islandora_object_load($pid['value']) : NULL;
         $img_url_m = $pid ? url($base_url . '/islandora/object/' . $pid['value'] . '/datastream/JPG/view') : NULL;
-        dpm($img_url_m);
         //$img_url_l = url($base_url . '/islandora/object/' . $pid['value'] . '/datastream/JP2/view');
         $img_url_l = $img_url_m;
         $output .= '<div class="exhibition-object ' . $i . '">';
@@ -58,8 +57,14 @@ function theme_bc_islandora_exhibit($vars) {
  */
 function theme_bc_islandora_newspaper_issue_navigator(&$vars) {
   module_load_include('inc', 'islandora_newspaper', 'includes/utilities');
-
+  $output = '';
   $object = $vars['object'];
+  if ($page_links = _bc_islandora_np_page_pager($object)) {
+    $output .= "<p><strong>Pages: </strong>{$page_links}</p>";
+  }
+  if ($dl_links = _bc_islandora_dl_links($object)) {
+    $output .= '<p><strong>Download: </strong>' . $dl_links . '</p>'; 
+  }
   $newspaper = islandora_newspaper_get_newspaper($object);
   $newspaper = $newspaper ? islandora_object_load($newspaper) : FALSE;
   $issues = $newspaper ? islandora_newspaper_get_issues($newspaper) : array();
@@ -94,7 +99,8 @@ function theme_bc_islandora_newspaper_issue_navigator(&$vars) {
     );
   }
   $attributes = array('class' => array('links', 'inline'));
-  return theme('links', array('links' => $links, 'attributes' => $attributes));
+  $output .= theme('links', array('links' => $links, 'attributes' => $attributes));
+  return $output;
 }
 
 /**
@@ -108,54 +114,18 @@ function theme_bc_islandora_newspaper_page_controls(&$vars) {
   $issue = islandora_newspaper_get_issue($object);
   $issue = $issue ? islandora_object_load($issue) : FALSE;
   $output = '';
-
   $page_pager = _bc_islandora_np_page_pager($object);
-  $issue_link = l('(view issue)', "islandora/object/{$issue}");
+  if ($issue_link = l($issue->label, "islandora/object/{$issue}")) {
+    $output .= "<p><strong>View issue: </strong>{$issue_link}</p>";
+  }
   if (!empty($page_pager)) {
-    $output .= '<p><strong>Page:</strong>&nbsp;';
+    $output .= '<p><strong>Pages:</strong>&nbsp;';
     $output .= $page_pager;
-    if (!empty($issue_link)) {
-      $output .= '&nbsp;';
-      $output .= $issue_link;
-    }
     $output .= '</p>';
   }
 
-  $dl_links = array();
-
-  // Text view.
-  if (isset($object['OCR']) && islandora_datastream_access(ISLANDORA_VIEW_OBJECTS, $object['OCR'])) {
-    $url = islandora_datastream_get_url($object['OCR'], 'view');
-    $attributes = array('attributes' => array('title' => t('View text')));
-    $dl_links[] = l(t('Text'), $url, $attributes);
-  }
-  // PDF download.
-  if (isset($object['PDF']) && islandora_datastream_access(ISLANDORA_VIEW_OBJECTS, $object['PDF'])) {
-    $size = islandora_datastream_get_human_readable_size($object['PDF']);
-    $text = t('PDF (@size)', array('@size' => $size));
-    $url = islandora_datastream_get_url($object['PDF'], 'download');
-    $attributes = array('attributes' => array('title' => t('Download PDF')));
-    $dl_links[] = l($text, $url, $attributes);
-  }
-  if (isset($object['JP2']) && islandora_datastream_access(ISLANDORA_VIEW_OBJECTS, $object['JP2'])) {
-    // JP2 download.
-    $size = islandora_datastream_get_human_readable_size($object['JP2']);
-    $text = t('JP2 (@size)', array('@size' => $size));
-    $url = islandora_datastream_get_url($object['JP2'], 'download');
-    $attributes = array('attributes' => array('title' => t('Download JP2')));
-    $dl_links[] = l($text, $url, $attributes);
-  }
-  // TIFF download.
-  if (isset($object['OBJ']) && islandora_datastream_access(ISLANDORA_VIEW_OBJECTS, $object['OBJ'])) {
-    $size = islandora_datastream_get_human_readable_size($object['OBJ']);
-    $text = t('TIFF (@size)', array('@size' => $size));
-    $url = islandora_datastream_get_url($object['OBJ'], 'download');
-    $attributes = array('attributes' => array('title' => t('Download TIFF')));
-    $dl_links[] = l($text, $url, $attributes);
-  }
-
-  if (!empty($dl_links)) {
-    $output .= '<p><strong>Download: </strong>' . implode(' | ', $dl_links) . '</p>'; 
+  if ($dl_links = _bc_islandora_dl_links($object)) {
+    $output .= '<p><strong>Download: </strong>' . $dl_links . '</p>'; 
   }
   return $output;
 }
@@ -163,7 +133,7 @@ function theme_bc_islandora_newspaper_page_controls(&$vars) {
 function _bc_islandora_np_page_pager($object) {
   $results = $object->relationships->get(ISLANDORA_RELS_EXT_URI, 'isPageOf');
   $result = reset($results);
-  $parent = $result ? islandora_object_load($result['object']['value']) : FALSE;
+  $parent = $result ? islandora_object_load($result['object']['value']) : islandora_object_load($object);
   $pages = $parent ? islandora_paged_content_get_pages($parent) : array();
   $pages = array_keys($pages);
   if (empty($pages)) {
@@ -173,7 +143,7 @@ function _bc_islandora_np_page_pager($object) {
   $page_links = array();
   foreach ($pages as $i => $pid) {
     $title = $i + 1;
-    if ($i == $index) {
+    if ($index !== FALSE && $i == $index) {
       $page_links[] = $title;
     }
     else {
@@ -188,12 +158,15 @@ function theme_bc_islandora_newspaper_issue(&$vars) {
   
   $output = '';
   $object = $vars['object'];
+  $context = !empty($vars['context']) ? $vars['context'] : 'issue';
   //$pages = $vars['pages'];
   $pages = $object ? islandora_paged_content_get_pages($object) : array();
   $start_page = $vars['start_page'];
   $identifiers = array();
+  $thumbnails = array();
   foreach ($pages as $pid => $page) {
     $page_metadata = islandora_paged_content_get_page_metadata_from_djatoka($pid);
+    $thumbnails[] = array('pid' => $pid, 'url' => "/islandora/object/{$pid}/datastream/TN/view");
     if ($start_page > 1 && $page['page'] < $start_page) {
       $identifiers[count($pages)+$page['page']-2] = $page_metadata['identifier'];
     }
@@ -205,24 +178,24 @@ function theme_bc_islandora_newspaper_issue(&$vars) {
     }
   }
   ksort($identifiers);
-  
-  $output = theme('bc_islandora_openseadragon_viewer', array('uri' => $identifiers));
+  $osd_settings = $context == 'issue' ? array(
+    'preserveViewport' => 'true',
+    'showReferenceStrip' => 'true', // TODO only for newspaper issues
+    'referenceStripSizeRatio' => '0.15',
+  ) : array();
+  $output .= theme('bc_islandora_openseadragon_viewer', array('uri' => $identifiers, 'settings' => $osd_settings));
   return $output;
 }
 
 function theme_bc_islandora_newspaper_page(&$vars) {
+  module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
+
   $object = $vars['object'];
   $issue = islandora_object_load(islandora_newspaper_get_issue($object));
   $pid = $object->id;
-  $page_results = $object->relationships->get(ISLANDORA_RELS_EXT_URI, 'isSequenceNumber');
+  $page_metadata = islandora_paged_content_get_page_metadata_from_djatoka($pid);
 
-  if (!empty($page_results)) {
-    $start_page = $page_results[0]['object']['value'];
-  }
-  else {
-    $start_page = array_pop(explode('-', $pid));
-  }
-  return theme('bc_islandora_newspaper_issue', array('object' => $issue, 'start_page' => $start_page));
+  return theme('bc_islandora_openseadragon_viewer', array('uri' => $page_metadata['identifier'], 'settings' => array()));
 }
 
 
@@ -299,12 +272,12 @@ function _bc_islandora_featured() {
 function theme_bc_islandora_openseadragon_viewer(&$variables) {
   // Variable fedora_object included in results, but not used.
   $library_path = libraries_get_path('openseadragon');
-  $module_path = drupal_get_path('module', 'islandora_openseadragon');
+  $module_path = drupal_get_path('module', 'bc_islandora');
   $variables['viewer_id'] = 'islandora-openseadragon';
-  $settings = array(
+  $settings = array_merge($variables['settings'] ? $variables['settings'] : array(), array(
     'id' => $variables['viewer_id'],
     'prefixUrl' => file_create_url("$library_path/images/"),
-  );
+  ));
 
   module_load_include('inc', 'islandora_openseadragon', 'includes/utilities');
   $installed_version = islandora_openseadragon_get_installed_version();

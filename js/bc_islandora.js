@@ -14,7 +14,7 @@
         listeners: function () {
           var self = this;
           // year click
-          $('.years li.year a').click(function () {
+          $('.year a').click(function () {
             var year = $(this).parent().attr('id');
             console.log('got year: ' + year);
             var months = $('.months-' + year);
@@ -47,7 +47,7 @@
             self.toggle_list(active_list, $('.years ul.years'));
             self.nav_display('.year', '');
             self.nav_display('.month', '');
-            self.nav_display('.browse', 'Browse issues');
+            self.nav_display('.browse', '');
           });
       },
       nav_display: function (selector, text) {
