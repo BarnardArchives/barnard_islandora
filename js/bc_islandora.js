@@ -131,7 +131,7 @@
       }*/
       console.log($('body').css('background'));
       console.log(Drupal.settings.featured_img_path);
-      $('body').css('background', 'url("' + Drupal.settings.featured_img_path + '") no-repeat center center center fixed');
+      $('body.front').css('background', 'url("' + Drupal.settings.featured_img_path + '") 50% 50% no-repeat fixed');
       console.log($('body').css('background'));
       
     }

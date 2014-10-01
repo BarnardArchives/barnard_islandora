@@ -2,6 +2,10 @@ body {
   background: #fff;
 }
 
+body.logged-in #navigation {
+  margin-top: 110px;
+}
+
 .breadcrumb {
   margin-bottom: 15px;
 }
@@ -17,8 +21,13 @@ body {
 }
 .bulletin-calendar ul {
     list-style-type: none;
-    margin-left: 0px;
 }
+
+.bulletin-calendar .years ul {
+  margin-left: 0px;
+  padding-left: 0px;
+}
+
 .bulletin-calendar li {
     display: inline;
     margin: 0 0 10px 10px;
@@ -37,7 +46,20 @@ body {
   margin:  0 10px 10px 0;
 }
 
+#yearbook-nav .decade {
+  margin-left: 50px;
+  margin-bottom: 25px;
+}
+
 /* exhibitions */
+.view-id-exhibition {
+  margin-top: 20px;
+}
+
+.view-id-exhibition .pager {
+  margin-bottom: 50px;
+}
+
 .exhibition {
   width: 960px;
   height: 850px;
@@ -76,10 +98,23 @@ body {
   position: relative;
 }
 
+.exhibition-tn {
+  float: left;
+}
+
+.exhibition-title {
+  position: relative;
+  left: 25px;
+  top: 50px;
+}
+
 .exhibition-next {
   margin-left: 10px;
 }
 
+.node-exhibition {
+  margin-bottom: 50px;
+}
 
 /* newspaper issue */
 .islandora-newspaper-issue-navigator {
@@ -134,4 +169,15 @@ body {
 
 .landingpage-icon#exhibits {
   background: url(http://160.39.115.62/sites/all/modules/bc_islandora/img/exhibiticon.jpg) no-repeat;
+}
+
+/* social media */
+.socialmedia {
+  display: block;
+  margin-top: 20px;
+  margin-bottom: 100px;
+}
+
+.socialmedia a {
+  margin-right: 10px;
 }

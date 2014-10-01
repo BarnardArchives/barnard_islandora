@@ -1,57 +1,5 @@
 <?php
 
-function theme_bc_islandora_exhibit($vars) {
-  global $base_url;
-  $node = isset($vars['node']) ? $vars['node'] : NULL;
-  $output = '<div id="exhibition-nav">';
-  $output .= '<span class="exhibition-prev"><a href="#">prev</a></span>';
-  $output .= '<span class="exhibition-next"><a href="#">next</a></span>';
-  $output .= '</div>';
-  $output .= '<div class="exhibition">';
-  if ($node && $node->type == 'exhibition') {
-    $exhibition_objects = array();
-    foreach (field_get_items('node', $node, 'field_object') as $i => $obj) {
-      if (isset($obj['node'])) {
-        $pid = !empty($obj['node']->field_fedora_pid) ? array_shift(field_get_items('node', $obj['node'], 'field_fedora_pid')) : NULL;
-        $description = !empty($obj['node']->field_description) ? array_shift(field_get_items('node', $obj['node'], 'field_description')) : '';
-        $caption = !empty($obj['node']->field_caption) ? array_shift(field_get_items('node', $obj['node'], 'field_caption')) : array('value' => '');
-        $obj_img = !empty($obj['node']->field_object_image) ? array_shift(field_get_items('node', $obj['node'], 'field_object_image')) : NULL;
-        $title = $obj['node']->title;
-        $f_o = $pid ? islandora_object_load($pid['value']) : NULL;
-        $img_url_m = $pid ? url($base_url . '/islandora/object/' . $pid['value'] . '/datastream/JPG/view') : NULL;
-        //$img_url_l = url($base_url . '/islandora/object/' . $pid['value'] . '/datastream/JP2/view');
-        $img_url_l = $img_url_m;
-        $output .= '<div class="exhibition-object ' . $i . '">';
-        $output .= '<h2>' . $title . '</h2>';
-        $output .= '<div class="object-description">';
-        $output .= '<span class="description">' . $description['value'] . '</span>';
-        $output .= '</div>';
-        if ($img_url_m || $obj_img) {
-          $output .= '<div class="object-image">';
-          if ($obj_img) {
-            $obj_img['path'] = file_create_url($obj_img['uri']);
-            $output .= '<a href="' . $obj_img['path']  . '" data-lightbox="' . $pid['value'] . '" data-title="' . $caption['value'] . '">';
-            $output .= theme('image', $obj_img);
-          }
-          else {
-            $output .= '<a href="' . $img_url_l . '" data-lightbox="' . $pid['value'] . '" data-title="' . $caption['value'] . '">';
-            $output .= '<img src="' . $img_url_m . '">';
-          }
-          $output .= '</a>';
-          $output .= '<span class="caption">' . $caption['value'] . '</span>';
-          // TODO
-          $output .= '<span class="dc-link"><p>(' . l(t('View in Digital Collections.'), 'islandora/object/'. $pid['value']) . ')</p</span>';
-          $output .= '</div>';
-        }
-        $output .= '</div>';
-      }
-    }
-  }
-
-  $output .= '</div>';
-  return $output;
-}
-
 /**
  * Modified version of theme_islandora_newspaper_issue_navigator.
  */
@@ -246,7 +194,7 @@ function theme_bc_islandora_featured(&$vars) {
 }
 
 function _bc_islandora_featured() {
-  $output = '';
+  $output = 'Featured: ';
   $nid = variable_get('bc_islandora_featured_nid', NULL);
   // If we didn't get an nid, get the newest Featured Object node.
   if (!$nid) {
@@ -254,19 +202,34 @@ function _bc_islandora_featured() {
       ->fields('n', array('nid'))
       ->condition('type', 'featured_object');
     $nid = $node_q->execute()->fetchField();
-    //var_export($nid);
-    if (!$nid) {
-      return $output;
+  }
+  if ($nid) {
+    // Get featured object image.
+    $img_q = db_select('file_managed', 'fm')
+      ->fields('fm', array('uri'));
+    $img_q->join('field_data_field_object_image', 'foi', 'fm.fid = foi.field_object_image_fid');
+    $img_q->condition('foi.entity_id', $nid, '=');
+    if ($img_uri = $img_q->execute()->fetchField()) {
+      drupal_add_js(array('featured_img_path' => file_create_url($img_uri)), 'setting');
+    }
+    // Get caption.
+    $cap_q = db_select('field_data_field_caption', 'c')
+      ->fields('c', array('field_caption_value'))
+      ->condition('entity_id', $nid, '=');
+    if ($cap = $cap_q->execute()->fetchField()) {
+      // Get pid. !
+      $pid_q = db_select('field_data_field_fedora_pid', 'fp')
+        ->fields('fp', array('field_fedora_pid_value'))
+        ->condition('entity_id', $nid, '=');
+      if ($pid = $pid_q->execute()->fetchField()) {
+        $output .= l($cap, "islandora/object/{$pid}");
+      }
+      else {
+        $output .= $cap;
+      }
     }
   }
-  // Get featured object image.
-  $img_q = db_select('file_managed', 'fm')
-    ->fields('fm', array('uri'));
-  $img_q->join('field_data_field_object_image', 'foi', 'fm.fid = foi.field_object_image_fid');
-  $img_q->condition('foi.entity_id', $nid, '=');
-  if ($img_uri = $img_q->execute()->fetchField()) {
-    drupal_add_js(array('featured_img_path' => file_create_url($img_uri)), 'setting');
-  }
+  return $output;
 }
 
 function theme_bc_islandora_openseadragon_viewer(&$variables) {
@@ -376,15 +339,10 @@ function theme_bc_islandora_breadcrumb(&$vars) {
     // Should this logic be based on the model of the object? Parent
     // collection? Both???
     $collection_results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
-    //dpm($collection_results);
     $cm_results = $object->relationships->get(FEDORA_MODEL_URI, 'hasModel');
-    //dpm($cm_results[0]['object']['value']);
     if (!empty($cm_results) && $cm_pid = $cm_results[0]['object']['value']) {
+      $bc[] = l('Collections', 'collections');
       $cm = str_replace('islandora:', '', $cm_pid);
-      $bc = array(
-        l('Home', '<front>'),
-        l('Collections', 'collections'),
-      );
       switch ($cm) {
         case 'bookCModel':
           $is_book = TRUE;
@@ -406,6 +364,7 @@ function theme_bc_islandora_breadcrumb(&$vars) {
           $bc[] = l('Newspaper', 'bulletin');
           break;
         case 'sp_large_image_cmodel':
+        case 'sp_basic_image':
           $photos_search = l('Photographs', 'islandora/search', array(
             'query' => array(
               'type' => 'dismax',
@@ -419,26 +378,26 @@ function theme_bc_islandora_breadcrumb(&$vars) {
       }
     }
   }
-  else {
-    // Do something else if we couldn't load an object?
+  elseif (arg(0) == 'node' && is_numeric(arg(1))) {
+    $node = menu_get_object();
+    $is_exhibition = $node->type == 'exhibition';
+    $alias = drupal_get_path_alias(implode('/', arg()));
+    if (in_array($alias, array('bulletin', 'yearbook')) || $is_exhibition) {
+      $bc[] = l('Collections', 'collections');
+      if ($is_exhibition) {
+        $bc[] = l('Exhibitions', 'exhibitions');
+      }
+    }
   }
-  if (count($bc) >= 1) {
-    $bc[] = menu_get_active_title();
+  elseif (arg(0) == 'exhibitions' && count(arg()) == 1) {
+    $bc[] = l('Collections', 'collections');
+    $bc[] = 'Exhibitions';
+  }
+  if (count($bc) >= 1 && $title = menu_get_active_title()) {
+    $bc[] = $title;
   }
   $output .= '<div class="breadcrumb">' . implode(' » ', $bc) . '</div>';
   return $output;
-}
-
-function _bc_islandora_breadcrumb() {
-  $breadcrumb = drupal_get_breadcrumb();
-  if (array_shift(arg()) == 'view') {
-    $type = array_shift(explode('-', arg(1)));
-    $path = drupal_get_normal_path($type);
-    if ($node = menu_get_item($path)) {
-      $breadcrumb[] = l($node['title'], $path);
-    }
-  }
-  return theme_breadcrumb(array('breadcrumb' => $breadcrumb));
 }
 
 function _bc_islandora_dl_links($obj, $datastreams = array('PDF', 'JPG')) {

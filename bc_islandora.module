@@ -19,11 +19,6 @@ function bc_islandora_permission() {
  */
 function bc_islandora_menu() {
   return array(
-    'view/%' => array(
-      'page callback' => 'bc_islandora_page_view',
-      'page arguments' => array(1),
-      'access arguments' => array('access content'),
-    ),
     'download_datastream/%/%' => array(
       'page callback' => 'bc_islandora_download_datastream',
       'page arguments' => array(1, 2),
@@ -44,21 +39,6 @@ function bc_islandora_menu() {
  */
 function bc_islandora_theme($existing, $type, $theme, $path) {
   return array(
-    'bc_islandora_object' => array(
-      'variables' => array(
-        'pid' => NULL,
-        'title' => NULL,
-        'paged' => FALSE,
-        'start_page' => NULL,
-      ),
-      'file' => 'includes/bc_islandora.theme.inc',
-    ),
-    'bc_islandora_exhibit' => array(
-      'variables' => array(
-        'node' => NULL,
-      ),
-      'file' => 'includes/bc_islandora.theme.inc',
-    ),
     'bc_islandora_newspaper_issue' => array(
       'variables' => array(
         'object' => NULL,
@@ -105,10 +85,6 @@ function bc_islandora_theme($existing, $type, $theme, $path) {
       'file' => 'includes/bc_islandora.theme.inc',
     ),
   );
-}
-
-function bc_islandora_page_view($pid) {
-  return theme('bc_islandora_object', array('pid' => BASE_NAMESPACE . ':' . $pid));
 }
 
 function bc_islandora_download_datastream($pid, $dsid) {
@@ -250,6 +226,7 @@ function bc_islandora_block_view($delta = '') {
     // TODO
     case 'bc_islandora_yearbook':
       if ($collection_pid = variable_get($delta . '_pid', 'islandora:bookCollection')) {
+        $years = array();
         $output = '<div id="yearbook-nav">';
         $book_collection = islandora_object_load($collection_pid);
         $query = <<<EOQ
@@ -266,8 +243,21 @@ EOQ;
         foreach ($results as $r) {
           $pid = $r['object']['value'];
           $year = array_pop(explode('-', $pid));
-          //$output .= '<span class="year">' . l($year, 'view/' . str_replace(BASE_NAMESPACE . ':', '', $pid)) . '</span>';
-          $output .= '<span class="year">' . l($year, "islandora/object/{$pid}") . '</span>';
+          $years[$year] = l($year, "islandora/object/{$pid}");
+        }
+        ksort($years);
+        foreach ($years as $y => $l) {
+          $year_output = '<span class="year">' . $l . '</span>';
+          if (!isset($decade_start)) {
+            $decade_start = $y;
+            $output .= '<div class="decade">';
+          }
+          elseif (!($y % 10) || ($y - $decade_start >= 10)) {
+            $output .= '</div>';
+            $output .= '<div class="decade">';
+            $decade_start = $y;
+          }
+          $output .= $year_output;
         }
         $output .= '</div>';
         $block['content'] = $output;
