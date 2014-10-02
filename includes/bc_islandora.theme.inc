@@ -59,13 +59,8 @@ function theme_bc_islandora_newspaper_page_controls(&$vars) {
   module_load_include('inc', 'islandora', 'includes/utilities');
   global $base_url;
   $object = $vars['object'];
-  $issue = islandora_newspaper_get_issue($object);
-  $issue = $issue ? islandora_object_load($issue) : FALSE;
   $output = '';
   $page_pager = _bc_islandora_np_page_pager($object);
-  if ($issue_link = l($issue->label, "islandora/object/{$issue}")) {
-    $output .= "<p><strong>View issue: </strong>{$issue_link}</p>";
-  }
   if (!empty($page_pager)) {
     $output .= '<p><strong>Pages:</strong>&nbsp;';
     $output .= $page_pager;
@@ -340,6 +335,7 @@ function theme_bc_islandora_breadcrumb(&$vars) {
     // collection? Both???
     $collection_results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
     $cm_results = $object->relationships->get(FEDORA_MODEL_URI, 'hasModel');
+    
     if (!empty($cm_results) && $cm_pid = $cm_results[0]['object']['value']) {
       $bc[] = l('Collections', 'collections');
       $cm = str_replace('islandora:', '', $cm_pid);
@@ -360,8 +356,26 @@ function theme_bc_islandora_breadcrumb(&$vars) {
             $bc[] = l('Yearbook', 'yearbook');
           }
           break;
+        // Book page.
+        case 'pageCModel':
+          $bc[] = l('Yearbook', 'yearbook');
+          $results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
+          if ($book = islandora_object_load($results[0]['object']['value'])) {
+            $bc[] = l($book->label, "islandora/object/{$book->id}");
+          }
+          //$variables['book_object_id'] = $results[0]['object']['value'];
+          break;
         case 'newspaperIssueCModel':
           $bc[] = l('Newspaper', 'bulletin');
+          break;
+        case 'newspaperPageCModel':
+          $bc[] = l('Newspaper', 'bulletin');
+          $issue = islandora_newspaper_get_issue($object);
+          $issue = $issue ? islandora_object_load($issue) : FALSE;
+          if ($issue_link = l($issue->label, "islandora/object/{$issue}")) {
+            //dpm("<p><strong>View issue: </strong>{$issue_link}</p>");
+            $bc[] = $issue_link;
+          }
           break;
         case 'sp_large_image_cmodel':
         case 'sp_basic_image':
@@ -372,8 +386,6 @@ function theme_bc_islandora_breadcrumb(&$vars) {
             ),
           ));
           $bc[] = $photos_search;
-          break;
-        default:
           break;
       }
     }
@@ -391,10 +403,17 @@ function theme_bc_islandora_breadcrumb(&$vars) {
   }
   elseif (arg(0) == 'exhibitions' && count(arg()) == 1) {
     $bc[] = l('Collections', 'collections');
-    $bc[] = 'Exhibitions';
   }
   if (count($bc) >= 1 && $title = menu_get_active_title()) {
-    $bc[] = $title;
+    $title_parts = explode(',', $title);
+    // yuk
+    if ((preg_match('/^Barnard Bulletin/', $title) !== 0 && count($title_parts) == 4) ||
+     (preg_match('/^Annual|Mortarboard/', $title) !== 0 && count($title_parts) == 2))  {
+      $bc[] = array_pop($title_parts);
+    }
+    else {
+      $bc[] = $title;
+    }
   }
   $output .= '<div class="breadcrumb">' . implode(' » ', $bc) . '</div>';
   return $output;
