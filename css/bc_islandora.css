@@ -142,6 +142,7 @@ body.logged-in #navigation {
 
 .landingpage-icon p {
   width: 190px;
+  padding-top: 25px;
   padding-left: 15px;
 }
 
@@ -180,4 +181,9 @@ body.logged-in #navigation {
 
 .socialmedia a {
   margin-right: 10px;
+}
+
+/* overwriting DG theme */
+#block-islandora-solr-sort h2, #block-islandora-solr-current-query h2 {
+  line-height: 1.5em !important;
 }
