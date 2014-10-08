@@ -11,6 +11,11 @@ body.logged-in #navigation {
 }
 
 /* newspaper landing page */
+#block-bc-islandora-bc-islandora-newspaper {
+  width: 960px;
+  margin: auto;
+}
+
 .bulletin-calendar .inactive,
 .exhibition-object.inactive {
     display: none;
@@ -29,8 +34,8 @@ body.logged-in #navigation {
 }
 
 .bulletin-calendar li {
-    display: inline;
-    margin: 0 0 10px 10px;
+    display: inline-block;
+    margin: 0 10px 10px 0;
 }
 
 #dl-links {
@@ -138,11 +143,11 @@ body.logged-in #navigation {
 
 .landingpage-icon h1 {
   font-size: 1.6em;
+  margin-top: 2em;
 }
 
 .landingpage-icon p {
   width: 190px;
-  padding-top: 25px;
   padding-left: 15px;
 }
 
@@ -155,21 +160,21 @@ body.logged-in #navigation {
 }
 
 .landingpage-icon#photos {
-  background: url(http://160.39.115.62/sites/all/modules/bc_islandora/img/photographsicon.jpg) no-repeat top left;
+  background: url(/sites/all/modules/bc_islandora/img/photographsicon.jpg) no-repeat top left;
   height: 225px;
   width: 225px;
 }
 
 .landingpage-icon#bulletin {
-  background: url(http://160.39.115.62/sites/all/modules/bc_islandora/img/bulletinicon.jpg) no-repeat;
+  background: url(/sites/all/modules/bc_islandora/img/bulletinicon.jpg) no-repeat;
 }
 
 .landingpage-icon#yearbook {
-  background: url(http://160.39.115.62/sites/all/modules/bc_islandora/img/yearbookicon.jpg) no-repeat;
+  background: url(/sites/all/modules/bc_islandora/img/yearbookicon.jpg) no-repeat;
 }
 
 .landingpage-icon#exhibits {
-  background: url(http://160.39.115.62/sites/all/modules/bc_islandora/img/exhibiticon.jpg) no-repeat;
+  background: url(/sites/all/modules/bc_islandora/img/exhibiticon.jpg) no-repeat;
 }
 
 /* social media */
@@ -183,7 +188,8 @@ body.logged-in #navigation {
   margin-right: 10px;
 }
 
-/* overwriting DG theme */
-#block-islandora-solr-sort h2, #block-islandora-solr-current-query h2 {
-  line-height: 1.5em !important;
+/* overriding DG theme styles */
+#block-views-featured-block {
+  /*top: -75px !important;
+  right: 50px !important;*/
 }

@@ -397,11 +397,11 @@ function theme_bc_islandora_breadcrumb(&$vars) {
     if (in_array($alias, array('bulletin', 'yearbook')) || $is_exhibition) {
       $bc[] = l('Collections', 'collections');
       if ($is_exhibition) {
-        $bc[] = l('Exhibitions', 'exhibitions');
+        $bc[] = l('Exhibits', 'exhibits');
       }
     }
   }
-  elseif (arg(0) == 'exhibitions' && count(arg()) == 1) {
+  elseif (arg(0) == 'exhibits' && count(arg()) == 1) {
     $bc[] = l('Collections', 'collections');
   }
   if (count($bc) >= 1 && $title = menu_get_active_title()) {

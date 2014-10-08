@@ -21,7 +21,7 @@
             self.toggle_list('ul.years', '.months-' + year);
             self.nav_display('.year #nav', year);
             self.nav_display('.year', year);
-            self.nav_display('.browse', '<a href="#" id="nav">Browse issues</a>&nbsp;&gt;&nbsp;');
+            self.nav_display('.browse', '<a href="#" id="nav">Browse</a>&nbsp;&gt;&nbsp;');
           });
           // month click
           $('.months li.month a').click(function () {

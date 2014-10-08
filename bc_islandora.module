@@ -179,6 +179,7 @@ function bc_islandora_block_view($delta = '') {
         $issues_output = '<div class="issues">';
         $months_sort = array();
         $issues_sort = array();
+        $grouped_issues = array();
 
         $paper = islandora_object_load($collection_pid);
         $issues = $paper ? islandora_newspaper_get_issues($paper) : array();
@@ -194,18 +195,17 @@ function bc_islandora_block_view($delta = '') {
             foreach ($issues as $day => $issue) {
               //$issue_url = 'view/' . str_replace(BASE_NAMESPACE . ':', '', $issue[0]['pid']);
               $issue_url = "islandora/object/{$issue[0]['pid']}";
-              $issues_sort[$month][$day] = '<li class="issue">' . l(preg_replace('/^0/', '', $day), $issue_url) . '</li>';
+              $issues_sort[$year][$month][$day] = '<li class="issue">' . l(preg_replace('/^0/', '', $day), $issue_url) . '</li>';
             }
           }
         }
-
         $years_output .= '</ul></div>';
         foreach ($months_sort as $year => $month) {
           ksort($month);
           $months_output .= '<ul class="months-' . $year . '">';
           $months_output .= implode("\n", $month);
           $months_output .= '</ul>';
-          foreach ($issues_sort as $issue_month => $day) {
+          foreach ($issues_sort[$year] as $issue_month => $day) {
             ksort($day);
             $issues_output .= '<ul class="issues-' . $year . '-' . $issue_month . '">';
             $issues_output .= implode("\n", $day);
