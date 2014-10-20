@@ -16,9 +16,8 @@
           // year click
           $('.year a').click(function () {
             var year = $(this).parent().attr('id');
-            console.log('got year: ' + year);
             var months = $('.months-' + year);
-            self.toggle_list('ul.years', '.months-' + year);
+            self.toggle_list('.decade', '.months-' + year);
             self.nav_display('.year #nav', year);
             self.nav_display('.year', year);
             self.nav_display('.browse', '<a href="#" id="nav">Browse</a>&nbsp;&gt;&nbsp;');
@@ -39,12 +38,13 @@
             var month_list = $('ul.months-' + $(this).text());
             self.toggle_list(active_list, month_list);
             self.nav_display('.month', '');
+            self.nav_display('.year', $('.bulletin-nav .year').text());
           });
           // nav browse click
           $('.bulletin-nav .browse').click(function() {
-            console.log('got click');
             var active_list = $('.bulletin-calendar').find('ul.active');
-            self.toggle_list(active_list, $('.years ul.years'));
+            self.toggle_list(active_list, $('.years'));
+            $('.decade').removeClass('inactive').addClass('active');
             self.nav_display('.year', '');
             self.nav_display('.month', '');
             self.nav_display('.browse', '');
@@ -122,18 +122,7 @@
     
     // yuk!
     if (typeof Drupal.settings.featured_img_path !== 'undefined' && Drupal.settings.featured_img_path.length != 0) {
-      /*var featured_img = new Image();
-      featured_img.src = Drupal.settings.featured_img_path;
-      featured_img.onload = function() {
-        $('#featured_image').css('background', 'url(' + Drupal.settings.featured_img_path + ')');
-        $('#featured_image').css('height', this.height);
-        $('#featured_image').css('width', this.width);
-      }*/
-      console.log($('body').css('background'));
-      console.log(Drupal.settings.featured_img_path);
       $('body.front').css('background', 'url("' + Drupal.settings.featured_img_path + '") 50% 50% no-repeat fixed');
-      console.log($('body').css('background'));
-      
     }
   });
 }) (jQuery);
