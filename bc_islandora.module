@@ -183,9 +183,18 @@ function bc_islandora_block_view($delta = '') {
         $issues = $paper ? islandora_newspaper_get_issues($paper) : array();
         $grouped_issues = islandora_newspaper_group_issues($issues);
         ksort($grouped_issues);
-        $years_output .= '<ul class="years">';
         foreach ($grouped_issues as $year => $months) {
-          $years_output .= '<li class="year" id="' . $year . '"><a href="#">' . $year . '</a></li>';
+          $year_output = '<li class="year" id="' . $year . '"><a href="#">' . $year . '</a></li>';
+          if (!isset($decade_start)) {
+            $decade_start = $year;
+            $years_output .= '<ul class="decade">';
+          }
+          elseif (!($year % 10) || ($year - $decade_start >= 10)) {
+            $years_output .= '</ul>';
+            $years_output .= '<ul class="decade">';
+            $decade_start = $year;
+          }
+          $years_output .= $year_output;
 
           foreach ($months as $month => $issues) {
             $month_display = date('F', strtotime($year . '-' . $month));
@@ -197,7 +206,7 @@ function bc_islandora_block_view($delta = '') {
             }
           }
         }
-        $years_output .= '</ul></div>';
+        $years_output .= '</div>';
         foreach ($months_sort as $year => $month) {
           ksort($month);
           $months_output .= '<ul class="months-' . $year . '">';
