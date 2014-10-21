@@ -1,7 +1,5 @@
 <?php
 
-define('BASE_NAMESPACE', 'bc');
-
 /**
  * Implements hook_permission().
  */
@@ -103,12 +101,6 @@ function bc_islandora_download_datastream($pid, $dsid) {
 }
 
 function bc_islandora_config($form, &$form_state) {
-  $form['bc_islandora_namespace'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Base namespace'),
-    '#required' => TRUE,
-    '#default_value' => variable_get('bc_islandora_namespace', BASE_NAMESPACE),
-  );
   $form['bc_islandora_collection_newspaper'] = array(
     '#type' => 'textfield',
     '#title' => t('Newspaper collection pid'),
@@ -118,6 +110,11 @@ function bc_islandora_config($form, &$form_state) {
     '#type' => 'textfield',
     '#title' => t('Textual materials collection pid'),
     '#default_value' => variable_get('bc_islandora_documents_pid', ''),
+  );
+  $form['bc_islandora_featured_nid'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Featured homepage object nid'),
+    '#default_value' => variable_get('bc_islandora_featured_nid', ''),
   );
   $form['submit'] = array(
     '#type' => 'submit',
@@ -130,6 +127,7 @@ function bc_islandora_config_submit($form, &$form_state) {
   variable_set('bc_islandora_namespace', $form_state['values']['bc_islandora_namespace']);
   variable_set('bc_islandora_newspaper_pid', $form_state['values']['bc_islandora_collection_newspaper']);
   variable_set('bc_islandora_documents_pid', $form_state['values']['bc_islandora_collection_textual']);
+  variable_set('bc_islandora_featured_nid', $form_state['values']['bc_islandora_featured_nid']);
   $form_state['redirect'] = 'admin/islandora/bc_config';
   drupal_set_message(t('Saved changes.'));
 }

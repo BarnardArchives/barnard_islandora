@@ -195,7 +195,8 @@ function _bc_islandora_featured() {
   if (!$nid) {
     $node_q = db_select('node', 'n')
       ->fields('n', array('nid'))
-      ->condition('type', 'featured_object');
+      ->condition('type', 'featured_object')
+      ->orderBy('created', 'DESC');
     $nid = $node_q->execute()->fetchField();
   }
   if ($nid) {
@@ -230,7 +231,7 @@ function _bc_islandora_featured() {
 function theme_bc_islandora_openseadragon_viewer(&$variables) {
   // Variable fedora_object included in results, but not used.
   $library_path = libraries_get_path('openseadragon');
-  $module_path = drupal_get_path('module', 'bc_islandora');
+  $module_path = drupal_get_path('module', 'islandora_openseadragon');
   $variables['viewer_id'] = 'islandora-openseadragon';
   $settings = array_merge($variables['settings'] ? $variables['settings'] : array(), array(
     'id' => $variables['viewer_id'],
