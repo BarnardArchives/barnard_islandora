@@ -110,7 +110,12 @@ body.logged-in #navigation {
 .exhibition-title {
   position: relative;
   left: 25px;
-  top: 50px;
+  top: 20px;
+}
+
+.exhibition-body {
+  position: relative;
+  left: 25px;
 }
 
 .exhibition-next {
@@ -192,4 +197,8 @@ body.logged-in #navigation {
 #block-views-featured-block {
   /*top: -75px !important;
   right: 50px !important;*/
+}
+
+.islandora-openseadragon {
+  width: 85% !important;
 }

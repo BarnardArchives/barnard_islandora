@@ -370,6 +370,7 @@ function theme_bc_islandora_breadcrumb(&$vars) {
           $bc[] = l('Newspaper', 'bulletin');
           break;
         case 'newspaperPageCModel':
+          module_load_include('inc', 'islandora_newspaper', 'includes/utilities');
           $bc[] = l('Newspaper', 'bulletin');
           $issue = islandora_newspaper_get_issue($object);
           $issue = $issue ? islandora_object_load($issue) : FALSE;
