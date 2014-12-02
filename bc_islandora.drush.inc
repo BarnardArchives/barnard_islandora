@@ -88,6 +88,16 @@ function bc_islandora_drush_command() {
       'aliases' => array('bcigua'),
       'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_LOGIN, // we can pass in users id on the command line using drush -u.
     ),
+    'bc_islandora_replace_ocr' => array(
+      'arguments' => array(
+        'query_file' => 'The path to a CSV file that contains the information about the newspaper pages',
+      ),
+      'examples' => array(
+        'drush -u 1 bciro',
+      ),
+      'aliases' => array('bciro'),
+      'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_LOGIN,
+    ),
   );
 }
 
@@ -251,7 +261,7 @@ function drush_bc_islandora_ingest_books($query_file) {
           if (!drush_get_option('purge')) {
             create_page_object($fn, $data, $book_pid, $page_pid, 'book'); 
           }
-        }        
+        }
       }
     }
   
@@ -418,11 +428,14 @@ function drush_bc_islandora_fix_metadata($type, $collection_pid = '') {
 }
 
 function _bc_islandora_create_derivatives($objects) {
+  module_load_include('inc', 'bc_islandora', 'includes/bc_islandora.drush_batch');
   foreach ($objects as $pid) {
     $book = islandora_object_load($pid);
     $pages = array_keys(islandora_paged_content_get_pages($book));
-    $img_batch = islandora_paged_content_create_images_batch($book, $pages);
-    $pdf_batch = islandora_paged_content_create_pdf_batch($book, $pages);
+    // $img_batch = islandora_paged_content_create_images_batch($book, $pages);
+    $img_batch = bc_islandora_create_images_batch($book, $pages);
+    //$pdf_batch = islandora_paged_content_create_pdf_batch($book, $pages);
+    $pdf_batch = bc_islandora_create_pdf_batch($book, $pages);
     $ocr_batch = islandora_paged_content_create_ocr_batch($book, $pages, array('language' => 'eng', 'preprocess' => FALSE));
     batch_set($img_batch);
     batch_set($pdf_batch);
@@ -461,6 +474,36 @@ SPARQL;
     }
     else {
       drush_log(dt('Couldn\'t load object at pid = @pid', array('@pid' => $pid)), 'warning');
+    }
+  }
+}
+
+function drush_bc_islandora_replace_ocr($query_file) {
+  module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
+  module_load_include('inc', 'islandora_paged_content', 'includes/batch');
+
+  ini_set("auto_detect_line_endings", "1");
+
+  $path_name = dirname($query_file);
+  $fh = fopen($query_file, 'r');
+  $line_number = 0;
+
+  while (($data = fgetcsv($fh)) !== FALSE) {
+    $line_number++;
+    if ($line_number > 1) {
+      $ocr_filename = str_replace('tiff', 'txt', $data[2]);
+      $hocr_filename = str_replace('tiff', 'html', $data[2]);
+      $type = $data[4];
+      if ($type == 'page') {
+        $page_pid = 'bc:bulletin-' . date('Ymd', strtotime($data[1])) . '-' . $data[3];
+        $object = islandora_object_load($page_pid);
+        $ocr_ds = $object['OCR'];
+        $hocr_ds = $object['HOCR'];
+        $ocr_ds->setContentFromFile($path_name . '/ocr/' . $ocr_filename, FALSE);
+        $hocr_ds->setContentFromFile($path_name . '/ocr/' . $hocr_filename, FALSE);
+        // ingest?
+        // $object->ingestDatastream($datastream);
+      }
     }
   }
 }

@@ -63,12 +63,6 @@ function bc_islandora_theme($existing, $type, $theme, $path) {
       ),
       'file' => 'includes/bc_islandora.theme.inc',
     ),
-    'bc_islandora_featured' => array(
-      'variables' => array(
-        'nid' => NULL,
-      ),
-      'file' => 'includes/bc_islandora.theme.inc',
-    ),
     'bc_islandora_openseadragon_viewer' => array(
       'variables' => array(
         'fedora_object' => NULL,

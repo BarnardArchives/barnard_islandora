@@ -327,8 +327,10 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid, $type
     break;
     case 'book':
       $title = $data[0];
+      $year = array_pop(explode(' ', $data[1]));
       $page_number = array_pop($data);
-      $label = $title . ' ' . $data[3] . ', page ' . $page_number;
+      //$label = $title . ' ' . $data[3] . ', page ' . $page_number;
+      $label = $title . ' ' . $year . ', page ' . $page_number; 
       $dateIssued = '<dateIssued encoding="iso8601">' . $data[3] . '</dateIssued>';
       $dateCreated = '<dateCreated encoding="iso8601">' . $data[3] . '</dateCreated>';
       $id_short = 'BC12-01';

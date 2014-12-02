@@ -141,65 +141,17 @@ function theme_bc_islandora_newspaper_page(&$vars) {
   return theme('bc_islandora_openseadragon_viewer', array('uri' => $page_metadata['identifier'], 'settings' => array()));
 }
 
-
-function theme_bc_islandora_featured(&$vars) {
-  $output = '';
-  $nid = $vars['nid'] ? $vars['nid'] : variable_get('bc_islandora_featured_nid', NULL);
-  // If we didn't get an nid, get the newest Featured Object node.
-  if (!$nid) {
-    $node_q = db_select('node', 'n')
-      ->fields('n', array('nid'))
-      ->condition('type', 'featured_object');
-    $nid = $node_q->execute()->fetchField();
-    //var_export($nid);
-    if (!$nid) {
-      return $output;
-    }
-  }
-  // Get featured object image.
-  $img_q = db_select('file_managed', 'fm')
-    ->fields('fm', array('uri'));
-  $img_q->join('field_data_field_object_image', 'foi', 'fm.fid = foi.field_object_image_fid');
-  $img_q->condition('foi.entity_id', $nid, '=');
-  if ($img_uri = $img_q->execute()->fetchField()) {
-    drupal_add_js(array('featured_img_path' => file_create_url($img_uri)), 'setting');
-  }
-  // What if we didn't get image???
-  else {
-  }
-  // Get featured object caption.
-  $caption_q = db_select('field_data_field_caption', 'fc')
-    ->fields('fc', array('field_caption_value'))
-    ->condition('fc.entity_id', $nid, '=');
-  if ($caption = $caption_q->execute()->fetchField()) {
-    $output .= 'Featured: ';
-    // Get featured object PID.
-    $pid_q = db_select('field_data_field_fedora_pid', 'fp')
-      ->fields('fp', array('field_fedora_pid_value'))
-      ->condition('fp.entity_id', $nid, '=');
-    if ($pid = $pid_q->execute()->fetchField()) {
-      $obj_url = url('islandora/object/' . $pid);
-      $output .= l(t($caption), $obj_url);
-    }
-    else {
-      $output .= $caption;
-    }
-  }
-  return $output;
-}
-
 function _bc_islandora_featured() {
-  $output = 'Featured: ';
-  $nid = variable_get('bc_islandora_featured_nid', NULL);
-  // If we didn't get an nid, get the newest Featured Object node.
-  if (!$nid) {
-    $node_q = db_select('node', 'n')
-      ->fields('n', array('nid'))
-      ->condition('type', 'featured_object')
-      ->orderBy('created', 'DESC');
-    $nid = $node_q->execute()->fetchField();
-  }
-  if ($nid) {
+  $output = '';
+  // Get a random Featured Object node.
+  $node_q = db_select('node', 'n')
+    ->fields('n', array('nid'))
+    ->condition('type', 'featured_object')
+    ->condition('status', 1)
+    ->range(0, 1)
+    ->orderRandom();
+
+  if ($nid = $node_q->execute()->fetchField()) {
     // Get featured object image.
     $img_q = db_select('file_managed', 'fm')
       ->fields('fm', array('uri'));
@@ -225,6 +177,7 @@ function _bc_islandora_featured() {
       }
     }
   }
+
   return $output;
 }
 
