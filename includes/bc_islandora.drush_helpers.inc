@@ -324,6 +324,7 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid, $type
       $file_name = $file_path . '/' . $data[2];
       $content_model_pid = 'islandora:newspaperPageCModel';
       $genre = 'newspaper';
+      $img_mime = 'image/tiff';
     break;
     case 'book':
       $title = $data[0];
@@ -338,6 +339,7 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid, $type
       $file_name = $file_path;
       $content_model_pid = 'islandora:pageCModel';
       $genre = 'yearbook';
+      $img_mime = 'image/jp2';
     break;
   }
 
@@ -433,8 +435,10 @@ PAGE_RDF;
   
   $image_datastream = new NewFedoraDatastream('OBJ', 'M', $object, $connection->repository);
   $image_datastream->setContentFromFile($file_name, FALSE);
-  $image_datastream->label = 'TIFF image';
-  $image_datastream->mimetype = 'image/tiff';
+  // $image_datastream->label = 'TIFF image';
+  $image_datastream->label = $label;
+  // $image_datastream->mimetype = 'image/tiff';
+  $image_datastream->mimetype = $img_mime;
   $image_datastream->checksum = TRUE;
   $image_datastream->checksumType = 'MD5';
   $image_datastream->logMessage = 'OBJ datastream created using Newspapers batch ingest script || SUCCESS';
