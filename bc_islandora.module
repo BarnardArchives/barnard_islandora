@@ -29,6 +29,14 @@ function bc_islandora_menu() {
       'page arguments' => array('bc_islandora_config'),
       'access arguments' => array('administer bc_islandora'),
     ),
+    'islandora/object/%islandora_object/transcript' => array(
+      'title' => 'Transcript',
+      'type' => MENU_LOCAL_TASK,
+      'page callback' => 'bc_islandora_transcript_menu',
+      'page arguments' => array(2),
+      'access callback' => 'bc_islandora_transcript_access',
+      'access arguments' => array(2),
+    ),
   );
 }
 
@@ -124,6 +132,35 @@ function bc_islandora_config_submit($form, &$form_state) {
   variable_set('bc_islandora_featured_nid', $form_state['values']['bc_islandora_featured_nid']);
   $form_state['redirect'] = 'admin/islandora/bc_config';
   drupal_set_message(t('Saved changes.'));
+}
+
+function bc_islandora_transcript_menu($object) {
+  module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
+
+  $output = '';
+  $transcript = array();
+  $pages = islandora_paged_content_get_pages($object);
+  foreach ($pages as $pid => $page) {
+    $page_obj = islandora_object_load($pid);
+    if ($ocr_text = $page_obj['OCR']->getContent(NULL)) {
+      $transcript[$page['page']] = $ocr_text;
+    }
+  }
+  foreach ($transcript as $page => $text) {
+    // $output .= "<p><b>page $page</b>:</p>";
+    // $output .= "<p>$text</p>";
+    $output .= $text;
+  }
+
+  // Print the transcript.
+  return "<pre>$output</pre>";
+}
+
+function bc_islandora_transcript_access($object) {
+  //module_load_include('inc', 'bc_islandora', 'includes/bc_islandora.theme');  
+  // This object is a "letter" and the user has permission to view it.
+  //return _bc_islandora_is_genre($object, array('letter'));
+  return TRUE;
 }
 
 /**
