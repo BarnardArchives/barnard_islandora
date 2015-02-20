@@ -374,6 +374,94 @@ function theme_bc_islandora_breadcrumb(&$vars) {
   return $output;
 }
 
+function theme_bc_islandora_exhibition($args) {
+  $node = $args['node'];
+  $objects = array();
+  $themes = array();
+  $slides_output = $img_output = '';
+  $nav_output = '<div id="ex-nav">
+      <a id="prev" href="#">&lt; prev</a>
+      <a id="next" href="#">next &gt;</a>
+    </div>';
+  $themes_output = '<div id="ex-themes">';
+  // Create a structured list of exhibition objects.
+  foreach ($node->field_object[$node->language] as $i => $object) {
+    $objects[$i]['description'] = !empty($object['node']->field_description[$node->language][0]) ?
+      $object['node']->field_description[$node->language][0]['value'] :
+      '';
+    $objects[$i]['layout'] = _bc_islandora_get_ex_layout($object['node']->field_layout[$node->language][0]['value']);
+    $objects[$i]['theme'] = $object['node']->field_theme[$node->language][0]['taxonomy_term']->name;
+    foreach ($object['node']->field_images[$node->language] as $j => $fc_item) {
+      $fc_id = $fc_item['value'];
+      $fc_entity = entity_load('field_collection_item', array($fc_id));
+      $objects[$i]['images'][$j] = array(
+        'uri' => $fc_entity[$fc_id]->field_image[$node->language][0]['uri'],
+        'caption' => $fc_entity[$fc_id]->field_caption[$node->language][0]['value'],
+      );
+    }
+  }
+  // Cycle through objects and generate output.
+  foreach ($objects as $i => $item) {
+    $first = !$i;
+    $img_output = '';
+    $slides_output .= '<div class="ex-obj';
+    if (!in_array($item['theme'], $themes)) {
+      $themes[] = $item['theme'];
+      $themes_output .= '<a href="#" class="theme" data-theme="' . $item['theme'] . '">' . $item['theme'] . '</span>';
+    }
+    if ($first) {
+      $slides_output .= ' first';
+    }
+    $slides_output .= '" data-layout="' . $item['layout'];
+    $slides_output .= '" data-theme="' . $item['theme'];
+    $slides_output .= '" id="slide' . strval($i + 1) . '">';
+    $slides_output .= '<div class="ex-images">';
+    $tn_output = '<div class="ex-thumbnails">';
+    foreach ($item['images'] as $j => $img) {
+      $first_img = !$j;
+      $img_index = strval($j + 1);
+      $img_path = variable_get('file_public_path', conf_path() . '/files') . '/' . file_uri_target($img['uri']);
+      $img_output .= '<div class="large-image';
+      if ($first_img) {
+        $img_output .= ' first';
+      }
+      $img_output .= '" id="' . $img_index . '">';
+      $img_output .= '<img src="/' . $img_path . '"><br>';
+      $img_output .= '<span class="caption">' . $img['caption'] . '</span>';
+      $img_output .= '</div>';
+      $tn_args = array(
+        'style_name' => 'thumbnail',
+        'path' => $img['uri'],
+        'attributes' => array('id' => 'tn' . $img_index),
+      );
+      $tn_output .= '<a href="#">';
+      $tn_output .= theme('image_style', $tn_args);
+      $tn_output .= '</a>';
+    }
+    $tn_output .= '</div>';
+    $img_output .= $tn_output;
+    $slides_output .= $img_output . '</div>';
+    $slides_output .= '<div class="ex-txt">' . $item['description'] . '</div>';
+    $slides_output .= '</div>';
+  }
+  $themes_output .= '</div>';
+  $output = $themes_output . $nav_output . $slides_output;
+  return $output;
+}
+
+function _bc_islandora_get_ex_layout($lid) {
+  $layout = '';
+  switch($lid) {
+    case 1:
+      $layout = 'left';
+      break;
+    case 2:
+      $layout = 'right';
+      break;
+  }
+  return $layout;
+}
+
 function _bc_islandora_dl_links($obj, $datastreams = array('PDF', 'JPG')) {
   module_load_include('inc', 'islandora', 'includes/datastream');
   $urls = array();

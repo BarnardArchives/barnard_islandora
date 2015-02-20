@@ -1,0 +1,47 @@
+#ex-wrapper {
+  margin-bottom: 100px;
+}
+#ex-nav {
+  margin-bottom: 10px;
+}
+#ex-themes {
+  margin-bottom: 20px;
+}
+#ex-themes a.theme {
+  font-size: 1.05em;
+  text-decoration: none;
+  font-weight: bold;
+  color: #767676;
+  margin-right: 25px;
+}
+#ex-themes a.theme.active {
+  color: black;
+}
+.ex-obj {
+  clear: both;
+  margin-bottom: 50px;
+}
+.ex-obj[data-layout="left"] .ex-images {
+  float: left;
+}
+.ex-obj[data-layout="right"] .ex-images {
+  float: right;
+}
+.ex-images {
+  background: lightgrey;
+  padding: 10px;
+  margin-right: 20px;
+  margin-bottom: 20px;
+}
+.ex-images .large-image {
+  margin-bottom: 20px;
+}
+.caption {
+  font-size: 0.85em;
+}
+.ex-thumbnails a {
+  margin-right: 10px;
+}
+.ex-thumbnails img.active {
+  border: 1px solid #000;
+}
