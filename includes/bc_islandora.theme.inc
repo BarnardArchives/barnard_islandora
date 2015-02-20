@@ -138,7 +138,7 @@ function theme_bc_islandora_newspaper_page(&$vars) {
   $pid = $object->id;
   $page_metadata = islandora_paged_content_get_page_metadata_from_djatoka($pid);
 
-  return theme('bc_islandora_openseadragon_viewer', array('uri' => $page_metadata['identifier'], 'settings' => array()));
+  return theme('bc_islandora_openseadragon_viewer', array('uri' => $page_metadata['identifier'], 'settings' => array(), 'fedora_object' => $object));
 }
 
 function _bc_islandora_featured() {
@@ -214,6 +214,7 @@ function theme_bc_islandora_openseadragon_viewer(&$variables) {
       }
     }
   }
+
   $settings = array_merge($settings, islandora_openseadragon_get_settings());
   foreach ($settings as $key => $val) {
     if (filter_var($val, FILTER_VALIDATE_FLOAT)) {
@@ -254,7 +255,6 @@ function theme_bc_islandora_openseadragon_viewer(&$variables) {
     }
     $settings['overlays'] = $highlights;
   }
-
   drupal_add_js(array(
     'islandoraOpenSeadragon' => array(
       'pid' => isset($variables['fedora_object']) ? $variables['fedora_object']->id : NULL,
@@ -401,6 +401,15 @@ function _bc_islandora_is_document($object) {
       }
     }
   }
+}
+
+function _bc_islandora_is_genre($object, $genre = array()) {
+  if ($mods = simplexml_load_string($object['MODS']->getContent(NULL))) {
+    if (isset($mods->genre) && in_array((string) $mods->genre, $genre)) {
+      return TRUE;
+    }
+  }
+  return FALSE;
 }
 
 function _bc_islandora_get_sequence($object) {
