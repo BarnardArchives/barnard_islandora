@@ -20,12 +20,19 @@
 .ex-obj {
   clear: both;
   margin-bottom: 50px;
+  display: none;
+}
+.ex-obj.active {
+  display: block;
 }
 .ex-obj[data-layout="left"] .ex-images {
   float: left;
 }
 .ex-obj[data-layout="right"] .ex-images {
   float: right;
+}
+.ex-obj[data-layout="center"] .ex-images {
+  padding: 0;
 }
 .ex-images {
   background: lightgrey;

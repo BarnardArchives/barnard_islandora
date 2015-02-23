@@ -386,12 +386,18 @@ function theme_bc_islandora_exhibition($args) {
   $themes_output = '<div id="ex-themes">';
   // Create a structured list of exhibition objects.
   foreach ($node->field_object[$node->language] as $i => $object) {
-    $objects[$i]['description'] = !empty($object['node']->field_description[$node->language][0]) ?
+    $objects[$i]['description'] = isset($object['node']->field_description[$node->language]) ?
       $object['node']->field_description[$node->language][0]['value'] :
       '';
-    $objects[$i]['layout'] = _bc_islandora_get_ex_layout($object['node']->field_layout[$node->language][0]['value']);
+    $objects[$i]['layout'] = isset($object['node']->field_layout[$node->language]) ?
+      _bc_islandora_get_ex_layout($object['node']->field_layout[$node->language][0]['value']) :
+      '';
     $objects[$i]['theme'] = $object['node']->field_theme[$node->language][0]['taxonomy_term']->name;
-    foreach ($object['node']->field_images[$node->language] as $j => $fc_item) {
+    $images = isset($object['node']->field_images[$node->language]) ?
+      $object['node']->field_images[$node->language] :
+      array();
+    $objects[$i]['images'] = array();  
+    foreach ($images as $j => $fc_item) {
       $fc_id = $fc_item['value'];
       $fc_entity = entity_load('field_collection_item', array($fc_id));
       $objects[$i]['images'][$j] = array(
@@ -457,6 +463,9 @@ function _bc_islandora_get_ex_layout($lid) {
       break;
     case 2:
       $layout = 'right';
+      break;
+    case 4:
+      $layout = 'center';
       break;
   }
   return $layout;
