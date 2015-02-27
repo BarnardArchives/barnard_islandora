@@ -28,7 +28,6 @@
           $('#decades .decade a').click(function() {
             var decade = $(this).html(),
               browse_phrase;
-            console.log(decade);
             self.toggle_list('#decades', '.years #' + decade);
             self.nav_display(self.lp_nav, '.decade', decade);
             self.nav_display(self.lp_nav, '.browse', '<b><a href="#" id="nav">' + self.browse_phrase + '</a></b>&nbsp;');

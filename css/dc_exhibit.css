@@ -3,8 +3,21 @@
 }
 #ex-nav {
   margin-bottom: 10px;
+  margin-right: 25px;
+}
+#ex-nav a {
+  text-decoration: none;
+  font-size: 2em;
+}
+#ex-nav a:hover,
+#ex-nav a:active {
+  font-weight: bold;
+}
+#ex-nav #next {
+  float: right;
 }
 #ex-themes {
+  margin-top: 10px;
   margin-bottom: 20px;
 }
 #ex-themes a.theme {

@@ -163,10 +163,9 @@ function bc_islandora_transcript_menu($object) {
 }
 
 function bc_islandora_transcript_access($object) {
-  //module_load_include('inc', 'bc_islandora', 'includes/bc_islandora.theme');  
+  module_load_include('inc', 'bc_islandora', 'includes/bc_islandora.theme');  
   // This object is a "letter" and the user has permission to view it.
-  //return _bc_islandora_is_genre($object, array('letter'));
-  return TRUE;
+  return _bc_islandora_is_genre($object, array('letter'));
 }
 
 /**
@@ -231,7 +230,7 @@ function bc_islandora_block_view($delta = '') {
             }
             elseif (!($year % 10) || ($year - $decade_start >= 10)) {
               $years_output .= '</ul>';
-              $decade_start = $year;
+              $decade_start = ($year - ($year % 10));
               $years_output .= '<ul class="decade" id=' . $decade_start . 's' . '>';
             }
             $years_output .= '<li class="year" id="' . $year . '"><a href="#">' . $year . '</a></li>';
@@ -332,12 +331,9 @@ function _bc_islandora_newspaper_group_issues($issues) {
   $years = islandora_newspaper_group_issues($issues);
   $decades = array();
   foreach ($years as $year => $data) {
-    if ($year % 10 == 0) {
-      $decade = $year . 's';
-    }
+    $decade = ($year - ($year % 10)) . 's';
     $decades[$decade][$year] = $data;
   }
-  // return $years;
   return $decades;
 }
 
