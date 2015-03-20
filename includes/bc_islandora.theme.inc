@@ -380,8 +380,8 @@ function theme_bc_islandora_exhibition($args) {
   $themes = array();
   $slides_output = $img_output = '';
   $nav_output = '<div id="ex-nav">
-      <a id="prev" href="#">&lt; prev</a>
-      <a id="next" href="#">next &gt;</a>
+      <!-- <a id="prev" href="#">&lt; prev</a>
+      <a id="next" href="#">next &gt;</a> -->
     </div>';
   $themes_output = '<div id="ex-themes">';
   // Create a structured list of exhibition objects.
@@ -413,7 +413,7 @@ function theme_bc_islandora_exhibition($args) {
     $slides_output .= '<div class="ex-obj';
     if (!in_array($item['theme'], $themes)) {
       $themes[] = $item['theme'];
-      $themes_output .= '<a href="#" class="theme" data-theme="' . $item['theme'] . '">' . $item['theme'] . '</span>';
+      $themes_output .= '<a href="#" class="theme" data-theme="' . $item['theme'] . '">' . $item['theme'] . '</a>';
     }
     if ($first) {
       $slides_output .= ' first';
@@ -453,6 +453,40 @@ function theme_bc_islandora_exhibition($args) {
   $themes_output .= '</div>';
   $output = $themes_output . $nav_output . $slides_output;
   return $output;
+}
+
+function _bc_islandora_exhib_obj($nid, $page) {
+  $json_data = array();
+  $node = node_load($nid);
+  $object_id = isset($node->field_object) ? $node->field_object[$node->language][$page] : NULL;
+  $object = node_load($object_id);
+  // Only fill out the JSON data if we got the correct type.
+  if ($object && isset($object->type) && $object->type == 'exhibition_object') {
+    $json_data['description'] = isset($object->field_description[$object->language]) ?
+      $object->field_description[$object->language][0]['value'] :
+      '';
+    $json_data['layout'] = isset($object->field_layout[$object->language]) ?
+      _bc_islandora_get_ex_layout($object->field_layout[$object->language][0]['value']) :
+      '';
+    $json_data['theme'] = $object->field_theme[$object->language][0]['taxonomy_term']->name;
+    $field_images = isset($object->field_images[$object->language]) ?
+      $object->field_images[$object->language] :
+      array();
+    $json_data['images'] = array();  
+    foreach ($field_images as $j => $fc_item) {
+      $fc_id = $fc_item['value'];
+      $fc_entity = entity_load('field_collection_item', array($fc_id));
+      $img_uri = $fc_entity[$fc_id]->field_image[$node->language][0]['uri'];
+      $img_path = variable_get('file_public_path', conf_path() . '/files') . '/' . file_uri_target($img_uri);
+      $json_data['images'][$j] = array(
+        'path' => $img_path,
+        'caption' => $fc_entity[$fc_id]->field_caption[$node->language][0]['value'],
+      );
+      $json_data['images']['tn'][$j] = image_style_url('thumbnail', $img_uri);
+    }
+  }
+  //return json_encode($json_data);
+  return $json_data;
 }
 
 function _bc_islandora_get_ex_layout($lid) {

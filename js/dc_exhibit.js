@@ -26,12 +26,9 @@
       self.show_slide($to_slide);
     },
     activate_theme: function(theme) {
-      var self = this;
       var $theme = $('#ex-themes .theme[data-theme="' + theme + '"]');
       var $active_theme = $('#ex-themes .theme.active');
       var active_theme = $active_theme.innerHTML;
-      console.log(theme);
-      console.log(active_theme);
       if (active_theme != theme) {
         $active_theme.removeClass('active');
         $theme.addClass('active');
@@ -39,7 +36,7 @@
     },
     listeners: function() {
       var self = this;
-      // theme click
+      // Theme click.
       $('#ex-themes .theme').click(function(event) {
         event.preventDefault();
         var theme = this.innerHTML;
@@ -47,16 +44,15 @@
         var $active_obj = $('.ex-obj.active');
         if (!$theme_first.hasClass('active')) {
           self.toggle_slide($active_obj, $theme_first);
-          // $theme_first.addClass('active').show();
-          // $theme_first.find('.ex-images').addClass('active').show();
-          // $($theme_first.find('.ex-images')[0]).find('.large-image.first').show();
         }
         if (!$(this).hasClass('active')) {
           $(this).parent().find('.active').removeClass('active');
           $(this).addClass('active');
         }
+        // Activate correct pager item.
+        $('#ex-nav').pagination('selectPage', parseInt($theme_first.attr('id').split('slide')[1]))
       });
-      // thumbnail click
+      // Thumbnail click.
       $('.ex-thumbnails a').click(function(event) {
         event.preventDefault();
         // The "id" of the clicked thumbnail.
@@ -71,45 +67,29 @@
         $(this).parent().find('img.active').removeClass('active');
         $(this).find('img').addClass('active');
       });
-      // nav click
-      $('#ex-nav a').click(function(event) {
-        event.preventDefault();
-        var $active_slide = $('.ex-obj.active'),
-          $active_obj_img = $active_slide.find('.large-image.active'),
-          $active_tn = $active_obj_img.find('.ex-thumbnails img.active');
-        var active_slide_index = parseInt($active_slide.attr('id').split('slide')[1]);
-        var next_slide_index = active_slide_index + 1,
-          prev_slide_index = active_slide_index - 1;
-        var $next_slide = $('.ex-obj#slide' + next_slide_index),
-          $prev_slide = $('.ex-obj#slide' + prev_slide_index),
-          $first_slide = $('.ex-obj.first'),
-          $last_slide = $('.ex-obj:last');
-        var $slide_to;
-        switch ($(this).attr('id')) {
-          case 'next':
-            if ($next_slide.length) {
-              $slide_to = $next_slide;
-            }
-            else {
-              $slide_to = $first_slide;
-            }
-            break;
-          case 'prev':
-            if (prev_slide_index > 0) {
-              $slide_to = $prev_slide;
-            }
-            else {
-              $slide_to = $last_slide;
-            }
-            break;
-        }
-        self.toggle_slide($active_slide, $slide_to);
-        self.activate_theme($slide_to.attr('data-theme'));
+    },
+    pager_click: function(pageNumber, event, self) {
+      var $active_slide = $('.ex-obj.active');
+      var $slide_to = $('.ex-obj#slide' + pageNumber);
+      self.toggle_slide($active_slide, $slide_to);
+      self.activate_theme($slide_to.attr('data-theme'));
+    }, 
+    paginate: function() {
+      var self = this;
+      var slide_count = $('.ex-obj').length;
+      $('#ex-nav').pagination({
+        items: slide_count,
+        itemsOnPage: 1,
+        onPageClick: function(pageNumber, event) {
+          self.pager_click(pageNumber, event, self);
+        },
+        prevText: '&larr;',
+        nextText: '&rarr;'
       });
     },
     attach: function(context, settings) {
-      console.log(context);
       var self = this;
+      self.paginate();
       self.listeners();
       $('.ex-images').each(function() {
         self.show_first($(this).find('.large-image'));

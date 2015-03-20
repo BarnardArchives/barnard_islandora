@@ -29,6 +29,11 @@ function bc_islandora_menu() {
       'page arguments' => array('bc_islandora_config'),
       'access arguments' => array('administer bc_islandora'),
     ),
+    'exhibit/%' => array(
+      'page callback' => 'bc_islandora_exhibit_json',
+      'page arguments' => array(1),
+      'access arguments' => array('access content'),
+    ),
   );
 }
 
@@ -130,6 +135,14 @@ function bc_islandora_config_submit($form, &$form_state) {
   variable_set('bc_islandora_featured_nid', $form_state['values']['bc_islandora_featured_nid']);
   $form_state['redirect'] = 'admin/islandora/bc_config';
   drupal_set_message(t('Saved changes.'));
+}
+
+function bc_islandora_exhibit_json($nid) {
+  $page = isset($_GET['page']) ? $_GET['page'] : 0;
+  module_load_include('inc', 'bc_islandora', 'includes/bc_islandora.theme');
+  $output = _bc_islandora_exhib_obj($nid, $page);
+  dpm($output);
+  return '';
 }
 
 /**
