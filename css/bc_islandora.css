@@ -10,13 +10,14 @@ body.logged-in #navigation {
   margin-bottom: 15px;
 }
 
-/* newspaper landing page */
+/* newspaper and yearbook landing pages */
 #block-bc-islandora-bc-islandora-newspaper {
-  width: 960px;
-  margin: auto;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .bulletin-calendar .inactive,
+.yearbook-calendar .inactive,
 .exhibition-object.inactive {
     display: none;
 }
@@ -24,16 +25,15 @@ body.logged-in #navigation {
 .exhibition-object.active {
     display: block;
 }
-.bulletin-calendar ul {
+.bulletin-calendar ul,
+.yearbook-calendar ul {
     list-style-type: none;
+    margin-left: 0px;
+    padding-left: 0px;
 }
 
-.bulletin-calendar .years ul {
-  margin-left: 0px;
-  padding-left: 0px;
-}
-
-.bulletin-calendar li {
+.bulletin-calendar li,
+.yearbook-calendar li {
     display: inline-block;
     margin: 0 10px 10px 0;
 }
@@ -185,8 +185,7 @@ body.logged-in #navigation {
 /* social media */
 .socialmedia {
   display: block;
-  margin-top: 20px;
-  margin-bottom: 100px;
+  margin: 20px 0;
 }
 
 .socialmedia a {

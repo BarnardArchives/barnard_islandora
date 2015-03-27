@@ -16,7 +16,7 @@ function create_issue_object($pid, $data) {
   $content_model_pid = 'islandora:newspaperIssueCModel';
 
   // TODO should be able to supply this as an argument. (or via CSV?)
-  $collection_pid = variable_get('bc_islandora_newspaper_pid', 'islandora:1');
+  $collection_pid = variable_get('bc_islandora_newspaper_pid', 'islandora:74');
 
   $xml = <<<ISSUE_MODS
     <mods xmlns="http://www.loc.gov/mods/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/mods/v3/mods-3-5.xsd">

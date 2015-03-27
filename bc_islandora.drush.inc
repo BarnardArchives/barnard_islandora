@@ -163,9 +163,9 @@ function drush_bc_islandora_ingest_newspapers($query_file) {
       }
       elseif ($type == 'page') {
         $page_pid = 'bc:bulletin-' . date('Ymd', strtotime($data[1])) . '-' . $data[3];
-        
+
         if (drush_get_option('purge')) {
-          drush_bc_islandora_purge_object($issue_pid);
+          drush_bc_islandora_purge_object($page_pid);
         }
         elseif (!islandora_object_load($page_pid)) {
           try {
@@ -174,9 +174,6 @@ function drush_bc_islandora_ingest_newspapers($query_file) {
           catch (Exception $e) {
             drush_log(dt('Caught exception: @e', array('@e' => $e->getMessage())), 'warning');
           }
-        }
-        elseif (drush_get_option('purge')) {
-          drush_bc_islandora_purge_object($page_pid);
         }
         elseif (drush_get_option('overwrite-existing')) {
           try {
@@ -219,10 +216,7 @@ function drush_bc_islandora_ingest_books($query_file) {
     }
     $book_pid = 'bc:yearbook-' . $pid_year;
     $pages = $data[12];
-    if (drush_get_option('purge')) {
-      drush_bc_islandora_purge_object($book_pid);
-    }
-    elseif (!islandora_object_load($book_pid)) {
+    if (!islandora_object_load($book_pid)) {
       try {
         print "Got book pid: $book_pid\n";
         $book_pid = create_book_object($book_pid, $data);
@@ -230,6 +224,9 @@ function drush_bc_islandora_ingest_books($query_file) {
       catch (Exception $e) {
         drush_log(dt('Caught exception: @e', array('@e' => $e->getMessage())), 'warning');
       }
+    }
+    elseif (drush_get_option('purge')) {
+      drush_bc_islandora_purge_object($book_pid);
     }
     elseif (drush_get_option('overwrite-existing')) {
       try {
