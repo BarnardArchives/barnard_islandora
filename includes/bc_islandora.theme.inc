@@ -138,7 +138,7 @@ function theme_bc_islandora_newspaper_page(&$vars) {
   $pid = $object->id;
   $page_metadata = islandora_paged_content_get_page_metadata_from_djatoka($pid);
 
-  return theme('bc_islandora_openseadragon_viewer', array('uri' => $page_metadata['identifier'], 'settings' => array()));
+  return theme('bc_islandora_openseadragon_viewer', array('uri' => $page_metadata['identifier'], 'settings' => array(), 'fedora_object' => $object));
 }
 
 function _bc_islandora_featured() {
@@ -214,6 +214,7 @@ function theme_bc_islandora_openseadragon_viewer(&$variables) {
       }
     }
   }
+
   $settings = array_merge($settings, islandora_openseadragon_get_settings());
   foreach ($settings as $key => $val) {
     if (filter_var($val, FILTER_VALIDATE_FLOAT)) {
@@ -254,7 +255,6 @@ function theme_bc_islandora_openseadragon_viewer(&$variables) {
     }
     $settings['overlays'] = $highlights;
   }
-
   drupal_add_js(array(
     'islandoraOpenSeadragon' => array(
       'pid' => isset($variables['fedora_object']) ? $variables['fedora_object']->id : NULL,
@@ -295,19 +295,20 @@ function theme_bc_islandora_breadcrumb(&$vars) {
       $cm = str_replace('islandora:', '', $cm_pid);
       switch ($cm) {
         case 'bookCModel':
-          $is_book = TRUE;
-          $collection_results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOfCollection');
+          $is_yb = FALSE;
           if (!empty($collection_results)) {
             foreach ($collection_results as $cr) {
-              if ($cr['object']['value'] == variable_get('bc_islandora_documents_pid', 'islandora:95')) {
-                $bc[] = l('Textual Materials', 'islandora/object/islandora:95');
-                $is_book = FALSE;
+              if ($cr['object']['value'] == variable_get('bc_islandora_book_pid', 'islandora:bookCollection')) {
+                $bc[] = l('Yearbook', 'yearbook');
+                $is_yb = TRUE;
                 break;
               }
             }
           }
-          if ($is_book) {
-            $bc[] = l('Yearbook', 'yearbook');
+          elseif (!$is_yb && $cr2 = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOfCollection')) {
+            if ($collection_obj = islandora_object_load($cr2[0]['object']['value'])) {
+              $bc[] = l($collection_obj->label, "islandora/object/{$collection_obj->id}");
+            }
           }
           break;
         // Book page.
@@ -317,18 +318,21 @@ function theme_bc_islandora_breadcrumb(&$vars) {
           if ($book = islandora_object_load($results[0]['object']['value'])) {
             $bc[] = l($book->label, "islandora/object/{$book->id}");
           }
-          //$variables['book_object_id'] = $results[0]['object']['value'];
           break;
         case 'newspaperIssueCModel':
-          $bc[] = l('Newspaper', 'bulletin');
+          $bc[] = _bc_islandora_np_link($object);
           break;
         case 'newspaperPageCModel':
           module_load_include('inc', 'islandora_newspaper', 'includes/utilities');
-          $bc[] = l('Newspaper', 'bulletin');
           $issue = islandora_newspaper_get_issue($object);
           $issue = $issue ? islandora_object_load($issue) : FALSE;
-          if ($issue_link = l($issue->label, "islandora/object/{$issue}")) {
-            //dpm("<p><strong>View issue: </strong>{$issue_link}</p>");
+          if (_bc_islandora_is_bulletin($object)) {
+            $bc[] = l('Newspaper', 'bulletin');
+          }
+          else {
+            $bc[] = _bc_islandora_np_link($issue);
+          }
+          if ($issue_link = l($issue->label, "islandora/object/{$issue->id}")) {
             $bc[] = $issue_link;
           }
           break;
@@ -374,14 +378,52 @@ function theme_bc_islandora_breadcrumb(&$vars) {
   return $output;
 }
 
+function _bc_islandora_np_link($object, $type = 'newspaper', $relationship = 'isMemberOfCollection') {
+  $collection_results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
+  $is_np = FALSE;
+  $np_link = NULL;
+
+  foreach ($collection_results as $cr) {
+    if ($cr['object']['value'] == variable_get('bc_islandora_newspaper_pid', 'islandora:74')) {
+      $is_np = TRUE;
+    }
+  }
+  if (!$is_np) {
+    $get_np = "islandora_newspaper_get_{$type}";
+    $np_obj = islandora_object_load($get_np($object));
+    if ($np_collection = $np_obj->relationships->get(FEDORA_RELS_EXT_URI, $relationship)) {
+      $np_collection_obj = islandora_object_load($np_collection[0]['object']['value']);
+      $np_link = l($np_collection_obj->label, 'islandora/object/' . $np_collection_obj->id);
+    }
+  }
+  else {
+    $np_link = l('Newspaper', 'bulletin');
+  }
+  return $np_link;
+}
+
+function _bc_islandora_is_bulletin($object) {
+  $cm_results = $object->relationships->get(FEDORA_MODEL_URI, 'hasModel');
+  if ($cm_results[0]['object']['value'] == 'islandora:newspaperPageCModel') {
+    $np_issue = islandora_object_load(islandora_newspaper_get_issue($object));
+  }
+  $np_issue_rels = $np_issue->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
+  foreach ($np_issue_rels as $npr) {
+    if ($npr['object']['value'] == variable_get('bc_islandora_newspaper_pid', 'islandora:74')) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
 function theme_bc_islandora_exhibition($args) {
   $node = $args['node'];
   $objects = array();
   $themes = array();
   $slides_output = $img_output = '';
   $nav_output = '<div id="ex-nav">
-      <!-- <a id="prev" href="#">&lt; prev</a>
-      <a id="next" href="#">next &gt;</a> -->
+      <a id="prev" href="#">&larr;</a>
+      <a id="next" href="#">&rarr;</a>
     </div>';
   $themes_output = '<div id="ex-themes">';
   // Create a structured list of exhibition objects.
@@ -413,7 +455,7 @@ function theme_bc_islandora_exhibition($args) {
     $slides_output .= '<div class="ex-obj';
     if (!in_array($item['theme'], $themes)) {
       $themes[] = $item['theme'];
-      $themes_output .= '<a href="#" class="theme" data-theme="' . $item['theme'] . '">' . $item['theme'] . '</a>';
+      $themes_output .= '<a href="#" class="theme" data-theme="' . $item['theme'] . '">' . $item['theme'] . '</span>';
     }
     if ($first) {
       $slides_output .= ' first';
@@ -453,40 +495,6 @@ function theme_bc_islandora_exhibition($args) {
   $themes_output .= '</div>';
   $output = $themes_output . $nav_output . $slides_output;
   return $output;
-}
-
-function _bc_islandora_exhib_obj($nid, $page) {
-  $json_data = array();
-  $node = node_load($nid);
-  $object_id = isset($node->field_object) ? $node->field_object[$node->language][$page] : NULL;
-  $object = node_load($object_id);
-  // Only fill out the JSON data if we got the correct type.
-  if ($object && isset($object->type) && $object->type == 'exhibition_object') {
-    $json_data['description'] = isset($object->field_description[$object->language]) ?
-      $object->field_description[$object->language][0]['value'] :
-      '';
-    $json_data['layout'] = isset($object->field_layout[$object->language]) ?
-      _bc_islandora_get_ex_layout($object->field_layout[$object->language][0]['value']) :
-      '';
-    $json_data['theme'] = $object->field_theme[$object->language][0]['taxonomy_term']->name;
-    $field_images = isset($object->field_images[$object->language]) ?
-      $object->field_images[$object->language] :
-      array();
-    $json_data['images'] = array();  
-    foreach ($field_images as $j => $fc_item) {
-      $fc_id = $fc_item['value'];
-      $fc_entity = entity_load('field_collection_item', array($fc_id));
-      $img_uri = $fc_entity[$fc_id]->field_image[$node->language][0]['uri'];
-      $img_path = variable_get('file_public_path', conf_path() . '/files') . '/' . file_uri_target($img_uri);
-      $json_data['images'][$j] = array(
-        'path' => $img_path,
-        'caption' => $fc_entity[$fc_id]->field_caption[$node->language][0]['value'],
-      );
-      $json_data['images']['tn'][$j] = image_style_url('thumbnail', $img_uri);
-    }
-  }
-  //return json_encode($json_data);
-  return $json_data;
 }
 
 function _bc_islandora_get_ex_layout($lid) {
@@ -532,6 +540,16 @@ function _bc_islandora_is_document($object) {
       }
     }
   }
+}
+
+function _bc_islandora_is_genre($object, $genre = array()) {
+  
+  if (!empty($object['MODS']) && $mods = simplexml_load_string($object['MODS']->getContent(NULL))) {
+    if (isset($mods->genre) && in_array((string) $mods->genre, $genre)) {
+      return TRUE;
+    }
+  }
+  return FALSE;
 }
 
 function _bc_islandora_get_sequence($object) {
