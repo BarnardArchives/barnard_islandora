@@ -210,7 +210,11 @@ function drush_bc_islandora_ingest_books($query_file) {
   while (($data = fgetcsv($fh)) !== FALSE) {
     //$csv_year = array_pop(explode(' ', $data[1]));
     $csv_year = $data[3];
-    $pid_year = array_pop(explode(' ', $data[1]));
+    $csv_vol = explode(' ', $data[1]);
+    $pid_year = $csv_vol[1];
+    if (count($csv_vol > 2)) {
+      $pid_year .= '-' . $csv_vol[2];
+    }
     if ($year && $year != $csv_year) {
       continue;
     }

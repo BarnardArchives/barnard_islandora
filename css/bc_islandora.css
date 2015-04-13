@@ -17,11 +17,14 @@ body.logged-in #navigation {
 }
 
 .bulletin-calendar .inactive,
+.bulletin-calendar.inactive,
 .yearbook-calendar .inactive,
 .exhibition-object.inactive {
     display: none;
 }
+
 .bulletin-calendar .active,
+.bulletin-calendar.active,
 .exhibition-object.active {
     display: block;
 }

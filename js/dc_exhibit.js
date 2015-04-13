@@ -73,7 +73,13 @@
       var $slide_to = $('.ex-obj#slide' + pageNumber);
       self.toggle_slide($active_slide, $slide_to);
       self.activate_theme($slide_to.attr('data-theme'));
-    }, 
+    },
+    show_hash: function(hash) {
+      var self = this;
+      var page = parseInt(hash.split('#page-')[1]);
+      // self.pager_click(page, {}, self);
+      $('#ex-nav').pagination('selectPage', page);
+    },
     paginate: function() {
       var self = this;
       var slide_count = $('.ex-obj').length;
@@ -99,6 +105,9 @@
         var active_img = $('.ex-images .large-image.first').attr('id');
         $('.ex-thumbnails img#tn' + active_img).addClass('active');
       });
+      if (location.hash.length > 0) {
+        $('#ex-nav').pagination('selectPage', parseInt(location.hash.split('#page-')[1]));
+      }
       self.activate_theme($('.ex-obj.active').attr('data-theme'));
     }
   }  

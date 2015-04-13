@@ -5,9 +5,9 @@
   margin-bottom: 10px;
   margin-right: 25px;
 }
-#ex-nav a {
-  text-decoration: none;
-  font-size: 2em;
+#ex-nav a,
+#ex-nav li.active span {
+  margin-right: 10px;
 }
 #ex-nav a:hover,
 #ex-nav a:active {
@@ -79,6 +79,7 @@ ul.simple-pagination {
 }
 .ex-obj[data-layout="right"] .ex-images {
   float: right;
+  margin-left: 25px;
 }
 .ex-obj[data-layout="center"] .ex-images {
   padding: 0;

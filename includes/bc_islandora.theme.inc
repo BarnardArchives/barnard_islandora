@@ -465,6 +465,7 @@ function theme_bc_islandora_exhibition($args) {
     $slides_output .= '" id="slide' . strval($i + 1) . '">';
     $slides_output .= '<div class="ex-images">';
     $tn_output = '<div class="ex-thumbnails">';
+    $show_tn = count($item['images']) > 1;
     foreach ($item['images'] as $j => $img) {
       $first_img = !$j;
       $img_index = strval($j + 1);
@@ -477,14 +478,16 @@ function theme_bc_islandora_exhibition($args) {
       $img_output .= '<img src="/' . $img_path . '"><br>';
       $img_output .= '<span class="caption">' . $img['caption'] . '</span>';
       $img_output .= '</div>';
-      $tn_args = array(
-        'style_name' => 'thumbnail',
-        'path' => $img['uri'],
-        'attributes' => array('id' => 'tn' . $img_index),
-      );
-      $tn_output .= '<a href="#">';
-      $tn_output .= theme('image_style', $tn_args);
-      $tn_output .= '</a>';
+      if ($show_tn) {
+        $tn_args = array(
+          'style_name' => 'thumbnail',
+          'path' => $img['uri'],
+          'attributes' => array('id' => 'tn' . $img_index),
+        );
+        $tn_output .= '<a href="#">';
+        $tn_output .= theme('image_style', $tn_args);
+        $tn_output .= '</a>';
+      }
     }
     $tn_output .= '</div>';
     $img_output .= $tn_output;

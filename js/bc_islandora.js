@@ -1,10 +1,15 @@
 (function ($) {
   $(document).ready(function () {
     var bulletin_calendar = {
+        show_calendar: function(lp_id) {
+          var $selector = $('.' + lp_id + '-calendar');
+          if ($selector.hasClass('inactive')) {
+            $selector.removeClass('inactive').addClass('active');
+          }
+        },
         hide_lists: function (lp_id) {
           var calendar_selector = '.' + lp_id + '-calendar ul';
           $(calendar_selector).each(function() {
-            console.log(this);
             if ($(this).parent().attr('class') != 'decades') {
               $(this).addClass('inactive');
             }
@@ -14,7 +19,6 @@
           });
         },
         listeners: function (lp_id) {
-          console.log(lp_id);
           var self = this;
           self.lp_class = '.' + lp_id + '-calendar';
           self.lp_nav = '.' + lp_id + '-nav';
@@ -57,11 +61,14 @@
           // nav decade click
           $('.bulletin-nav .decade').click(function() {
             var decade = $(this).find('a').text(),
-              active_list = $(self.lp_class).find('ul.active'),
-              years_list = $(self.lp_class + ' .years ul.decade#' + decade);
-            self.toggle_list(active_list, years_list);
-            self.nav_display('.bulletin-nav', '.year', '');
-            self.nav_display('.bulletin-nav', '.decade', decade);
+              active_list = $(self.lp_class).find('ul.active');
+            if (decade.length !== 0) {
+              var years_list = $(self.lp_class + ' .years ul.decade#' + decade);
+              self.toggle_list(active_list, years_list);
+              self.nav_display('.bulletin-nav', '.year', '');
+              self.nav_display('.bulletin-nav', '.month', '');
+              self.nav_display('.bulletin-nav', '.decade', decade);
+            }
           });
           // nav year click
           $('.bulletin-nav .year').click(function () {
@@ -96,6 +103,7 @@
         $(to_selector).removeClass('inactive').addClass('active');
       },
       run: function (lp_id) {
+        this.show_calendar(lp_id);
         this.hide_lists(lp_id);
         this.listeners(lp_id);
       }
