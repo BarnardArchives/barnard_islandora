@@ -5,9 +5,9 @@
   margin-bottom: 10px;
   margin-right: 25px;
 }
-#ex-nav a,
-#ex-nav li.active span {
-  margin-right: 10px;
+#ex-nav a {
+  text-decoration: none;
+  font-size: 2em;
 }
 #ex-nav a:hover,
 #ex-nav a:active {
@@ -30,42 +30,6 @@
 #ex-themes a.theme.active {
   color: black;
 }
-
-
-ul.simple-pagination {
-	list-style: none;
-}
-
-.simple-pagination {
-	display: block;
-	overflow: hidden;
-	padding: 0 5px 5px 0;
-	margin: 0;
-}
-
-.simple-pagination ul {
-	list-style: none;
-	padding: 0;
-	margin: 0;
-}
-
-.simple-pagination li {
-	list-style: none;
-	padding: 0;
-	margin: 0;
-	float: left;
-}
-
-.simple-pagination li span,
-.simple-pagination li a.page-link {
-  margin-right: 5px;
-}
-
-.simple-pagination li .next,
-.simple-pagination li .prev {
-  text-decoration: none;
-}
-
 .ex-obj {
   clear: both;
   margin-bottom: 50px;
@@ -79,7 +43,6 @@ ul.simple-pagination {
 }
 .ex-obj[data-layout="right"] .ex-images {
   float: right;
-  margin-left: 25px;
 }
 .ex-obj[data-layout="center"] .ex-images {
   padding: 0;

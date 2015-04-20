@@ -98,7 +98,7 @@ function _bc_islandora_np_page_pager($object) {
 
 function theme_bc_islandora_newspaper_issue(&$vars) {
   module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
-  
+
   $output = '';
   $object = $vars['object'];
   $context = !empty($vars['context']) ? $vars['context'] : 'issue';
@@ -290,7 +290,6 @@ function theme_bc_islandora_breadcrumb(&$vars) {
     $collection_results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
     $cm_results = $object->relationships->get(FEDORA_MODEL_URI, 'hasModel');
     
-    // Only build the breadcrumb if we got a content model pid from RELS-EXT...
     if (!empty($cm_results) && $cm_pid = $cm_results[0]['object']['value']) {
       $bc[] = l('Collections', 'collections');
       $cm = str_replace('islandora:', '', $cm_pid);
@@ -308,8 +307,7 @@ function theme_bc_islandora_breadcrumb(&$vars) {
           }
           elseif (!$is_yb && $cr2 = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOfCollection')) {
             if ($collection_obj = islandora_object_load($cr2[0]['object']['value'])) {
-              // $bc[] = l($collection_obj->label, "islandora/object/{$collection_obj->id}");
-              $bc[] = _bc_islandora_breadcrumb_search($collection_obj);
+              $bc[] = l($collection_obj->label, "islandora/object/{$collection_obj->id}");
             }
           }
           break;
@@ -338,13 +336,19 @@ function theme_bc_islandora_breadcrumb(&$vars) {
             $bc[] = $issue_link;
           }
           break;
-        default:
-          $bc[] = _bc_islandora_breadcrumb_search($object);
+        case 'sp_large_image_cmodel':
+        case 'sp_basic_image':
+          $photos_search = l('Photographs', 'islandora/search', array(
+            'query' => array(
+              'type' => 'dismax',
+              'f[0]' => 'mods_genre_ms:photographs',
+            ),
+          ));
+          $bc[] = $photos_search;
           break;
       }
     }
   }
-  // ...or if this is a node (check if landing page)...
   elseif (arg(0) == 'node' && is_numeric(arg(1))) {
     $node = menu_get_object();
     $is_exhibition = $node->type == 'exhibition';
@@ -356,16 +360,12 @@ function theme_bc_islandora_breadcrumb(&$vars) {
       }
     }
   }
-  // ...or this is the exhibits view.
   elseif (arg(0) == 'exhibits' && count(arg()) == 1) {
     $bc[] = l('Collections', 'collections');
   }
-  
-  // Add the current page's title to the existing breadcrumb.
   if (count($bc) >= 1 && $title = menu_get_active_title()) {
     $title_parts = explode(',', $title);
-    // In these special cases, use whatever text occurs after the last comma
-    // (e.g. "issue 1") as the title.
+    // yuk
     if ((preg_match('/^Barnard Bulletin/', $title) !== 0 && count($title_parts) == 4) ||
      (preg_match('/^Annual|Mortarboard/', $title) !== 0 && count($title_parts) == 2))  {
       $bc[] = array_pop($title_parts);
@@ -374,25 +374,8 @@ function theme_bc_islandora_breadcrumb(&$vars) {
       $bc[] = $title;
     }
   }
-
-  // Generate themed output.
   $output .= '<div class="breadcrumb">' . implode(' » ', $bc) . '</div>';
   return $output;
-}
-
-function _bc_islandora_breadcrumb_search($object) {
-  $mods = isset($object['MODS']) ? simplexml_load_string($object['MODS']->getContent(NULL)) : NULL;
-  if ($mods) {
-    $genre = (string) $mods->genre;
-    $host_title = (string) $mods->relatedItem->titleInfo->title;
-    return l($host_title, 'islandora/search', array(
-      'query' => array(
-        'type' => 'dismax',
-        'f[0]' => 'mods_genre_ms:' . $genre,
-      ),
-    ));
-  }
-  return NULL;
 }
 
 function _bc_islandora_np_link($object, $type = 'newspaper', $relationship = 'isMemberOfCollection') {
@@ -482,7 +465,6 @@ function theme_bc_islandora_exhibition($args) {
     $slides_output .= '" id="slide' . strval($i + 1) . '">';
     $slides_output .= '<div class="ex-images">';
     $tn_output = '<div class="ex-thumbnails">';
-    $show_tn = count($item['images']) > 1;
     foreach ($item['images'] as $j => $img) {
       $first_img = !$j;
       $img_index = strval($j + 1);
@@ -495,16 +477,14 @@ function theme_bc_islandora_exhibition($args) {
       $img_output .= '<img src="/' . $img_path . '"><br>';
       $img_output .= '<span class="caption">' . $img['caption'] . '</span>';
       $img_output .= '</div>';
-      if ($show_tn) {
-        $tn_args = array(
-          'style_name' => 'thumbnail',
-          'path' => $img['uri'],
-          'attributes' => array('id' => 'tn' . $img_index),
-        );
-        $tn_output .= '<a href="#">';
-        $tn_output .= theme('image_style', $tn_args);
-        $tn_output .= '</a>';
-      }
+      $tn_args = array(
+        'style_name' => 'thumbnail',
+        'path' => $img['uri'],
+        'attributes' => array('id' => 'tn' . $img_index),
+      );
+      $tn_output .= '<a href="#">';
+      $tn_output .= theme('image_style', $tn_args);
+      $tn_output .= '</a>';
     }
     $tn_output .= '</div>';
     $img_output .= $tn_output;

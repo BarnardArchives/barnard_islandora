@@ -291,18 +291,12 @@ EOQ;
         $results = $book_collection->repository->ri->sparqlQuery($query);
         foreach ($results as $r) {
           $pid = $r['object']['value'];
-          $pid_parts = explode('-', $pid);
-          $year = $pid_parts[1];
+          $year = array_pop(explode('-', $pid));
           $decade = $year - ($year % 10) . 's';
           $years[$decade][$year] = l($year, "islandora/object/{$pid}");
-          if (isset($pid_parts[2]) && !empty($pid_parts[2])) {
-            $years[$decade][$year] .= '&nbsp';
-            $years[$decade][$year] .= '(' . $pid_parts[2] . ')';
-          }
         }
         ksort($years);
         foreach ($years as $decade => $y) {
-          ksort($y);
           $decade_output .= '<li class="decade"><a href="#">' . $decade . '</a></li>';
 
           foreach ($y as $year => $l) {

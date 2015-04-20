@@ -98,12 +98,6 @@ function bc_islandora_drush_command() {
       'aliases' => array('bciro'),
       'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_LOGIN,
     ),
-    'bc_islandora_update_exhibit' => array(
-      'examples' => array(
-        'drush bciue',
-      ),
-      'aliases' => array('bciue'),
-    ),
   );
 }
 
@@ -210,11 +204,7 @@ function drush_bc_islandora_ingest_books($query_file) {
   while (($data = fgetcsv($fh)) !== FALSE) {
     //$csv_year = array_pop(explode(' ', $data[1]));
     $csv_year = $data[3];
-    $csv_vol = explode(' ', $data[1]);
-    $pid_year = $csv_vol[1];
-    if (count($csv_vol > 2)) {
-      $pid_year .= '-' . $csv_vol[2];
-    }
+    $pid_year = array_pop(explode(' ', $data[1]));
     if ($year && $year != $csv_year) {
       continue;
     }
@@ -512,64 +502,5 @@ function drush_bc_islandora_replace_ocr($query_file) {
         // $object->ingestDatastream($datastream);
       }
     }
-  }
-}
-
-function drush_bc_islandora_update_exhibit() {
-  module_load_include('inc', 'entity', 'includes/entity.controller');
-  $themes = array(
-    'Introduction' => array(16),
-    'Suffrage' => array(17, 18, 19, 20),
-    'Athletics' => array(8, 3, 21, 22),
-    'Student activism' => array(33, 11, 32, 31, 30, 29, 28, 27, 26, 25, 23, 24),
-  );
-  $q = db_select('node', 'n')
-    ->fields('n', array('nid'))
-    ->condition('type', 'exhibition_object', '=');
-  foreach ($q->execute()->fetchAll() as $result) {
-    $node = node_load($result->nid);
-    if (empty($node->field_images)) {
-      $field_image = $node->field_object_image[$node->language];
-      $field_caption = $node->field_caption[$node->language];
-      $field_fedora_pid = $node->field_fedora_pid[$node->language];
-      $fc_values = array(
-        'field_name' => 'field_images',
-        'field_image' => array(
-          LANGUAGE_NONE => $field_image,
-        ),
-        'field_caption' => array(
-          LANGUAGE_NONE => $field_caption,
-        ),
-        'field_fedora_pid' => array(
-          LANGUAGE_NONE => $field_fedora_pid,
-        ),
-      );
-      $fc_entity = entity_create('field_collection_item', $fc_values);
-      $fc_entity->setHostEntity('node', $node);
-      $fc_entity->save();
-    }
-    if (empty($node->field_layout)) {
-      // Objects get "right" alignment by default.
-      $node->field_layout[$node->language] = array(array('value' => 2));
-    }
-    if (empty($node->field_theme)) {
-      $exhib_theme_vid = 2;
-      foreach ($themes as $theme => $nids) {
-        if (in_array($node->nid, $nids)) {
-          if ($tids = taxonomy_get_term_by_name($theme)) {
-            $tid = array_shift(array_keys($tids));
-          }
-          else {
-            $term = new stdClass();
-            $term->name = $theme;
-            $term->vid = $exhib_theme_vid;
-            taxonomy_term_save($term);
-            $tid = $term->tid;
-          }
-          $node->field_theme[$node->language] = array(array('tid' => $tid));
-        }
-      }
-    }
-    node_save($node);
   }
 }
