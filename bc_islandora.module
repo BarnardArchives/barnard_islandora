@@ -185,6 +185,12 @@ function bc_islandora_block_info() {
       'pages' => array('yearbook'),
       'region' => 'content',
     ),
+    'bc_islandora_student_pubs' => array(
+      'info' => t('Student Publications'),
+      'status' => BLOCK_VISIBILITY_LISTED,
+      'pages' => array('student-publications'),
+      'region' => 'content',
+    ),
   );
   return $blocks;
 }
@@ -328,6 +334,27 @@ EOQ;
           </div>';
         $output .= '<div class="yearbook-calendar">' . $decade_output . $years_output . '</div>';
         $block['content'] = $output;
+      }
+    break;
+    case 'bc_islandora_student_pubs':
+      $collection_pid = variable_get($delta . '_pid', 'islandora:154');
+      $pubs_collection = islandora_object_load($collection_pid);
+      $query = <<<EOQ
+PREFIX islandora-rels-ext: <http://islandora.ca/ontology/relsext#>
+PREFIX fedora-rels-ext: <info:fedora/fedora-system:def/relations-external#>
+SELECT ?object
+FROM <#ri>
+WHERE {
+  ?object fedora-rels-ext:isMemberOfCollection <info:fedora/{$collection_pid}> ;
+}
+EOQ;
+      $results = $pubs_collection->repository->ri->sparqlQuery($query);
+      foreach ($results as $r) {
+        $pid = $r['object']['value'];
+        $obj = islandora_object_load($pid);
+        $cm_results = $obj->relationships->get(FEDORA_MODEL_URI, 'hasModel');
+        dpm($pid);
+        dpm($cm_results);
       }
     break;
   }

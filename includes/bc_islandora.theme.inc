@@ -307,9 +307,9 @@ function theme_bc_islandora_breadcrumb(&$vars) {
             }
           }
           elseif (!$is_yb && $cr2 = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOfCollection')) {
-            if ($collection_obj = islandora_object_load($cr2[0]['object']['value'])) {
+            if ($collection_obj = islandora_object_load($cr2[0]['object']['value']) && $bc_link = _bc_islandora_breadcrumb_search($collection_obj)) {
               // $bc[] = l($collection_obj->label, "islandora/object/{$collection_obj->id}");
-              $bc[] = _bc_islandora_breadcrumb_search($collection_obj);
+              $bc[] = $bc_link;
             }
           }
           break;
@@ -339,7 +339,9 @@ function theme_bc_islandora_breadcrumb(&$vars) {
           }
           break;
         default:
-          $bc[] = _bc_islandora_breadcrumb_search($object);
+          if ($bc_link =  _bc_islandora_breadcrumb_search($object)) {
+            $bc[] = $bc_link;          
+          }
           break;
       }
     }
