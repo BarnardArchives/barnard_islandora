@@ -284,67 +284,87 @@ function theme_bc_islandora_openseadragon_viewer(&$variables) {
 function theme_bc_islandora_breadcrumb(&$vars) {
   $output = '';
   $bc = $vars['breadcrumb'];
+
+  // Is this an islandora object?
   if (arg(2) && $object = islandora_object_load(arg(2))) {
+    $bc[] = l('Collections', 'collections');
     // Should this logic be based on the model of the object? Parent
     // collection? Both???
     $collection_results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
     $cm_results = $object->relationships->get(FEDORA_MODEL_URI, 'hasModel');
-    
-    // Only build the breadcrumb if we got a content model pid from RELS-EXT...
-    if (!empty($cm_results) && $cm_pid = $cm_results[0]['object']['value']) {
-      $bc[] = l('Collections', 'collections');
-      $cm = str_replace('islandora:', '', $cm_pid);
-      switch ($cm) {
-        case 'bookCModel':
-          $is_yb = FALSE;
-          if (!empty($collection_results)) {
-            foreach ($collection_results as $cr) {
-              if ($cr['object']['value'] == variable_get('bc_islandora_book_pid', 'islandora:bookCollection')) {
-                $bc[] = l('Yearbook', 'yearbook');
-                $is_yb = TRUE;
-                break;
-              }
-            }
-          }
-          elseif (!$is_yb && $cr2 = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOfCollection')) {
-            if ($collection_obj = islandora_object_load($cr2[0]['object']['value'])) {
-              // $bc[] = l($collection_obj->label, "islandora/object/{$collection_obj->id}");
-              $bc[] = _bc_islandora_breadcrumb_search($collection_obj);
-            }
-          }
-          break;
-        // Book page.
-        case 'pageCModel':
+    $mods = isset($object['MODS']) ? simplexml_load_string($object['MODS']->getContent(NULL)) : NULL;
+    if ($mods) {
+      // $id_full = (string) $mods->relatedItem->identifier;
+      // $identifier = preg_replace('/^BC/', '', $id_full);
+      $identifier = preg_replace('/^BC/', '', array_shift(explode('_', (string) $mods->identifier)));
+      switch ($identifier) {
+        // Mortarboard.
+        case '12-01': 
           $bc[] = l('Yearbook', 'yearbook');
-          $results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
-          if ($book = islandora_object_load($results[0]['object']['value'])) {
+          // Is it a page (= "member of" a book, not just book collection)?
+          // If so, link to the parent book.
+          $parent = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
+          $book = islandora_object_load($parent[0]['object']['value']);
+          if ($book->id != variable_get('bc_islandora_yearbook_pid', 'islandora:bookCollection')) {
             $bc[] = l($book->label, "islandora/object/{$book->id}");
           }
-          break;
-        case 'newspaperIssueCModel':
-          $bc[] = _bc_islandora_np_link($object);
-          break;
-        case 'newspaperPageCModel':
+        break;
+        // Bulletin.
+        case '12-03':
           module_load_include('inc', 'islandora_newspaper', 'includes/utilities');
-          $issue = islandora_newspaper_get_issue($object);
-          $issue = $issue ? islandora_object_load($issue) : FALSE;
-          if (_bc_islandora_is_bulletin($object)) {
-            $bc[] = l('Newspaper', 'bulletin');
+          $bc[] = l('Newspaper', 'bulletin');
+          // Is it a page? If so, link to parent issue.
+          $issue_pid = islandora_newspaper_get_issue($object);
+          if ($issue = islandora_object_load($issue_pid)) {
+            $bc[] = l($issue->label, "islandora/object/{$issue->id}");
           }
-          else {
-            $bc[] = _bc_islandora_np_link($issue);
-          }
-          if ($issue_link = l($issue->label, "islandora/object/{$issue->id}")) {
-            $bc[] = $issue_link;
-          }
-          break;
+        break;
         default:
-          $bc[] = _bc_islandora_breadcrumb_search($object);
-          break;
+          $mods = isset($object['MODS']) ? simplexml_load_string($object['MODS']->getContent(NULL)) : NULL;
+          $genre = $mods && isset($mods->genre) ? (string) $mods->genre : NULL;
+          // If a photo, generate search link for genre = photo.
+          if ($genre == 'photographs') {
+            $bc[] = l('Photographs', 'islandora/search', array(
+              'query' => array(
+                'type' => 'dismax',
+                'f[0]' => 'mods_genre_ms:"' . $genre . '"',
+              ),
+            ));
+          }
+          // If not a photo, generate links based on relatedItem metadata.
+          else {
+            $links = array();
+            foreach ($mods->relatedItem as $ri) {
+              if ($host_title = (string) $ri->titleInfo->title) {
+                $bc_link = l($host_title, 'islandora/search', array(
+                  'query' => array(
+                    'type' => 'dismax',
+                    'f[0]' => 'mods_relatedItem_host_titleInfo_title_ms' . ':"' . $host_title . '"',
+                  ),
+                ));
+              }
+              // Record group.
+              if (isset($ri['displayLabel']) && $ri['displayLabel'] == 'Record Group') {
+                $links['rg'] = $bc_link;
+              }
+              // Collection.
+              elseif (isset($bc_link)) {
+                $links['c'] = $bc_link;
+              }
+            }
+            // Record group precedes collection in breadcrumb sequence.
+            if (isset($links['rg'])) {
+              $bc[] = $links['rg'];
+            }
+            if (isset($links['c'])) {
+              $bc[] = $links['c'];
+            }
+          }
+        break;
       }
     }
   }
-  // ...or if this is a node (check if landing page)...
+  // Is this a landing page or exhibition node?
   elseif (arg(0) == 'node' && is_numeric(arg(1))) {
     $node = menu_get_object();
     $is_exhibition = $node->type == 'exhibition';
@@ -356,11 +376,7 @@ function theme_bc_islandora_breadcrumb(&$vars) {
       }
     }
   }
-  // ...or this is the exhibits view.
-  elseif (arg(0) == 'exhibits' && count(arg()) == 1) {
-    $bc[] = l('Collections', 'collections');
-  }
-  
+
   // Add the current page's title to the existing breadcrumb.
   if (count($bc) >= 1 && $title = menu_get_active_title()) {
     $title_parts = explode(',', $title);
@@ -380,21 +396,6 @@ function theme_bc_islandora_breadcrumb(&$vars) {
   return $output;
 }
 
-function _bc_islandora_breadcrumb_search($object) {
-  $mods = isset($object['MODS']) ? simplexml_load_string($object['MODS']->getContent(NULL)) : NULL;
-  if ($mods) {
-    $genre = (string) $mods->genre;
-    $host_title = (string) $mods->relatedItem->titleInfo->title;
-    return l($host_title, 'islandora/search', array(
-      'query' => array(
-        'type' => 'dismax',
-        'f[0]' => 'mods_genre_ms:' . $genre,
-      ),
-    ));
-  }
-  return NULL;
-}
-
 function _bc_islandora_np_link($object, $type = 'newspaper', $relationship = 'isMemberOfCollection') {
   $collection_results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
   $is_np = FALSE;
@@ -403,6 +404,7 @@ function _bc_islandora_np_link($object, $type = 'newspaper', $relationship = 'is
   foreach ($collection_results as $cr) {
     if ($cr['object']['value'] == variable_get('bc_islandora_newspaper_pid', 'islandora:74')) {
       $is_np = TRUE;
+      $np_link = l('Newspaper', 'bulletin');
     }
   }
   if (!$is_np) {
@@ -412,9 +414,6 @@ function _bc_islandora_np_link($object, $type = 'newspaper', $relationship = 'is
       $np_collection_obj = islandora_object_load($np_collection[0]['object']['value']);
       $np_link = l($np_collection_obj->label, 'islandora/object/' . $np_collection_obj->id);
     }
-  }
-  else {
-    $np_link = l('Newspaper', 'bulletin');
   }
   return $np_link;
 }
@@ -439,14 +438,17 @@ function theme_bc_islandora_exhibition($args) {
   $themes = array();
   $slides_output = $img_output = '';
   $nav_output = '<div id="ex-nav">
-      <a id="prev" href="#">&larr;</a>
-      <a id="next" href="#">&rarr;</a>
+      <a id="prev" href="#">&larr;&nbsp;prev</a>
+      <a id="next" href="#">next&nbsp;&rarr;</a>
     </div>';
   $themes_output = '<div id="ex-themes">';
   // Create a structured list of exhibition objects.
   foreach ($node->field_object[$node->language] as $i => $object) {
     $objects[$i]['description'] = isset($object['node']->field_description[$node->language]) ?
       $object['node']->field_description[$node->language][0]['value'] :
+      '';
+    $objects[$i]['pid'] = isset($object['node']->field_fedora_pid[$node->language]) ?
+      $object['node']->field_fedora_pid[$node->language][0]['value'] :
       '';
     $objects[$i]['layout'] = isset($object['node']->field_layout[$node->language]) ?
       _bc_islandora_get_ex_layout($object['node']->field_layout[$node->language][0]['value']) :
@@ -472,7 +474,7 @@ function theme_bc_islandora_exhibition($args) {
     $slides_output .= '<div class="ex-obj';
     if (!in_array($item['theme'], $themes)) {
       $themes[] = $item['theme'];
-      $themes_output .= '<a href="#" class="theme" data-theme="' . $item['theme'] . '">' . $item['theme'] . '</span>';
+      $themes_output .= '<a href="#" class="theme" data-theme="' . $item['theme'] . '">' . $item['theme'] . '</a>';
     }
     if ($first) {
       $slides_output .= ' first';
@@ -493,7 +495,14 @@ function theme_bc_islandora_exhibition($args) {
       }
       $img_output .= '" id="' . $img_index . '">';
       $img_output .= '<img src="/' . $img_path . '"><br>';
-      $img_output .= '<span class="caption">' . $img['caption'] . '</span>';
+      $img_output .= '<span class="caption">' . $img['caption'];
+      if ($item['pid']) {
+        $img_output .= '&nbsp;(' . l('View object',
+          'islandora/object/' . $item['pid'], array(
+          'attributes' => array('target' => '_blank'),
+        )) . ')';
+      }
+      $img_output .= '</span>';
       $img_output .= '</div>';
       if ($show_tn) {
         $tn_args = array(
