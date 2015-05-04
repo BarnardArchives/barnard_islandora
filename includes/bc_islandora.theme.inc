@@ -288,14 +288,10 @@ function theme_bc_islandora_breadcrumb(&$vars) {
   // Is this an islandora object?
   if (arg(2) && $object = islandora_object_load(arg(2))) {
     $bc[] = l('Collections', 'collections');
-    // Should this logic be based on the model of the object? Parent
-    // collection? Both???
     $collection_results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
     $cm_results = $object->relationships->get(FEDORA_MODEL_URI, 'hasModel');
     $mods = isset($object['MODS']) ? simplexml_load_string($object['MODS']->getContent(NULL)) : NULL;
     if ($mods) {
-      // $id_full = (string) $mods->relatedItem->identifier;
-      // $identifier = preg_replace('/^BC/', '', $id_full);
       $identifier = preg_replace('/^BC/', '', array_shift(explode('_', (string) $mods->identifier)));
       switch ($identifier) {
         // Mortarboard.
@@ -320,7 +316,6 @@ function theme_bc_islandora_breadcrumb(&$vars) {
           }
         break;
         default:
-          $mods = isset($object['MODS']) ? simplexml_load_string($object['MODS']->getContent(NULL)) : NULL;
           $genre = $mods && isset($mods->genre) ? (string) $mods->genre : NULL;
           // If a photo, generate search link for genre = photo.
           if ($genre == 'photographs') {
