@@ -196,19 +196,19 @@ function drush_bc_islandora_ingest_books($query_file) {
   module_load_include('inc', 'islandora_paged_content', 'includes/batch');
 
   ini_set("auto_detect_line_endings", "1");
-  
+
   $fh = fopen($query_file, 'r');
   $year = drush_get_option('year');
   $books = array();
 
   while (($data = fgetcsv($fh)) !== FALSE) {
-    //$csv_year = array_pop(explode(' ', $data[1]));
     $csv_year = $data[3];
-    $pid_year = array_pop(explode(' ', $data[1]));
     if ($year && $year != $csv_year) {
       continue;
     }
-    $book_pid = 'bc:yearbook-' . $pid_year;
+    $vol_parts = explode(' ', $data[1]);
+    array_shift($vol_parts);
+    $book_pid = 'bc:yearbook-' . implode('-', $vol_parts);
     $pages = $data[12];
     if (!islandora_object_load($book_pid)) {
       try {
