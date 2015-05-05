@@ -208,7 +208,7 @@ function drush_bc_islandora_ingest_books($query_file) {
     }
     $vol_parts = explode(' ', $data[1]);
     array_shift($vol_parts);
-    $book_pid = 'bc:yearbook-' . implode('-', $vol_parts);
+    $book_pid = 'bc:yearbook-' . implode('.', $vol_parts);
     $pages = $data[12];
     if (!islandora_object_load($book_pid)) {
       try {

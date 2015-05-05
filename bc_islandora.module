@@ -296,16 +296,25 @@ EOQ;
         foreach ($results as $r) {
           $pid = $r['object']['value'];
           $pid_parts = explode('-', $pid);
-          $year = $pid_parts[1];
+          // See if we got a volume number separated in the pid from the year
+          // by a period and set $vol if found.
+          if (strpos($pid_parts[1], '.') !== FALSE) {
+            $year_parts = explode('.', $pid_parts[1]);
+            $year = $year_parts[0];
+            $vol = $year_parts[1];
+          }
+          else {
+            $year = $pid_parts[1];
+          }
           $decade = $year - ($year % 10) . 's';
-          // The following lines are necessary for the two "supplementary"
-          // yearbook objects with pids in the format: bc:yearbook-19xx-x.
-          // For these objects, we append some text to the link indicating
-          // that this is instance number '2' or whatever of the object.
-          $index = isset($years[$decade][$year]) ? count($years[$decade][$year]) : 0;
-          $years[$decade][$year][$index] = l($year, "islandora/object/{$pid}");
-          if (isset($pid_parts[2]) && !empty($pid_parts[2])) {
-            $years[$decade][$year][$index] .= '&nbsp(' . $pid_parts[2] . ')';
+          $yb_link = l($year, "islandora/object/{$pid}");
+          // If we got a volume number, make sure the link is at the end of the
+          // $years[decade][year] array...
+          if (isset($vol)) {
+            $years[$decade][$year][1] .= $yb_link . '&nbsp(' . $vol . ')';
+          }
+          else {
+            $years[$decade][$year][0] = $yb_link;
           }
         }
         ksort($years);
@@ -318,7 +327,7 @@ EOQ;
             $years_markup = function($link) {
               return '<li class="year">' . $link . '</li>';
             };
-            $year_output = array_map($years_markup, array_reverse($l));
+            $year_output = array_map($years_markup, $l);
 
             // Is this the first year of the decade? If so, generate opening
             // <ul> tag.
