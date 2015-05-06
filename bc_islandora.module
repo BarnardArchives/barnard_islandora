@@ -313,6 +313,7 @@ EOQ;
           // (N.B. this doesn't work for >2 volumes, BUT that's ok I guess)
           if (isset($vol)) {
             $years[$decade][$year][1] = $yb_link . '&nbsp(' . $vol . ')';
+            unset($vol);
           }
           else {
             $years[$decade][$year][0] = $yb_link;
