@@ -1,20 +1,36 @@
 #ex-wrapper {
   margin-bottom: 100px;
 }
-#ex-nav {
-  margin-bottom: 10px;
-  margin-right: 25px;
-}
-#ex-nav a {
+a.nav {
   text-decoration: none;
   margin-right: 10px;
-  border: 1px solid #000;
   padding: 5px;
-  font-weight: bold;
+  border: 1px solid #fff;
+  /*font-weight: bold;
+  color: #fff !important;
+  background: #535353;*/
+  border: 3px solid;
+  color: #000 !important;
 }
 
-#ex-nav a:hover,
-#ex-nav a:active {
+a.nav#prev {
+  margin-right: 25px;
+  border-right: 3px solid;
+  padding-right: 15px;
+}
+
+a.nav#next {
+  border-left: 3px solid;
+  padding-left: 15px;
+}
+
+a.nav:hover,
+a.nav:active {
+  /*color: #535353 !important;
+  background: #fff;*/
+  /*border-bottom: 3px solid;*/
+  background: #000;
+  color: #fff !important;
 }
 /*
 #ex-nav #next {
@@ -26,20 +42,28 @@
 */
 #ex-themes {
   margin-top: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 37px;
 }
 #ex-themes a.theme {
   font-size: 1.05em;
   text-decoration: none;
   font-weight: bold;
-  color: #767676;
+  /*color: #767676;*/
+  color: #73797F;
+  padding: 5px;
   margin-right: 25px;
 }
 
 #ex-themes a.theme.active {
-  color: #0f2d6b;
+  /*color: #0f2d6b;*/
+  color: #7AA3CC;
 }
 
+#ex-themes a.theme:active,
+#ex-themes a.theme:hover {
+  color: #2E3D4C;
+  border-bottom: 3px solid;
+}
 
 ul.simple-pagination {
 	list-style: none;
@@ -94,7 +118,7 @@ ul.simple-pagination {
   padding: 0;
 }
 .ex-images {
-  background: lightgrey;
+  background: #D0D0D0;
   padding: 10px;
   margin-right: 20px;
   margin-bottom: 20px;
