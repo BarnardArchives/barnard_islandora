@@ -58,6 +58,24 @@ function bc_islandora_drush_command() {
       'aliases' => array('bciib'),
       'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_LOGIN, // we can pass in users id on the command line using drush -u.
     ),
+    'bc_islandora_ingest_pdfs' => array(
+      'description' => 'Ingests pdfs.',
+      'arguments' => array(
+        'directory' => 'The directory containing pdf and xml files to ingest.'
+      ),
+      'options' => array(
+        'derivatives' => 'Whether to create derivatives.',
+        'overwrite-existing' => 'Whether to overwrite existing objects.',
+        // TODO move this
+        'purge' => 'Whether to purge instead of ingesting.',
+        'year' => 'Whether to import a specific year\'s book.',
+      ),
+      'examples' => array(
+        'drush -u 1 --uri=http://localhost bciip /path/to/pdf/dir',
+      ),
+      'aliases' => array('bciip'),
+      'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_LOGIN, // we can pass in users id on the command line using drush -u.
+    ),
     'bc_islandora_generate_newspaper_csv' => array(
       'description' => 'Generates csv files for ingesting newspapers.',
       'arguments' => array(
@@ -265,6 +283,15 @@ function drush_bc_islandora_ingest_books($query_file) {
     // Create derivatives.
     if (drush_get_option('derivatives')) {
       _bc_islandora_create_derivatives($books);
+    }
+  }
+}
+
+function drush_bc_islandora_ingest_pdfs($directory) {
+  foreach (explode("\n", `ls $directory/*.pdf`) as $pdf) {
+    $xml = preg_replace('/\.pdf$/', '.xml', $pdf);
+    if (is_file($xml)) {
+      create_pdf_object($pdf, file_get_contents($xml));
     }
   }
 }

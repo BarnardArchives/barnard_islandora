@@ -476,3 +476,98 @@ PAGE_RDF;
 
   return $pid;
 }
+
+function create_pdf_object($pdf, $xml) {
+  $connection = islandora_get_tuque_connection();
+  $mods_xml = new DOMDocument();
+  $mods_xml->loadXML($xml);
+  $simple_mods_xml = simplexml_load_string($xml);
+  $label = (string) $simple_mods_xml->titleInfo->title;
+  print "$label\n";
+  $obj_pid = 'bc:oh-' . str_replace(' ', '-', strtolower(str_replace('Oral history of ', '', $label)));
+  $collection_pid = variable_get('bc_islandora_oh_pid', 'islandora:990');
+  
+  if ($object = islandora_object_load($obj_pid)) {
+    drush_log(dt('Object exists at @pid; skipping...', array('@pid' => $obj_pid)), 'ok');
+    return $obj_pid;
+  }
+  else {
+    $object = new NewFedoraObject($obj_pid, $connection->repository);
+  }
+
+  $rdf_string = <<<PDF_RDF
+    <rdf:RDF xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+      <rdf:Description rdf:about="info:fedora/$obj_pid">
+        <fedora:isMemberOfCollection rdf:resource="info:fedora/$collection_pid"/>
+        <fedora-model:hasModel rdf:resource="info:fedora/islandora:sp_pdf"/>
+      </rdf:Description>
+    </rdf:RDF>
+PDF_RDF;
+
+  $transform_xsl = new DOMDocument();
+  $xsl_file = DRUPAL_ROOT . '/' . drupal_get_path('module', 'islandora_importer') . '/xsl/mods_to_dc.xsl';
+  $transform_xsl->load($xsl_file);
+
+  $proc = new XSLTProcessor();
+  $proc->importStylesheet($transform_xsl);
+  $dc = $proc->transformToXML($mods_xml);
+
+  $object->label = $label;
+
+  $dc_datastream = new NewFedoraDatastream('DC', 'X', $object, $connection->repository);
+
+  $dc_datastream->content = $dc;
+  $dc_datastream->mimetype = 'text/xml';
+  $dc_datastream->label = 'Dublin Core Record for this object';
+
+  $object->ingestDatastream($dc_datastream);
+  $mods_datastream = new NewFedoraDatastream('MODS', 'X', $object, $connection->repository);
+
+  $mods_datastream->content = $xml;
+  $mods_datastream->mimetype = 'text/xml';
+  $mods_datastream->label = 'MODS record';
+  $mods_datastream->checksum = TRUE;
+  $mods_datastream->checksumType = 'MD5';
+  $mods_datastream->logMessage = 'MODS datastream created using PDF batch ingest script || SUCCESS';
+
+  $object->ingestDatastream($mods_datastream);
+  $pdf_datastream = new NewFedoraDatastream('OBJ', 'M', $object, $connection->repository);
+  $pdf_datastream->setContentFromFile($pdf, FALSE);
+  $pdf_datastream->label = $label;
+  $pdf_datastream->mimetype = 'application/pdf';
+  $pdf_datastream->checksum = TRUE;
+  $pdf_datastream->checksumType = 'MD5';
+  $pdf_datastream->logMessage = 'OBJ datastream created using PDF batch ingest script || SUCCESS';
+
+  $object->ingestDatastream($pdf_datastream);
+  $rels_datastream = new NewFedoraDatastream('RELS-EXT', 'X', $object, $connection->repository);
+  $rels_datastream->setContentFromString($rdf_string);
+  $rels_datastream->label = 'Fedora Object to Object Relationship Metadata.';
+  $rels_datastream->mimetype = 'text/xml';
+  $rels_datastream->logMessage = 'RELS-EXT datastream created using PDF batch ingest script || SUCCESS';
+
+  $object->ingestDatastream($rels_datastream);
+  try {
+    $object->state = 'A';
+    $ingest = $connection->repository->ingestObject($object);
+  }
+  catch (Exception $e) {
+    unset($object);
+    throw($e);
+  }
+
+  if ($ingest == TRUE) {
+    drush_log(dt("Page object @pid created successfully\n", array('@pid' => $pid)), 'success');
+  }
+  else {
+    drush_log(dt("There was an error creating the page object!\n"), 'error');
+  }
+
+  unset($object); // make sure destructors are called as this script can run for a long time.
+  unset($pdf_datastream);
+  unset($mods_datastream);
+  unset($rels_datastream);
+  unset($dc_datastream);
+
+  return $obj_pid;
+}
