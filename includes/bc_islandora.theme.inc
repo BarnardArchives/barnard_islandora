@@ -432,12 +432,12 @@ function theme_bc_islandora_exhibition($args) {
   $objects = array();
   $themes = array();
   $slides_output = $img_output = '';
-  /*$nav_output = '<div id="ex-nav">
+  $nav_output = '<div id="ex-nav">
       <a id="prev" href="#">&larr;&nbsp;prev</a>
       <a id="next" href="#">next&nbsp;&rarr;</a>
-    </div>';*/
+    </div>';
   $themes_output = '<div id="ex-themes">';
-  $themes_output .= '<a id="prev" class="nav" href="#">&larr;&nbsp;prev</a>';
+  //$themes_output .= '<a id="prev" class="nav" href="#">&larr;&nbsp;prev</a>';
   // Create a structured list of exhibition objects.
   foreach ($node->field_object[$node->language] as $i => $object) {
     $objects[$i]['description'] = isset($object['node']->field_description[$node->language]) ?
@@ -517,7 +517,7 @@ function theme_bc_islandora_exhibition($args) {
     $slides_output .= '<div class="ex-txt">' . $item['description'] . '</div>';
     $slides_output .= '</div>';
   }
-  $themes_output .= '<a id="next" class="nav" href="#">next&nbsp;&rarr;</a>';
+  //$themes_output .= '<a id="next" class="nav" href="#">next&nbsp;&rarr;</a>';
   $themes_output .= '</div>';
   $output = $themes_output . $nav_output . $slides_output;
   return $output;

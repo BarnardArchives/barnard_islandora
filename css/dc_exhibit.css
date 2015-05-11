@@ -1,7 +1,9 @@
-#ex-wrapper {
-  margin-bottom: 100px;
+#ex-nav {
+  position: relative;
+  top: 50px;
 }
-a.nav {
+
+#ex-nav a {
   text-decoration: none;
   margin-right: 10px;
   padding: 5px;
@@ -13,37 +15,31 @@ a.nav {
   color: #000 !important;
 }
 
-a.nav#prev {
+#ex-nav a#prev {
   margin-right: 25px;
   border-right: 3px solid;
   padding-right: 15px;
 }
 
-a.nav#next {
+#ex-nav a#next {
   border-left: 3px solid;
   padding-left: 15px;
+  float: right;
 }
 
-a.nav:hover,
-a.nav:active {
+#ex-nav a:hover,
+#ex-nav a:active {
   /*color: #535353 !important;
   background: #fff;*/
   /*border-bottom: 3px solid;*/
   background: #000;
   color: #fff !important;
 }
-/*
-#ex-nav #next {
-  padding: 5px 5px 5px 2px;
-}
-#ex-nav #prev {
-  padding: 5px 2px 5px 5px;
-}
-*/
+
 #ex-themes {
   margin-top: 10px;
-  margin-bottom: 37px;
 }
+
 #ex-themes a.theme {
   font-size: 1.05em;
   text-decoration: none;
@@ -65,43 +61,12 @@ a.nav:active {
   border-bottom: 3px solid;
 }
 
-ul.simple-pagination {
-	list-style: none;
-}
-
-.simple-pagination {
-	display: block;
-	overflow: hidden;
-	padding: 0 5px 5px 0;
-	margin: 0;
-}
-
-.simple-pagination ul {
-	list-style: none;
-	padding: 0;
-	margin: 0;
-}
-
-.simple-pagination li {
-	list-style: none;
-	padding: 0;
-	margin: 0;
-	float: left;
-}
-
-.simple-pagination li span,
-.simple-pagination li a.page-link {
-  margin-right: 5px;
-}
-
-.simple-pagination li .next,
-.simple-pagination li .prev {
-  text-decoration: none;
-}
-
 .ex-obj {
   clear: both;
   margin-bottom: 50px;
+  width: 85%;
+  position: relative;
+  left: 90px;
   display: none;
 }
 .ex-obj.active {
@@ -122,6 +87,7 @@ ul.simple-pagination {
   padding: 10px;
   margin-right: 20px;
   margin-bottom: 20px;
+  max-width: 600px;
 }
 .ex-images .large-image {
   margin-bottom: 20px;

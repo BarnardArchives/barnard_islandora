@@ -93,7 +93,7 @@
         $(this).find('img').addClass('active');
       });
       // Nav click: prev.
-      $('a.nav#prev').click(function(event) {
+      $('#ex-nav a#prev').click(function(event) {
         event.preventDefault();
         var page = parseInt($('.ex-obj.active').attr('id').split('slide')[1]);
         var page_count = $('.ex-obj').length;
@@ -106,7 +106,7 @@
         }
       });
       // Nav click: next.
-      $('a.nav#next').click(function(event) {
+      $('#ex-nav a#next').click(function(event) {
         event.preventDefault();
         var page = parseInt($('.ex-obj.active').attr('id').split('slide')[1]);
         var page_count = $('.ex-obj').length;
