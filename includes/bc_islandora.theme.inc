@@ -17,7 +17,6 @@ function theme_bc_islandora_newspaper_issue_navigator(&$vars) {
   $newspaper = $newspaper ? islandora_object_load($newspaper) : FALSE;
   $issues = $newspaper ? islandora_newspaper_get_issues($newspaper) : array();
   ksort($issues);
-  //dpm($issues);
   $issues = array_keys($issues);
   if (empty($issues)) {
     $issues[] = $object->id;
@@ -490,7 +489,21 @@ function theme_bc_islandora_exhibition($args) {
         $img_output .= ' first';
       }
       $img_output .= '" id="' . $img_index . '">';
-      $img_output .= '<img src="/' . $img_path . '"><br>';
+      $img_output .= l(theme('image_style', array(
+          'style_name' => 'exhibit',
+          'path' => $img['uri']
+        )),
+        $img_path,
+        array(
+          'attributes' => array(
+            'rel' => 'lightbox',
+            'title' => $img['caption'],
+          ),
+          'html' => TRUE,
+        )
+      );
+      $img_output .= '<br>';
+      //$img_output .= '<img src="/' . $img_path . '"><br>';
       $img_output .= '<span class="caption">' . $img['caption'];
       if ($item['pid']) {
         $img_output .= '&nbsp;(' . l('View object',
@@ -514,7 +527,7 @@ function theme_bc_islandora_exhibition($args) {
     $tn_output .= '</div>';
     $img_output .= $tn_output;
     $slides_output .= $img_output . '</div>';
-    $slides_output .= '<div class="ex-txt">' . $item['description'] . '</div>';
+    $slides_output .= '<div class="ex-txt">' . check_markup($item['description'], 'filtered_html') . '</div>';
     $slides_output .= '</div>';
   }
   //$themes_output .= '<a id="next" class="nav" href="#">next&nbsp;&rarr;</a>';
