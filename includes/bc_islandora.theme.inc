@@ -431,12 +431,7 @@ function theme_bc_islandora_exhibition($args) {
   $objects = array();
   $themes = array();
   $slides_output = $img_output = '';
-  $nav_output = '<div id="ex-nav">
-      <a id="prev" href="#">&larr;&nbsp;prev</a>
-      <a id="next" href="#">next&nbsp;&rarr;</a>
-    </div>';
   $themes_output = '<div id="ex-themes">';
-  //$themes_output .= '<a id="prev" class="nav" href="#">&larr;&nbsp;prev</a>';
   // Create a structured list of exhibition objects.
   foreach ($node->field_object[$node->language] as $i => $object) {
     $objects[$i]['description'] = isset($object['node']->field_description[$node->language]) ?
@@ -452,24 +447,36 @@ function theme_bc_islandora_exhibition($args) {
     $images = isset($object['node']->field_images[$node->language]) ?
       $object['node']->field_images[$node->language] :
       array();
-    $objects[$i]['images'] = array();  
+    $objects[$i]['images'] = array();
     foreach ($images as $j => $fc_item) {
       $fc_id = $fc_item['value'];
       $fc_entity = entity_load('field_collection_item', array($fc_id));
       $objects[$i]['images'][$j] = array(
         'uri' => $fc_entity[$fc_id]->field_image[$node->language][0]['uri'],
         'caption' => $fc_entity[$fc_id]->field_caption[$node->language][0]['value'],
+        'pid' => $fc_entity[$fc_id]->field_fedora_pid[$node->language][0]['value'],
       );
     }
   }
   // Cycle through objects and generate output.
   foreach ($objects as $i => $item) {
+    // Anchor values for current, next, and previous page.
+    $pg_frag = 'page' . strval($i + 1);
+    $prev_frag = 'page' . ($i ? strval($i) : strval(count($objects)));
+    $next_frag = 'page' . ($i != count($objects) - 1 ? strval($i + 2) : '1');
     $first = !$i;
     $img_output = '';
     $slides_output .= '<div class="ex-obj';
+    // Generate a new theme link if we didn't get this theme yet.
     if (!in_array($item['theme'], $themes)) {
       $themes[] = $item['theme'];
-      $themes_output .= '<a href="#" class="theme" data-theme="' . $item['theme'] . '">' . $item['theme'] . '</a>';
+      $themes_output .= l($item['theme'], request_path(), array(
+        'attributes' => array(
+          'class' => 'theme',
+          'data-theme' => $item['theme'],
+        ),
+        'fragment' => $pg_frag,
+      ));
     }
     if ($first) {
       $slides_output .= ' first';
@@ -480,6 +487,7 @@ function theme_bc_islandora_exhibition($args) {
     $slides_output .= '<div class="ex-images">';
     $tn_output = '<div class="ex-thumbnails">';
     $show_tn = count($item['images']) > 1;
+    // Generate image output (including thumbnails).
     foreach ($item['images'] as $j => $img) {
       $first_img = !$j;
       $img_index = strval($j + 1);
@@ -496,43 +504,60 @@ function theme_bc_islandora_exhibition($args) {
         $img_path,
         array(
           'attributes' => array(
-            'rel' => 'lightbox',
+            // 'rel' => 'lightbox',
+            'rel' => 'slide' . $i,
+            'class' => 'colorbox-load',
             'title' => $img['caption'],
           ),
           'html' => TRUE,
         )
       );
       $img_output .= '<br>';
-      //$img_output .= '<img src="/' . $img_path . '"><br>';
       $img_output .= '<span class="caption">' . $img['caption'];
-      if ($item['pid']) {
+      if ($img['pid']) {
         $img_output .= '&nbsp;(' . l('View object',
-          'islandora/object/' . $item['pid'], array(
+          'islandora/object/' . $img['pid'], array(
           'attributes' => array('target' => '_blank'),
         )) . ')';
       }
       $img_output .= '</span>';
       $img_output .= '</div>';
+      // Show thumbnails below image if more than one image attached to slide.
       if ($show_tn) {
-        $tn_args = array(
-          'style_name' => 'thumbnail',
-          'path' => $img['uri'],
-          'attributes' => array('id' => 'tn' . $img_index),
+        $tn_id = 'tn' . $img_index;
+        $tn_output .= l(theme('image_style', array(
+            'style_name' => 'thumbnail',
+            'path' => $img['uri'],
+            'attributes' => array('id' => $tn_id),
+          )),
+          request_path(),
+          array(
+            'fragment' => $pg_frag . '#' . $tn_id,
+            'html' => TRUE,
+          )
         );
-        $tn_output .= '<a href="#">';
-        $tn_output .= theme('image_style', $tn_args);
-        $tn_output .= '</a>';
       }
     }
     $tn_output .= '</div>';
     $img_output .= $tn_output;
     $slides_output .= $img_output . '</div>';
     $slides_output .= '<div class="ex-txt">' . check_markup($item['description'], 'filtered_html') . '</div>';
+    // Navigation links.
+    $slides_output .= '<div id="ex-nav">';
+    $slides_output .= l('« Prev', request_path(), array(
+      'attributes' => array('id' => 'prev'),
+      'fragment' => $prev_frag,
+    ));
+    $slides_output .= l('Next »', request_path(), array(
+      'attributes' => array('id' => 'next'),
+      'fragment' => $next_frag,
+    ));
+    $slides_output .= '</div>';
     $slides_output .= '</div>';
   }
   //$themes_output .= '<a id="next" class="nav" href="#">next&nbsp;&rarr;</a>';
   $themes_output .= '</div>';
-  $output = $themes_output . $nav_output . $slides_output;
+  $output = $themes_output . $slides_output;
   return $output;
 }
 
