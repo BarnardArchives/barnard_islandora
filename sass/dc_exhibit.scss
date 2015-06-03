@@ -30,17 +30,13 @@
     margin-right: 25px;
     &:active,
     &:hover {
-      color: #2E3D4C;
+      color: #7AA3CC;
       border-bottom: 3px solid;
     };
   }
   a.theme.active {
     color: #7AA3CC;
     border-bottom: 3px solid;
-    &:active,
-    &:hover {
-      color: #2E3D4C;
-    };
   }
 }
 
