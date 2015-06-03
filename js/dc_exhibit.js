@@ -34,11 +34,27 @@
         $theme.addClass('active');
       }
     },
+    pager_click: function(pageNumber, self) {
+      console.log('about to show page: ' + pageNumber);
+      var $active_slide = $('.ex-obj.active');
+      var $slide_to = $('.ex-obj#slide' + pageNumber);
+      self.toggle_slide($active_slide, $slide_to);
+      self.activate_theme($slide_to.attr('data-theme'));
+    },
+    show_hash: function(hash) {
+      var self = this;
+      var page = parseInt(hash.split('#page-')[1]);
+      self.pager_click(page, {}, self);
+    },
+    paginate: function() {
+      var self = this;
+      var slide_count = $('.ex-obj').length;
+    },
     listeners: function() {
       var self = this;
       // Theme click.
       $('#ex-themes .theme').click(function(event) {
-        event.preventDefault();
+        // event.preventDefault();
         var theme = this.innerHTML;
         var $theme_first = $('.ex-obj[data-theme="' + theme + '"]:first');
         var $active_obj = $('.ex-obj.active');
@@ -49,14 +65,13 @@
           $(this).parent().find('.active').removeClass('active');
           $(this).addClass('active');
         }
-        // Activate correct pager item.
-        $('#ex-nav').pagination('selectPage', parseInt($theme_first.attr('id').split('slide')[1]))
       });
       // Thumbnail click.
       $('.ex-thumbnails a').click(function(event) {
-        event.preventDefault();
+        // event.preventDefault();
         // The "id" of the clicked thumbnail.
         var active_img_id = $(this).find('img').attr('id').split('tn')[1];
+        console.log(active_img_id);
         // The current "active" image: hide it.
         var $active_img = $(this).parent().parent().find('.large-image.active');
         $active_img.hide().removeClass('active');
@@ -67,36 +82,14 @@
         $(this).parent().find('img.active').removeClass('active');
         $(this).find('img').addClass('active');
       });
-    },
-    pager_click: function(pageNumber, event, self) {
-      var $active_slide = $('.ex-obj.active');
-      var $slide_to = $('.ex-obj#slide' + pageNumber);
-      self.toggle_slide($active_slide, $slide_to);
-      self.activate_theme($slide_to.attr('data-theme'));
-    },
-    show_hash: function(hash) {
-      var self = this;
-      var page = parseInt(hash.split('#page-')[1]);
-      // self.pager_click(page, {}, self);
-      $('#ex-nav').pagination('selectPage', page);
-    },
-    paginate: function() {
-      var self = this;
-      var slide_count = $('.ex-obj').length;
-      $('#ex-nav').pagination({
-        items: slide_count,
-        itemsOnPage: 1,
-        onPageClick: function(pageNumber, event) {
-          self.pager_click(pageNumber, event, self);
-        },
-        prevText: '&larr;',
-        nextText: '&rarr;'
+      // Nav click.
+      $('#ex-nav a').click(function() {
+        var page_to = $(this)[0].hash.split('#page')[1];
+        self.pager_click(page_to, self);
       });
     },
     attach: function(context, settings) {
       var self = this;
-      self.paginate();
-      self.listeners();
       $('.ex-images').each(function() {
         self.show_first($(this).find('.large-image'));
       });
@@ -105,10 +98,18 @@
         var active_img = $('.ex-images .large-image.first').attr('id');
         $('.ex-thumbnails img#tn' + active_img).addClass('active');
       });
+      // TODO
       if (location.hash.length > 0) {
-        $('#ex-nav').pagination('selectPage', parseInt(location.hash.split('#page-')[1]));
+        var frag = location.hash.split('#');
+        var slide_id = frag[1].replace('page', 'slide');
+        self.toggle_slide($('.ex-obj.active'), $('.ex-obj#' + slide_id));
+        // Is thumbnail fragment set?
+        if (frag.length > 2) {
+          $('.ex-obj#' + slide_id + ' .ex-thumbnails img#' + frag[2]).parent().click();
+        }
       }
       self.activate_theme($('.ex-obj.active').attr('data-theme'));
+      self.listeners();
     }
   }  
 }) (jQuery);

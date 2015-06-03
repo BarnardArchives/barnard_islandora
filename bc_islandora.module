@@ -279,11 +279,13 @@ function bc_islandora_block_view($delta = '') {
     break;
     // TODO
     case 'bc_islandora_yearbook':
-      if ($collection_pid = variable_get($delta . '_pid', 'islandora:bookCollection')) {
+      $collection_pid = variable_get($delta . '_pid', 'islandora:bookCollection');
+      // Only generate the block output if we can load the book collection.
+      if ($book_collection = islandora_object_load($collection_pid)) {
         $years = array();
         $decade_output = '<div class="decades"><ul id="decades">';
         $years_output = '<div class="years">';
-        $book_collection = islandora_object_load($collection_pid);
+        // SPARQL query for isMemberOf book collection and hasModel bookCModel.
         $query = <<<EOQ
 PREFIX islandora-rels-ext: <http://islandora.ca/ontology/relsext#>
 PREFIX fedora-rels-ext: <info:fedora/fedora-system:def/relations-external#>
@@ -295,35 +297,64 @@ WHERE {
 }
 EOQ;
         $results = $book_collection->repository->ri->sparqlQuery($query);
+        // Cycle through SPARQL query results and generate a structured list of
+        // yearbook years (structured as $years[decade][year][i]).
         foreach ($results as $r) {
           $pid = $r['object']['value'];
           $pid_parts = explode('-', $pid);
-          $year = $pid_parts[1];
+          // See if we got a volume number separated in the pid from the year
+          // by a period and set $vol if found.
+          if (strpos($pid_parts[1], '.') !== FALSE) {
+            $year_parts = explode('.', $pid_parts[1]);
+            $year = $year_parts[0];
+            $vol = $year_parts[1];
+          }
+          else {
+            $year = $pid_parts[1];
+          }
           $decade = $year - ($year % 10) . 's';
-          $years[$decade][$year] = l($year, "islandora/object/{$pid}");
-          if (isset($pid_parts[2]) && !empty($pid_parts[2])) {
-            $years[$decade][$year] .= '&nbsp';
-            $years[$decade][$year] .= '(' . $pid_parts[2] . ')';
+          $yb_link = l($year, "islandora/object/{$pid}");
+          // If we got a volume number, make sure the link is at the end of the
+          // $years[decade][year] array...
+          // (N.B. this doesn't work for >2 volumes, BUT that's ok I guess)
+          if (isset($vol)) {
+            $years[$decade][$year][1] = $yb_link . '&nbsp(' . $vol . ')';
+            unset($vol);
+          }
+          else {
+            $years[$decade][$year][0] = $yb_link;
           }
         }
         ksort($years);
+        // Cycle through the $years array generated above.
         foreach ($years as $decade => $y) {
           ksort($y);
           $decade_output .= '<li class="decade"><a href="#">' . $decade . '</a></li>';
-
+          // Cycle through the year subarray. Generate decade/year list output.
           foreach ($y as $year => $l) {
-            $year_output = '<li class="year">' . $l . '</li>';
+            $years_markup = function($link) {
+              return '<li class="year">' . $link . '</li>';
+            };
+            $year_output = array_map($years_markup, $l);
+
+            // Is this the first year of the decade? If so, generate opening
+            // <ul> tag.
             if (!isset($decade_start)) {
               $decade_start = $decade;
               $years_output .= '<ul class="decade" id="' . $decade_start . '">';
             }
+            // Is this the last year of the decade? If so, close the list and
+            // start a new one.
             elseif (!($year % 10) || ($year - $decade_start >= 10)) {
               $years_output .= '</ul>';
               $decade_start = $decade;
               $years_output .= '<ul class="decade" id="' . $decade_start . '">';
             }
-            $years_output .= $year_output;
+            foreach ($year_output as $yo) {
+              $years_output .= $yo;
+            }
           }
+          // If this is the last decade in the list, close the list.
           if ($decade == end(array_keys($years))) {
             $decade_output .= '</ul>';
           }
