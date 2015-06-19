@@ -58,6 +58,24 @@ function bc_islandora_drush_command() {
       'aliases' => array('bciib'),
       'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_LOGIN, // we can pass in users id on the command line using drush -u.
     ),
+    'bc_islandora_ingest_pubs' => array(
+      'description' => 'Ingests student publications.',
+      'arguments' => array(
+        'directory' => 'The directory in which the publication data/files are held.',
+      ),
+      'options' => array(
+        'derivatives' => 'Whether to create derivatives.',
+        'overwrite-existing' => 'Whether to overwrite existing objects.',
+        // TODO move this
+        'purge' => 'Whether to purge instead of ingesting.',
+        'id' => 'Whether to import the publication corresponding to a certain internal identifier.',
+      ),
+      'examples' => array(
+        'drush -u 1 --uri=http://localhost bcii /path/to/pubs',
+      ),
+      'aliases' => array('bciip'),
+      'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_LOGIN, // we can pass in users id on the command line using drush -u.
+    ),
     'bc_islandora_generate_newspaper_csv' => array(
       'description' => 'Generates csv files for ingesting newspapers.',
       'arguments' => array(
@@ -213,7 +231,7 @@ function drush_bc_islandora_ingest_books($query_file) {
     if (!islandora_object_load($book_pid)) {
       try {
         print "Got book pid: $book_pid\n";
-        $book_pid = create_book_object($book_pid, $data);
+        $book_pid = create_book_object($book_pid, $data);          
       }
       catch (Exception $e) {
         drush_log(dt('Caught exception: @e', array('@e' => $e->getMessage())), 'warning');
@@ -265,6 +283,113 @@ function drush_bc_islandora_ingest_books($query_file) {
     // Create derivatives.
     if (drush_get_option('derivatives')) {
       _bc_islandora_create_derivatives($books);
+    }
+  }
+}
+
+function drush_bc_islandora_ingest_pubs($directory) {
+  $pub_id = drush_get_option('id');
+  $purge = drush_get_option('purge');
+
+  if (is_dir($directory)) {
+    // Look at each file in the supplied (argument) directory.
+    foreach (scandir($directory) as $file) {
+      // The full path to this file.
+      $path = $directory . '/' . $file;
+      // The XML file with pub data (should follow the format: [directory name].xml)
+      $xml_file = $path . '/' . $file . '.xml';
+      print "\$xml_file: $xml_file\n";
+      // If we didn't get a good directory or XML file, move on.
+      if (!is_dir($path) || preg_match('/^\./', $file) !== 0 || !file_exists($xml_file)) {
+        continue;
+      }
+      $pub_data = _bc_islandora_pub_data($xml_file);
+      $pub_pid = 'bc:' . str_replace(' ', '-',  strtolower($pub_data['title']));
+      $pub_pid = preg_replace('/[^a-z\d\-\:+]/', '', $pub_pid);
+      // Publication ids that constitute "exceptions" (different behavior required).
+      $exceptions = array('BC12-9_1959', 'BC12-26_1970');
+      $exception = in_array(array_pop(explode('/', $path)), $exceptions);
+      // If pub object doesn't exist, create it.
+      if (!islandora_object_load($pub_pid) && !$exception) {
+        create_pub_object($pub_pid, $pub_data);
+      }
+      elseif ($exception) {
+        $collection_pid = variable_get('bc_islandora_pubs_pid', 'islandora:1022');
+        $book_pid = create_book_object($pub_pid, _bc_islandora_pub_data($xml_file, $collection_pid));
+      }
+      $pub_obj = islandora_object_load($pub_pid);
+      // If we got an id, only look at the corresponding dir.
+      if (($pub_id && $file == $pub_id) || !$pub_id) {
+        if ($exception) {
+          // Yuk!
+          if (!isset($book_pid)) {
+            $book_pid = $pub_pid;
+          }
+          _bc_islandora_process_pub_pages($book_pid, $xml_file, $path, $purge);
+        }
+        // If non-exceptional, do the normal thing (TODO reverse this order?)
+        else {
+          print "Got pid: $pub_pid\n";
+          // Create a book object corresponding to each pub.
+          foreach (scandir($path) as $subfile) {
+            // TODO refactor (DRY)
+            $subpath = implode('/', array($path, $subfile));
+            $xml_file = implode('/', array($subpath, $subfile)) . '.xml';
+            if ((!is_dir($subpath) || preg_match('/^\./', $subdir) !== 0 || !file_exists($xml_file)) && !$exception) {
+              continue;
+            }
+            $book_data = _bc_islandora_pub_data($xml_file, $pub_pid, 'book');
+            $issue_pid = implode('-', array($pub_pid, $book_data['date']));
+            print "Got pid: $issue_pid\n";
+            if (!islandora_object_load($issue_pid)) {
+              create_book_object($issue_pid, $book_data);
+            }
+            $issue_obj = islandora_object_load($issue_pid);
+            // Create a page object for each page.
+            _bc_islandora_process_pub_pages($issue_pid, $xml_file, $subpath, $purge);
+          }
+        }
+      }
+    }
+  }
+}
+
+function _bc_islandora_pub_data($xml_file, $pid = '', $type = '', $page_number = '') {
+  $xml = file_get_contents($xml_file);
+  $mods = simplexml_load_string($xml);
+  $data = array(
+    'xml' => $xml,
+    'collection_pid' => $pid,
+    'date' => (string) $mods->originInfo->dateCreated,
+    'title' =>  (string) $mods->titleInfo->title,
+  );
+  if ($type == 'page') {
+    $data['genre'] = (string) $mods->genre;
+    $data['title_related'] = (string) $mods->titleInfo->title;
+    $data['host_id'] = (string) $mods->relatedItem[1]->identifier;
+    $data['page_id'] = (string) $mods->identifier . '_' . str_pad($page_number, 3, STR_PAD_LEFT);
+  }
+  return $data;
+}
+
+function _bc_islandora_process_pub_pages($parent_pid, $parent_xml_file, $path, $purge = FALSE) {
+  foreach (scandir($path) as $page) {
+    if (preg_match('/^\./', $page) === 0 && preg_match('/\.tif$/', $page) !== 0) {
+      $page_file = $path . '/' . $page;
+      $page_number_padded = str_replace('.tif', '', end(explode('_', $page)));
+      $page_number = preg_replace('/^0+/', '', $page_number_padded);
+      $page_pid = $parent_pid . '-' . $page_number;
+      $page_data = _bc_islandora_pub_data($parent_xml_file, $issue_pid, 'page', $page_number);
+      $page_data['page_number'] = $page_number;
+      $page_data['title'] .= ', page ' . $page_number; 
+      if (!islandora_object_load($page_pid) && !$purge) {
+        print "Creating page: $page_pid\n";
+        var_export($page_data);
+        create_page_object($page_file, $page_data, $parent_pid, $page_pid, 'pub');
+      }
+      elseif ($purge) {
+        drush_bc_islandora_purge_object($page_pid);
+      } 
     }
   }
 }

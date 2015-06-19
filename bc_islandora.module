@@ -368,25 +368,9 @@ EOQ;
       }
     break;
     case 'bc_islandora_student_pubs':
-      $collection_pid = variable_get($delta . '_pid', 'islandora:154');
+      $collection_pid = variable_get($delta . '_pid', 'islandora:1022');
       $pubs_collection = islandora_object_load($collection_pid);
-      $query = <<<EOQ
-PREFIX islandora-rels-ext: <http://islandora.ca/ontology/relsext#>
-PREFIX fedora-rels-ext: <info:fedora/fedora-system:def/relations-external#>
-SELECT ?object
-FROM <#ri>
-WHERE {
-  ?object fedora-rels-ext:isMemberOfCollection <info:fedora/{$collection_pid}> ;
-}
-EOQ;
-      $results = $pubs_collection->repository->ri->sparqlQuery($query);
-      foreach ($results as $r) {
-        $pid = $r['object']['value'];
-        $obj = islandora_object_load($pid);
-        $cm_results = $obj->relationships->get(FEDORA_MODEL_URI, 'hasModel');
-        dpm($pid);
-        dpm($cm_results);
-      }
+      $block['content'] = islandora_view_object($pubs_collection);
     break;
   }
   return $block;

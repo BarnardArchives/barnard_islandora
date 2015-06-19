@@ -294,15 +294,34 @@ function theme_bc_islandora_breadcrumb(&$vars) {
       $identifier = preg_replace('/^BC/', '', array_shift(explode('_', (string) $mods->identifier)));
       switch ($identifier) {
         // Mortarboard.
-        case '12-01': 
+        case '12-01':
           $bc[] = l('Yearbook', 'yearbook');
           // Is it a page (= "member of" a book, not just book collection)?
           // If so, link to the parent book.
-          $parent = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
-          $book = islandora_object_load($parent[0]['object']['value']);
-          if ($book->id != variable_get('bc_islandora_yearbook_pid', 'islandora:bookCollection')) {
-            $bc[] = l($book->label, "islandora/object/{$book->id}");
+          if ($book_link = _bc_islandora_book_link($object, variable_get('bc_islandora_yearbook_pid', 'islandora:bookCollection'))) {
+            $bc[] = $book_link;
           }
+        break;
+        // Student Publications.
+        case '12-04':
+        case '12-05':
+        case '12-06':
+        case '12-11':
+        case '12-14':
+        case '12-18':
+        case '12-22':
+        case '12-23':
+        case '12-24':
+          $bc[] = l('Student Publications', 'student-publications');
+          $is_pub = TRUE;
+          if ($pub_link = _bc_islandora_book_link($object, variable_get('bc_islandora_pubs_pid', 'islandora:1022'))) {
+            $bc[] = $pub_link;
+          }
+        break;
+        // Special student publications: only one issue: don't provide issue link
+        case '12-09':
+        case '12-26':
+          $bc[] = l('Student Publications', 'student-publications');
         break;
         // Bulletin.
         case '12-03':
@@ -374,11 +393,15 @@ function theme_bc_islandora_breadcrumb(&$vars) {
   // Add the current page's title to the existing breadcrumb.
   if (count($bc) >= 1 && $title = menu_get_active_title()) {
     $title_parts = explode(',', $title);
+    $last_part = array_pop($title_parts);
     // In these special cases, use whatever text occurs after the last comma
     // (e.g. "issue 1") as the title.
-    if ((preg_match('/^Barnard Bulletin/', $title) !== 0 && count($title_parts) == 4) ||
-     (preg_match('/^Annual|Mortarboard/', $title) !== 0 && count($title_parts) == 2))  {
-      $bc[] = array_pop($title_parts);
+/*    if ((preg_match('/^Barnard Bulletin/', $title) !== 0 && count($title_parts) == 4) ||
+     (preg_match('/^Annual|Mortarboard/', $title) !== 0 && count($title_parts) == 2) ||
+      $is_pub)  {
+*/
+    if (array_shift(explode(' ', preg_replace('/^ /', '', $last_part))) == 'page' || $is_pub) {
+      $bc[] = $last_part;
     }
     else {
       $bc[] = $title;
@@ -388,6 +411,15 @@ function theme_bc_islandora_breadcrumb(&$vars) {
   // Generate themed output.
   $output .= '<div class="breadcrumb">' . implode(' » ', $bc) . '</div>';
   return $output;
+}
+
+function _bc_islandora_book_link($object, $parent_collection) {
+  $parent = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
+  $book = islandora_object_load($parent[0]['object']['value']);
+  if ($book->id != $parent_collection) {
+    return l($book->label, "islandora/object/{$book->id}");
+  }
+  return NULL;
 }
 
 function _bc_islandora_np_link($object, $type = 'newspaper', $relationship = 'isMemberOfCollection') {
