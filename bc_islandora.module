@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Custom behavior for Barnard Digital Collections.
+ */
+
+/**
  * Implements hook_permission().
  */
 function bc_islandora_permission() {
@@ -17,25 +22,12 @@ function bc_islandora_permission() {
  */
 function bc_islandora_menu() {
   return array(
-    'download_datastream/%/%' => array(
-      'page callback' => 'bc_islandora_download_datastream',
-      'page arguments' => array(1, 2),
-      'access arguments' => array('access content'),
-    ),
     'admin/islandora/bc_config' => array(
       'page callback' => 'drupal_get_form',
       'title' => 'Configure Barnard Islandora',
       'type' => MENU_NORMAL_ITEM,
       'page arguments' => array('bc_islandora_config'),
       'access arguments' => array('administer bc_islandora'),
-    ),
-    'islandora/object/%islandora_object/transcript' => array(
-      'title' => 'Transcript',
-      'type' => MENU_LOCAL_TASK,
-      'page callback' => 'bc_islandora_transcript_menu',
-      'page arguments' => array(2),
-      'access callback' => 'bc_islandora_transcript_access',
-      'access arguments' => array(2),
     ),
   );
 }
@@ -93,36 +85,20 @@ function bc_islandora_theme($existing, $type, $theme, $path) {
   );
 }
 
-function bc_islandora_download_datastream($pid, $dsid) {
-  module_load_include('inc', 'islandora', 'includes/datastream');
-
-  $mods = _bc_islandora_mods_object($pid);
-  $xml = $mods['mods'];
-  if ($id  = (string) $xml->identifier) {
-    $object[$dsid]->label = $id;
-    //bc_islandora_view_datastream($object[$dsid]);
-    islandora_view_datastream($object[$dsid], TRUE);
-  }
-  else {
-    return drupal_not_found();
-  }
-}
-
+/**
+ * Implements hook_form().
+ */
 function bc_islandora_config($form, &$form_state) {
+  // TODO others to add?
   $form['bc_islandora_collection_newspaper'] = array(
     '#type' => 'textfield',
     '#title' => t('Newspaper collection pid'),
     '#default_value' => variable_get('bc_islandora_newspaper_pid', ''),
   );
-  $form['bc_islandora_collection_textual'] = array(
+  $form['bc_islandora_student_pubs'] = array(
     '#type' => 'textfield',
-    '#title' => t('Textual materials collection pid'),
-    '#default_value' => variable_get('bc_islandora_documents_pid', ''),
-  );
-  $form['bc_islandora_featured_nid'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Featured homepage object nid'),
-    '#default_value' => variable_get('bc_islandora_featured_nid', ''),
+    '#title' => t('Student Publications collection pid'),
+    '#default_value' => variable_get('bc_islandora_pubs_pid', 'islandora:1022'),
   );
   $form['submit'] = array(
     '#type' => 'submit',
@@ -131,41 +107,14 @@ function bc_islandora_config($form, &$form_state) {
   return $form;
 }
 
+/**
+ * Implements hook_form_submit().
+ */
 function bc_islandora_config_submit($form, &$form_state) {
-  variable_set('bc_islandora_namespace', $form_state['values']['bc_islandora_namespace']);
   variable_set('bc_islandora_newspaper_pid', $form_state['values']['bc_islandora_collection_newspaper']);
-  variable_set('bc_islandora_documents_pid', $form_state['values']['bc_islandora_collection_textual']);
-  variable_set('bc_islandora_featured_nid', $form_state['values']['bc_islandora_featured_nid']);
+  variable_get('bc_islandora_pubs_pid', $form_state['values']['bc_islandora_student_pubs']);
   $form_state['redirect'] = 'admin/islandora/bc_config';
   drupal_set_message(t('Saved changes.'));
-}
-
-function bc_islandora_transcript_menu($object) {
-  module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
-
-  $output = '';
-  $transcript = array();
-  $pages = islandora_paged_content_get_pages($object);
-  foreach ($pages as $pid => $page) {
-    $page_obj = islandora_object_load($pid);
-    if ($ocr_text = $page_obj['OCR']->getContent(NULL)) {
-      $transcript[$page['page']] = $ocr_text;
-    }
-  }
-  foreach ($transcript as $page => $text) {
-    // $output .= "<p><b>page $page</b>:</p>";
-    // $output .= "<p>$text</p>";
-    $output .= $text;
-  }
-
-  // Print the transcript.
-  return "<pre>$output</pre>";
-}
-
-function bc_islandora_transcript_access($object) {
-  module_load_include('inc', 'bc_islandora', 'includes/bc_islandora.theme');  
-  // This object is a "letter" and the user has permission to view it.
-  return _bc_islandora_is_genre($object, array('letter'));
 }
 
 /**
@@ -211,73 +160,82 @@ function bc_islandora_block_save($delta = '') {
 function bc_islandora_block_view($delta = '') {
   $block = array();
   switch ($delta) {
+    // Newspaper landing page block.
+    // TODO could use renderable arrays instead of literal HTML...
     case 'bc_islandora_newspaper':
-      if ($collection_pid = variable_get($delta . '_pid', 'islandora:1')) {
-        module_load_include('inc', 'islandora_newspaper', 'includes/utilities');
-        $decades_output = '<div class="decades"><ul id="decades">';
-        $years_output = '<div class="years">';
-        $months_output = '<div class="months">';
-        $issues_output = '<div class="issues">';
-        $months_sort = array();
-        $issues_sort = array();
-        $grouped_issues = array();
+      $collection_pid = variable_get($delta . '_pid', 'islandora:1');
+      module_load_include('inc', 'islandora_newspaper', 'includes/utilities');
+      $decades_output = '<div class="decades"><ul id="decades">';
+      $years_output = '<div class="years">';
+      $months_output = '<div class="months">';
+      $issues_output = '<div class="issues">';
+      $months_sort = array();
+      $issues_sort = array();
+      $grouped_issues = array();
 
-        $paper = islandora_object_load($collection_pid);
-        $issues = $paper ? islandora_newspaper_get_issues($paper) : array();
-        $grouped_issues = _bc_islandora_newspaper_group_issues($issues);
-        ksort($grouped_issues);
-        foreach ($grouped_issues as $decade => $years) {
-          $decades_output .= '<li class="decade"><a href="#">' . $decade . '</a></li>';
+      $paper = islandora_object_load($collection_pid);
+      $issues = $paper ? islandora_newspaper_get_issues($paper) : array();
+      $grouped_issues = _bc_islandora_newspaper_group_issues($issues);
+      ksort($grouped_issues);
+      foreach ($grouped_issues as $decade => $years) {
+        $decades_output .= '<li class="decade"><a href="#">' . $decade . '</a></li>';
 
-          ksort($years);
-          foreach ($years as $year => $months) {
-            if (!isset($decade_start)) {
-              $decade_start = preg_replace('/s$/', '', $decade);
-              $years_output .= '<ul class="decade" id="' . $decade . '">';
-            }
-            elseif (!($year % 10) || ($year - $decade_start >= 10)) {
-              $years_output .= '</ul>';
-              $decade_start = ($year - ($year % 10));
-              $years_output .= '<ul class="decade" id=' . $decade_start . 's' . '>';
-            }
-            $years_output .= '<li class="year" id="' . $year . '"><a href="#">' . $year . '</a></li>';
+        ksort($years);
+        foreach ($years as $year => $months) {
+          // Set $decade_start and open the ul tag if this is the first
+          // iteration.
+          if (!isset($decade_start)) {
+            $decade_start = preg_replace('/s$/', '', $decade);
+            $years_output .= '<ul class="decade" id="' . $decade . '">';
+          }
+          // We've reached the end of the decade if $year is divisible by 10
+          // or the difference between $year and $decade_start is 10 or more.
+          elseif (!($year % 10) || ($year - $decade_start >= 10)) {
+            $years_output .= '</ul>';
+            // Reset $decade_start for the next decade.
+            $decade_start = ($year - ($year % 10));
+            $years_output .= '<ul class="decade" id=' . $decade_start . 's' . '>';
+          }
+          $years_output .= '<li class="year" id="' . $year . '"><a href="#">' . $year . '</a></li>';
 
-            foreach ($months as $month => $issues) {
-              $month_display = date('F', strtotime($year . '-' . $month));
-              $months_sort[$year][$month] = '<li class="month" id="' . $month . '"><a href="#">' . $month_display . '</a></li>';
-              foreach ($issues as $day => $issue) {
-                $issue_url = "islandora/object/{$issue[0]['pid']}";
-                $issues_sort[$year][$month][$day] = '<li class="issue">' . l(preg_replace('/^0/', '', $day), $issue_url) . '</li>';
-              }
+          // Populate the $months_sort and $issues_sort arrays for use below.
+          foreach ($months as $month => $issues) {
+            $month_display = date('F', strtotime($year . '-' . $month));
+            $months_sort[$year][$month] = '<li class="month" id="' . $month . '"><a href="#">' . $month_display . '</a></li>';
+            foreach ($issues as $day => $issue) {
+              $issue_url = "islandora/object/{$issue[0]['pid']}";
+              $issues_sort[$year][$month][$day] = '<li class="issue">' . l(preg_replace('/^0/', '', $day), $issue_url) . '</li>';
             }
           }
         }
-        $decades_output .= '</ul></div>';
-        $years_output .= '</div>';
-        foreach ($months_sort as $year => $month) {
-          ksort($month);
-          $months_output .= '<ul class="months-' . $year . '">';
-          $months_output .= implode("\n", $month);
-          $months_output .= '</ul>';
-          foreach ($issues_sort[$year] as $issue_month => $day) {
-            ksort($day);
-            $issues_output .= '<ul class="issues-' . $year . '-' . $issue_month . '">';
-            $issues_output .= implode("\n", $day);
-            $issues_output .= '</ul>';
-          }
-        }
-
-        $months_output .= '</div>';
-        $issues_output .= '</div>';
-
-        $output = '<div class="bulletin-nav">
-            <span class="browse"><b>Browse issues by date:</b>&nbsp;</span><span class="decade"><a id="nav" href="#"></a></span><span class="month"></span><span class="day"></span><span class="year"><a id="nav" href="#"></a></span>
-          </div>';
-        $output .= '<div class="bulletin-calendar inactive">' . $decades_output . $years_output . $months_output . $issues_output . '</div>';
-        $block['content'] = $output;
       }
-    break;
-    // TODO
+      $decades_output .= '</ul></div>';
+      $years_output .= '</div>';
+      // Generate month and issue output.
+      foreach ($months_sort as $year => $month) {
+        ksort($month);
+        $months_output .= '<ul class="months-' . $year . '">';
+        $months_output .= implode("\n", $month);
+        $months_output .= '</ul>';
+        foreach ($issues_sort[$year] as $issue_month => $day) {
+          ksort($day);
+          $issues_output .= '<ul class="issues-' . $year . '-' . $issue_month . '">';
+          $issues_output .= implode("\n", $day);
+          $issues_output .= '</ul>';
+        }
+      }
+
+      $months_output .= '</div>';
+      $issues_output .= '</div>';
+
+      $output = '<div class="bulletin-nav">
+          <span class="browse"><b>Browse issues by date:</b>&nbsp;</span><span class="decade"><a id="nav" href="#"></a></span><span class="month"></span><span class="day"></span><span class="year"><a id="nav" href="#"></a></span>
+        </div>';
+      $output .= '<div class="bulletin-calendar inactive">' . $decades_output . $years_output . $months_output . $issues_output . '</div>';
+      $block['content'] = $output;
+      break;
+
+    // Yearbook landing page block.
     case 'bc_islandora_yearbook':
       $collection_pid = variable_get($delta . '_pid', 'islandora:bookCollection');
       // Only generate the block output if we can load the book collection.
@@ -316,7 +274,7 @@ EOQ;
           $yb_link = l($year, "islandora/object/{$pid}");
           // If we got a volume number, make sure the link is at the end of the
           // $years[decade][year] array...
-          // (N.B. this doesn't work for >2 volumes, BUT that's ok I guess)
+          // (N.B. this doesn't work for >2 volumes, BUT that's ok I guess?)
           if (isset($vol)) {
             $years[$decade][$year][1] = $yb_link . '&nbsp(' . $vol . ')';
             unset($vol);
@@ -366,16 +324,23 @@ EOQ;
         $output .= '<div class="yearbook-calendar">' . $decade_output . $years_output . '</div>';
         $block['content'] = $output;
       }
-    break;
+      break;
+
+    // Student publications landing page just uses standard islandora view.
     case 'bc_islandora_student_pubs':
       $collection_pid = variable_get($delta . '_pid', 'islandora:1022');
       $pubs_collection = islandora_object_load($collection_pid);
       $block['content'] = islandora_view_object($pubs_collection);
-    break;
+      break;
   }
   return $block;
 }
 
+/**
+ * Helper function to group newspaper issues by decade and year.
+ *
+ * Called above by bc_islandora_block_view(), newspaper case.
+ */
 function _bc_islandora_newspaper_group_issues($issues) {
   $years = islandora_newspaper_group_issues($issues);
   $decades = array();
@@ -384,19 +349,4 @@ function _bc_islandora_newspaper_group_issues($issues) {
     $decades[$decade][$year] = $data;
   }
   return $decades;
-}
-
-function _bc_islandora_solr_query($fq) {
-  $qp = new IslandoraSolrQueryProcessor();
-  $qp->buildAndExecuteQuery('', array('f' => $fq));
-  return $qp->islandoraSolrResult;
-}
-
-function _bc_islandora_mods_object($pid) {
-  if ($object = islandora_object_load($pid)) {
-    return array(
-      'object' => $object,
-      'mods' => simplexml_load_string($object['MODS']->getContent(NULL))
-    );
-  }
 }
