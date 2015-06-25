@@ -315,8 +315,8 @@ function drush_bc_islandora_ingest_pubs($directory) {
         continue;
       }
       $pub_data = _bc_islandora_pub_data($xml_file);
-      $pub_pid = 'bc:' . str_replace(' ', '-', strtolower($pub_data['title']));
-      $pub_pid = preg_replace('/[^a-z\d\-\:+]/', '', $pub_pid);
+      $pid_title = str_replace(' ', '-', preg_replace('/[^a-z\d\s+]/', '', strtolower($pub_data['title'])));
+      $pub_pid = 'bc:' . $pid_title;
       // Publication ids that constitute "exceptions" (different behavior
       // required).
       $exceptions = array('BC12-9_1959', 'BC12-26_1970');
