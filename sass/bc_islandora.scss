@@ -158,20 +158,23 @@ body {
   margin-right: 50px;
   margin-bottom: 50px;
   text-align: center;
+  cursor: pointer;
 }
 
 .landingpage-icon h1 {
-  font-size: 1.6em;
-  margin-top: 2em;
-}
-
-.landingpage-icon p {
-  width: 190px;
-  padding-left: 15px;
+  font-weight: bold;
+  font-size: 1.3em;
+  margin-top: 8.9em;
+  margin-bottom: 0;
 }
 
 .landingpage-icon a {
   text-decoration: none;
+}
+
+.landingpage-icon a.lp-link {
+  display: block;
+  font-size: 0.95em;  
 }
 
 .landingpage-link {
@@ -192,8 +195,8 @@ body {
   background: url(/sites/all/modules/bc_islandora/img/yearbookicon.jpg) no-repeat;
 }
 
-.landingpage-icon#exhibits {
-  background: url(/sites/all/modules/bc_islandora/img/exhibiticon.jpg) no-repeat;
+.landingpage-icon#student-pubs {
+  background: url(/sites/all/modules/bc_islandora/img/studentpubicon.jpg) no-repeat;
 }
 
 /* social media */

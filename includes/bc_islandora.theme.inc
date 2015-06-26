@@ -382,11 +382,11 @@ function theme_bc_islandora_breadcrumb(&$vars) {
     $node = menu_get_object();
     $is_exhibition = $node->type == 'exhibition';
     $alias = drupal_get_path_alias(implode('/', arg()));
-    if (in_array($alias, array('bulletin', 'yearbook')) || $is_exhibition) {
+    if (in_array($alias, array('bulletin', 'yearbook'))) {
       $bc[] = l('Collections', 'collections');
-      if ($is_exhibition) {
-        $bc[] = l('Exhibits', 'exhibits');
-      }
+    }
+    elseif ($is_exhibition) {
+      $bc[] = l('Exhibits', 'exhibits');
     }
   }
 
