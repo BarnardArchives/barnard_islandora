@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * @file
+ * Modified versions of standard islandora batch methods.
+ *
+ * We reimplemented these functions in order to give the batch-generated
+ * datastreams a non-generic label taken from MODS data (specifically the
+ * "identifier" field).
+ */
+
 module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
 module_load_include('inc', 'islandora_paged_content', 'includes/batch');
 module_load_include('inc', 'islandora_large_image', 'includes/derivatives');
@@ -73,12 +82,16 @@ function bc_islandora_derive_image_datastreams(AbstractObject $object) {
   return $ret;
 }
 
+/**
+ * Returns an array of names of functions for generating derivatives.
+ */
 function bc_islandora_create_all_derivatives(AbstractObject $object) {
   $ret = array();
   foreach (array('JPG', 'TN', 'JP2') as $dsid) {
     if ($dsid != 'JPG') {
       $function = 'islandora_large_image_create_' . strtolower($dsid) . '_derivative';
     }
+    // We use our own helper function to generate JPGs.
     else {
       $function = 'bc_islandora_create_jpg_derivative';
       print "Got function: $function\n";
@@ -88,6 +101,12 @@ function bc_islandora_create_all_derivatives(AbstractObject $object) {
   return $ret;
 }
 
+/**
+ * Generates a JPG derivative.
+ *
+ * Modified version of default islandora function; modified to provide DS label
+ * from MODS identifier data.
+ */
 function bc_islandora_create_jpg_derivative(AbstractObject $object) {
   unset($object['JPG']);
   $new_label = _mods_id_label($object, 'JPG');
@@ -113,8 +132,7 @@ function bc_islandora_create_jpg_derivative(AbstractObject $object) {
     }
     else {
       // I modified this one line.
-      // $added_successfully = islandora_large_image_add_datastream($object, 'JPG', $derivative_file, 'image/jpeg', t('Medium sized JPEG'));
-      $added_successfully = islandora_large_image_add_datastream($object, 'JPG', $derivative_file, 'image/jpeg', t($new_label));
+      $added_successfully = islandora_large_image_add_datastream($object, 'JPG', $derivative_file, 'image/jpeg', $new_label);
       if (TRUE === $added_successfully) {
         $to_return['messages'][] = array(
           'message' => t('Created JPG derivative.'),
@@ -228,12 +246,12 @@ function bc_islandora_create_pdf_page_batch_operation(array $pages, array $optio
   }
 }
 
-
+/**
+ * Helper function to get the identifier from MODS data.
+ */
 function _mods_id_label($object, $dsid) {
   $mods = $object['MODS']->content;
   $xml = simplexml_load_string($mods);
   $id = (string) $xml->identifier;
   return $id . '.' . strtolower($dsid);
 }
-
-?>
