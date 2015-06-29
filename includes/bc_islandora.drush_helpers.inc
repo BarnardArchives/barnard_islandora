@@ -1,16 +1,27 @@
 <?php
 
+/**
+ * @file
+ * Helper functions invoked in custom drush methods.
+ *
+ * @see bc_islandora.drush.inc
+ * @see https://github.com/roblib/scripts/tree/master/drush/drupal7
+ */
+
+/**
+ * Creates a newspaper issue.
+ */
 function create_issue_object($pid, $data) {
   module_load_include('inc', 'islandora', 'RestConnection');
-  
+
   $tuque = islandora_get_tuque_connection();
   $connection = $tuque->connection;
-  
+
   $title = $data[0];
   $date = date('Y-m-d', strtotime($data[1]));
   $date_short = date('Ymd', strtotime($date));
   $extent = $data[5];
- 
+
   $dsid = 'MODS';
 
   $content_model_pid = 'islandora:newspaperIssueCModel';
@@ -45,7 +56,7 @@ function create_issue_object($pid, $data) {
       <identifier type="local">BC12-03_$date_short</identifier>
     </mods> 
 ISSUE_MODS;
-  
+
   $rdf_string = <<<ISSUE_RDF
     <rdf:RDF xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
       <rdf:Description rdf:about="info:fedora/$pid">
@@ -56,7 +67,7 @@ ISSUE_MODS;
       </rdf:Description>
     </rdf:RDF>
 ISSUE_RDF;
- 
+
   $mods_xml = new DOMDocument();
   $mods_xml->loadXML($xml);
 
@@ -69,9 +80,9 @@ ISSUE_RDF;
   $dc = $proc->transformToXML($mods_xml);
 
   $object = new NewFedoraObject($pid, $connection->repository);
-  
+
   $object->label = $title;
- 
+
   $dc_datastream = new NewFedoraDatastream('DC', 'X', $object, $connection->repository);
 
   $dc_datastream->content = $dc;
@@ -81,7 +92,7 @@ ISSUE_RDF;
   $object->ingestDatastream($dc_datastream);
 
   $mods_datastream = new NewFedoraDatastream('MODS', 'X', $object, $connection->repository);
-  
+
   $mods_datastream->setContentFromString($xml);
   $mods_datastream->mimetype = 'text/xml';
   $mods_datastream->label = 'MODS record';
@@ -90,14 +101,14 @@ ISSUE_RDF;
   $mods_datastream->logMessage = 'MODS datastream created using Newspapers batch ingest script || SUCCESS';
 
   $object->ingestDatastream($mods_datastream);
-  
+
   $rels_datastream = new NewFedoraDatastream('RELS-EXT', 'X', $object, $connection->repository);
   $rels_datastream->setContentFromString($rdf_string);
   $rels_datastream->label = 'RELS-EXT';
   $rels_datastream->mimetype = 'text/xml';
   $rels_datastream->logMessage = 'RELS-EXT datastream created using Newspapers batch ingest script || SUCCESS';
 
-  $object->ingestDatastream($rels_datastream);  
+  $object->ingestDatastream($rels_datastream);
   try {
     $object->state = 'A';
     $ingest = $tuque->repository->ingestObject($object);
@@ -117,13 +128,16 @@ ISSUE_RDF;
   unset($mods_datastream);
   unset($rels_datastream);
   unset($dc_datastream);
-  
+
   return $pid;
 }
 
+/**
+ * Creates a book object.
+ */
 function create_book_object($pid, $data) {
   module_load_include('inc', 'islandora', 'RestConnection');
-  
+
   $tuque = islandora_get_tuque_connection();
   $connection = $tuque->connection;
 
@@ -131,18 +145,19 @@ function create_book_object($pid, $data) {
 
   $content_model_pid = 'islandora:bookCModel';
 
-  // TODO add book collection pid to 
+  // If we didn't get an explicit parent collection pid in $data, assume the
+  // default book collection pid.
   $collection_pid = isset($data['collection_pid']) ?
     $data['collection_pid'] :
     variable_get('bc_islandora_yearbook_pid', 'islandora:bookCollection');
 
+  // Generate the MODS XML datastream, unless MODS xml was passed in via $data.
+  // (Also generate the RELS-EXT or RDF datastream.)
   if (!isset($data['xml'])) {
     $date = $data[3];
     $vol = explode(' ', $data[1]);
     $id_date = $vol[1];
-    // TODO should work for both books and newspapers.
     $title = $data[0] . ' ' . $id_date;
-    //$date_short = date('Ymd', strtotime($date));
     $extent = $data[12] . ' pages';
     $description = $data[7];
 
@@ -232,17 +247,18 @@ function create_book_object($pid, $data) {
         </recordInfo>
       </mods>
 BOOK_MODS;
-  $rdf_string = <<<BOOK_RDF
-    <rdf:RDF xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-      <rdf:Description rdf:about="info:fedora/$pid">
-        <fedora-model:hasModel rdf:resource="info:fedora/$content_model_pid"></fedora-model:hasModel>
-        <fedora:isMemberOf rdf:resource="info:fedora/$collection_pid"></fedora:isMemberOf>
-        <islandora:isSequenceNumber>1</islandora:isSequenceNumber>
-        <islandora:dateIssued>$date</islandora:dateIssued>
-      </rdf:Description>
-    </rdf:RDF>
+    $rdf_string = <<<BOOK_RDF
+      <rdf:RDF xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+        <rdf:Description rdf:about="info:fedora/$pid">
+          <fedora-model:hasModel rdf:resource="info:fedora/$content_model_pid"></fedora-model:hasModel>
+          <fedora:isMemberOf rdf:resource="info:fedora/$collection_pid"></fedora:isMemberOf>
+          <islandora:isSequenceNumber>1</islandora:isSequenceNumber>
+          <islandora:dateIssued>$date</islandora:dateIssued>
+        </rdf:Description>
+      </rdf:RDF>
 BOOK_RDF;
   }
+  // Just generate RDF if we got MODS in $data.
   else {
     $xml = $data['xml'];
     $date = $data['date'];
@@ -256,8 +272,7 @@ BOOK_RDF;
       </rdf:RDF>
 BOOK_RDF;
   }
-  
- 
+
   $mods_xml = new DOMDocument();
   $mods_xml->loadXML($xml);
 
@@ -270,9 +285,9 @@ BOOK_RDF;
   $dc = $proc->transformToXML($mods_xml);
 
   $object = new NewFedoraObject($pid, $connection->repository);
-  
-  $object->label = $title; 
- 
+
+  $object->label = $title;
+
   $dc_datastream = new NewFedoraDatastream('DC', 'X', $object, $connection->repository);
 
   $dc_datastream->content = $dc;
@@ -282,7 +297,7 @@ BOOK_RDF;
   $object->ingestDatastream($dc_datastream);
 
   $mods_datastream = new NewFedoraDatastream('MODS', 'X', $object, $connection->repository);
-  
+
   $mods_datastream->setContentFromString($xml);
   $mods_datastream->mimetype = 'text/xml';
   $mods_datastream->label = 'MODS record';
@@ -291,14 +306,14 @@ BOOK_RDF;
   $mods_datastream->logMessage = 'MODS datastream created using Newspapers batch ingest script || SUCCESS';
 
   $object->ingestDatastream($mods_datastream);
-  
+
   $rels_datastream = new NewFedoraDatastream('RELS-EXT', 'X', $object, $connection->repository);
   $rels_datastream->setContentFromString($rdf_string);
   $rels_datastream->label = 'RELS-EXT';
   $rels_datastream->mimetype = 'text/xml';
   $rels_datastream->logMessage = 'RELS-EXT datastream created using Newspapers batch ingest script || SUCCESS';
 
-  $object->ingestDatastream($rels_datastream);  
+  $object->ingestDatastream($rels_datastream);
   try {
     $object->state = 'A';
     $ingest = $tuque->repository->ingestObject($object);
@@ -318,25 +333,26 @@ BOOK_RDF;
   unset($mods_datastream);
   unset($rels_datastream);
   unset($dc_datastream);
-  
+
   return $pid;
 }
 
+/**
+ * Creates a student publication object.
+ */
 function create_pub_object($pid, $data) {
   module_load_include('inc', 'islandora', 'RestConnection');
-  
+
   $tuque = islandora_get_tuque_connection();
   $connection = $tuque->connection;
-  
+
   $dsid = 'MODS';
 
   $content_model_pid = 'islandora:collectionCModel';
-
-  // TODO add book collection pid to 
   $collection_pid = variable_get('bc_islandora_pubs_pid', 'islandora:1022');
 
   $xml = $data['xml'];
-  
+
   $rdf_string = <<<PUB_RDF
     <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#">
       <rdf:Description rdf:about="info:fedora/$pid">
@@ -345,7 +361,7 @@ function create_pub_object($pid, $data) {
       </rdf:Description>
     </rdf:RDF>
 PUB_RDF;
- 
+
   $mods_xml = new DOMDocument();
   $mods_xml->loadXML($xml);
 
@@ -358,9 +374,9 @@ PUB_RDF;
   $dc = $proc->transformToXML($mods_xml);
 
   $object = new NewFedoraObject($pid, $connection->repository);
-  
-  $object->label = $data['title']; 
- 
+
+  $object->label = $data['title'];
+
   $dc_datastream = new NewFedoraDatastream('DC', 'X', $object, $connection->repository);
 
   $dc_datastream->content = $dc;
@@ -370,7 +386,7 @@ PUB_RDF;
   $object->ingestDatastream($dc_datastream);
 
   $mods_datastream = new NewFedoraDatastream('MODS', 'X', $object, $connection->repository);
-  
+
   $mods_datastream->setContentFromString($xml);
   $mods_datastream->mimetype = 'text/xml';
   $mods_datastream->label = 'MODS record';
@@ -379,14 +395,14 @@ PUB_RDF;
   $mods_datastream->logMessage = 'MODS datastream created using Newspapers batch ingest script || SUCCESS';
 
   $object->ingestDatastream($mods_datastream);
-  
+
   $rels_datastream = new NewFedoraDatastream('RELS-EXT', 'X', $object, $connection->repository);
   $rels_datastream->setContentFromString($rdf_string);
   $rels_datastream->label = 'RELS-EXT';
   $rels_datastream->mimetype = 'text/xml';
   $rels_datastream->logMessage = 'RELS-EXT datastream created using Newspapers batch ingest script || SUCCESS';
 
-  $object->ingestDatastream($rels_datastream);  
+  $object->ingestDatastream($rels_datastream);
   try {
     $object->state = 'A';
     $ingest = $tuque->repository->ingestObject($object);
@@ -406,48 +422,54 @@ PUB_RDF;
   unset($mods_datastream);
   unset($rels_datastream);
   unset($dc_datastream);
-  
+
   return $pid;
 }
 
+/**
+ * Creates a page object.
+ */
 function create_page_object($file_path, $data, $collection_pid, $page_pid, $type) {
   $connection = islandora_get_tuque_connection();
-  
+
   $pid = $page_pid;
 
+  // Set variables for MODS generation below. (Values differ depending on
+  // $type.)
   switch ($type) {
     case 'newspaper':
       $date = $data[1];
-      $date_short = date('Ymd', strtotime($date));    
+      $date_short = date('Ymd', strtotime($date));
       $page_number = $data[3];
       $title = 'Barnard Bulletin';
       $label = $title . ', ' . $date . ', page ' . $page_number;
-      $dateIssued = '<dateIssued encoding="w3cdtf">' . date('Y-m-d', strtotime($date)) . '</dateIssued>';
-      $dateCreated = '<dateCreated encoding="w3cdtf">' . date('Y-m-d', strtotime($date)) . '</dateCreated>';
+      $date_issued = '<dateIssued encoding="w3cdtf">' . date('Y-m-d', strtotime($date)) . '</dateIssued>';
+      $date_created = '<dateCreated encoding="w3cdtf">' . date('Y-m-d', strtotime($date)) . '</dateCreated>';
       $id_short = 'BC12-03';
       $id_long = 'BC12-03_' . $date_short . '-' . $page_number;
       $file_name = $file_path . '/' . $data[2];
       $content_model_pid = 'islandora:newspaperPageCModel';
       $genre = 'newspaper';
       $img_mime = 'image/tiff';
-    break;
+      break;
+
     case 'book':
       $date = $data[1];
-      $date_short = date('Ymd', strtotime($date));    
+      $date_short = date('Ymd', strtotime($date));
       $title = $data[0];
       $year = array_pop(explode(' ', $data[1]));
       $page_number = array_pop($data);
-      //$label = $title . ' ' . $data[3] . ', page ' . $page_number;
-      $label = $title . ' ' . $year . ', page ' . $page_number; 
-      $dateIssued = '<dateIssued encoding="iso8601">' . $data[3] . '</dateIssued>';
-      $dateCreated = '<dateCreated encoding="iso8601">' . $data[3] . '</dateCreated>';
+      $label = $title . ' ' . $year . ', page ' . $page_number;
+      $date_issued = '<dateIssued encoding="iso8601">' . $data[3] . '</dateIssued>';
+      $date_created = '<dateCreated encoding="iso8601">' . $data[3] . '</dateCreated>';
       $id_short = 'BC12-01';
       $id_long = 'BC12-01_' . $data[3] . '_' . str_pad($page_number, 3, '0', STR_PAD_LEFT);
       $file_name = $file_path;
       $content_model_pid = 'islandora:pageCModel';
       $genre = 'yearbook';
       $img_mime = 'image/jp2';
-    break;
+      break;
+
     case 'pub':
       $content_model_pid = 'islandora:pageCModel';
       $page_number = $data['page_number'];
@@ -462,6 +484,9 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid, $type
       $host_id = $data['host_id'];
       $date = $data['date'];
       $page_id = $data['page_id'];
+
+      // Student publications MODS doesn't follow the book/newspaper template,
+      // so we generate it here instead.
       $xml = <<<PAGE_MODS
         <mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
           <titleInfo>
@@ -486,9 +511,11 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid, $type
           </originInfo>
         </mods>
 PAGE_MODS;
-    break;
+      break;
+
   }
 
+  // Ingest a thumbnail of the first page to the parent object collection.
   if ($page_number == 1) {
     $rand = rand('100', '999');
     $tmp_file = '/tmp/tmp_file' . $rand . '.jpg';
@@ -510,6 +537,7 @@ PAGE_MODS;
 
   $dsid = 'MODS';
 
+  // Generate MODS here for book and newspaper pages.
   if (!isset($xml)) {
     $xml = <<<PAGE_MODS
       <mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -518,8 +546,8 @@ PAGE_MODS;
         </titleInfo>
         <genre authority="marcgt">$genre</genre>
         <originInfo>
-          $dateIssued
-          $dateCreated
+          $date_issued
+          $date_created
         </originInfo>
         <relatedItem type="host"> 
           <titleInfo> 
@@ -532,7 +560,7 @@ PAGE_MODS;
       </mods>
 PAGE_MODS;
   }
-  
+
   $rdf_string = <<<PAGE_RDF
     <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#">
       <rdf:Description rdf:about="info:fedora/$pid">
@@ -546,7 +574,7 @@ PAGE_MODS;
       </rdf:Description>
     </rdf:RDF>
 PAGE_RDF;
-  print "$xml\n";
+
   $mods_xml = new DOMDocument();
   $mods_xml->loadXML($xml);
 
@@ -580,7 +608,7 @@ PAGE_RDF;
   $mods_datastream->logMessage = 'MODS datastream created using Newspapers batch ingest script || SUCCESS';
 
   $object->ingestDatastream($mods_datastream);
-  
+
   $image_datastream = new NewFedoraDatastream('OBJ', 'M', $object, $connection->repository);
   $image_datastream->setContentFromFile($file_name, FALSE);
   // $image_datastream->label = 'TIFF image';
@@ -616,7 +644,8 @@ PAGE_RDF;
     drush_log(dt("There was an error creating the page object!\n"), 'error');
   }
 
-  unset($object); // make sure destructors are called as this script can run for a long time.
+  // Make sure destructors are called as this script can run for a long time.
+  unset($object);
   unset($image_datastream);
   unset($mods_datastream);
   unset($rels_datastream);
