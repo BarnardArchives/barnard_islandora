@@ -462,6 +462,8 @@ function drush_bc_islandora_generate_newspaper_csv($directory = '/home/BCIT/dsav
 
 /**
  * Helper function to set and process derivative-creation batches.
+ *
+ * @see includes/bc_islandora.drush_batch.inc.
  */
 function _bc_islandora_create_derivatives($objects) {
   module_load_include('inc', 'bc_islandora', 'includes/bc_islandora.drush_batch');

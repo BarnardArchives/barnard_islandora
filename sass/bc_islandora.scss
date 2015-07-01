@@ -29,7 +29,7 @@ body {
   margin-bottom: 15px;
 }
 
-/* newspaper and yearbook landing pages */
+// Newspaper and yearbook landing pages.
 #block-bc-islandora-bc-islandora-newspaper {
   width: 100%;
   margin: 0 auto;
@@ -59,7 +59,7 @@ body {
   margin-top: 10px;
 }
 
-/* yearbook landing page */
+// Yearbook landing page.
 #yearbook-nav {
   span.year {
     margin:  0 10px 10px 0;
@@ -70,12 +70,12 @@ body {
   }
 }
 
-/* student pubs */
+// Student publications.
 .islandora-basic-collection.student-pubs .islandora-basic-collection-object {
   margin-left: 0;
 }
 
-/* exhibitions */
+// Exhibits.
 .view-id-exhibition {
   margin-top: 20px;
   .pager {
@@ -140,7 +140,7 @@ body {
   margin-bottom: 50px;
 }
 
-/* newspaper issue */
+// Newspaper issue.
 .islandora-newspaper-issue-navigator {
   display: block;
   margin-bottom: 10px;
@@ -150,7 +150,7 @@ body {
   margin-top: 0 !important;
 }
 
-/* collections landing page */
+// Collections landing page.
 .landingpage-icon {
   float:left;
   width: 220px;
@@ -199,7 +199,7 @@ body {
   background: url(/sites/all/modules/bc_islandora/img/studentpubicon.jpg) no-repeat;
 }
 
-/* social media */
+// Social media.
 .socialmedia {
   display: block;
   margin: 20px 0;
@@ -209,12 +209,7 @@ body {
   margin-right: 10px;
 }
 
-/* overriding DG theme styles */
-#block-views-featured-block {
-  /*top: -75px !important;
-  right: 50px !important;*/
-}
-
+// Overriding theme styles.
 .islandora-openseadragon {
   width: 85% !important;
 }
