@@ -485,7 +485,7 @@ function theme_bc_islandora_exhibition($args) {
   // Create a structured list of exhibition objects.
   foreach ($node->field_object[$node->language] as $i => $object) {
     $objects[$i]['description'] = isset($object['node']->field_description[$node->language]) ?
-      $object['node']->field_description[$node->language][0]['value'] :
+      check_markup($object['node']->field_description[$node->language][0]['value'], $object['node']->field_description[$node->language][0]['format']) :
       '';
     $objects[$i]['pid'] = isset($object['node']->field_fedora_pid[$node->language]) ?
       $object['node']->field_fedora_pid[$node->language][0]['value'] :
@@ -593,7 +593,7 @@ function theme_bc_islandora_exhibition($args) {
     $tn_output .= '</div>';
     $img_output .= $tn_output;
     $slides_output .= $img_output . '</div>';
-    $slides_output .= '<div class="ex-txt">' . check_markup($item['description'], 'filtered_html') . '</div>';
+    $slides_output .= '<div class="ex-txt">' . $item['description'] . '</div>';
     // Navigation links.
     $slides_output .= '<div id="ex-nav">';
     $slides_output .= l(t('« Prev'), request_path(), array(
