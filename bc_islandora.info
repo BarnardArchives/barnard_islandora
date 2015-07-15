@@ -3,6 +3,4 @@ description = "Custom functionality for Barnard Digital Collections"
 version = 7.x-0.1-dev
 core = 7.x
 stylesheets[all][] = css/bc_islandora.css
-;stylesheets[all][] = css/vendor/lightbox.css
 scripts[] = js/bc_islandora.js
-;scripts[] = js/vendor/lightbox.min.js

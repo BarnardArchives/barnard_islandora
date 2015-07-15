@@ -1,7 +1,14 @@
 <?php
 
 /**
- * Modified version of theme_islandora_newspaper_issue_navigator.
+ * @file
+ * Theming functions for Barnard Digital Collections.
+ */
+
+/**
+ * Generates themed newspaper issue navigator output.
+ *
+ * @see theme_islandora_newspaper_issue_navigator()
  */
 function theme_bc_islandora_newspaper_issue_navigator(&$vars) {
   module_load_include('inc', 'islandora_newspaper', 'includes/utilities');
@@ -11,13 +18,12 @@ function theme_bc_islandora_newspaper_issue_navigator(&$vars) {
     $output .= "<p><strong>Pages: </strong>{$page_links}</p>";
   }
   if ($dl_links = _bc_islandora_dl_links($object)) {
-    $output .= '<p><strong>Download: </strong>' . $dl_links . '</p>'; 
+    $output .= '<p><strong>Download: </strong>' . $dl_links . '</p>';
   }
   $newspaper = islandora_newspaper_get_newspaper($object);
   $newspaper = $newspaper ? islandora_object_load($newspaper) : FALSE;
   $issues = $newspaper ? islandora_newspaper_get_issues($newspaper) : array();
   ksort($issues);
-  //dpm($issues);
   $issues = array_keys($issues);
   if (empty($issues)) {
     $issues[] = $object->id;
@@ -52,7 +58,9 @@ function theme_bc_islandora_newspaper_issue_navigator(&$vars) {
 }
 
 /**
- * Modified version of theme_islandora_newspaper_page_controls.
+ * Generates themed newspaper page controls output.
+ *
+ * @see theme_islandora_newspaper_page_controls()
  */
 function theme_bc_islandora_newspaper_page_controls(&$vars) {
   module_load_include('inc', 'islandora', 'includes/datastream');
@@ -68,11 +76,14 @@ function theme_bc_islandora_newspaper_page_controls(&$vars) {
   }
 
   if ($dl_links = _bc_islandora_dl_links($object)) {
-    $output .= '<p><strong>Download: </strong>' . $dl_links . '</p>'; 
+    $output .= '<p><strong>Download: </strong>' . $dl_links . '</p>';
   }
   return $output;
 }
 
+/**
+ * Helper function to generate newspaper pager.
+ */
 function _bc_islandora_np_page_pager($object) {
   $results = $object->relationships->get(ISLANDORA_RELS_EXT_URI, 'isPageOf');
   $result = reset($results);
@@ -80,56 +91,71 @@ function _bc_islandora_np_page_pager($object) {
   $pages = $parent ? islandora_paged_content_get_pages($parent) : array();
   $pages = array_keys($pages);
   if (empty($pages)) {
+    // The page object pid.
     $pages[] = $object->id;
   }
+  // The index of the current page in the issue.
   $index = array_search($object->id, $pages);
   $page_links = array();
   foreach ($pages as $i => $pid) {
     $title = $i + 1;
+    // Output just a title if we're at the current page.
     if ($index !== FALSE && $i == $index) {
       $page_links[] = $title;
     }
+    // Otherwise output a link.
     else {
-      $page_links[] = l(t($title), "islandora/object/{$pid}");
+      $page_links[] = l($title, "islandora/object/{$pid}");
     }
   }
   return implode($page_links, '&nbsp;');
 }
 
+/**
+ * Generates themed newspaper issue output.
+ *
+ * @see template_preprocess_islandora_newspaper_issue()
+ */
 function theme_bc_islandora_newspaper_issue(&$vars) {
   module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
-  
+
   $output = '';
   $object = $vars['object'];
   $context = !empty($vars['context']) ? $vars['context'] : 'issue';
-  //$pages = $vars['pages'];
   $pages = $object ? islandora_paged_content_get_pages($object) : array();
   $start_page = $vars['start_page'];
   $identifiers = array();
   $thumbnails = array();
+  // Populate $thumbnails and $identifiers.
   foreach ($pages as $pid => $page) {
     $page_metadata = islandora_paged_content_get_page_metadata_from_djatoka($pid);
     $thumbnails[] = array('pid' => $pid, 'url' => "/islandora/object/{$pid}/datastream/TN/view");
     if ($start_page > 1 && $page['page'] < $start_page) {
-      $identifiers[count($pages)+$page['page']-2] = $page_metadata['identifier'];
+      $identifiers[count($pages) + $page['page'] - 2] = $page_metadata['identifier'];
     }
     elseif ($start_page == 1) {
       $identifiers[] = $page_metadata['identifier'];
     }
     else {
-      $identifiers[$page['page']-2] = $page_metadata['identifier'];
+      $identifiers[$page['page'] - 2] = $page_metadata['identifier'];
     }
   }
   ksort($identifiers);
+  // Extra settings to pass to the OpenSeadragon viewer.
   $osd_settings = $context == 'issue' ? array(
     'preserveViewport' => 'true',
-    'showReferenceStrip' => 'true', // TODO only for newspaper issues
+    'showReferenceStrip' => 'true',
     'referenceStripSizeRatio' => '0.15',
   ) : array();
   $output .= theme('bc_islandora_openseadragon_viewer', array('uri' => $identifiers, 'settings' => $osd_settings));
   return $output;
 }
 
+/**
+ * Generates themed newspaper page output.
+ *
+ * @see template_preprocess_islandora_newspaper_page()
+ */
 function theme_bc_islandora_newspaper_page(&$vars) {
   module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
 
@@ -138,9 +164,18 @@ function theme_bc_islandora_newspaper_page(&$vars) {
   $pid = $object->id;
   $page_metadata = islandora_paged_content_get_page_metadata_from_djatoka($pid);
 
-  return theme('bc_islandora_openseadragon_viewer', array('uri' => $page_metadata['identifier'], 'settings' => array(), 'fedora_object' => $object));
+  return theme('bc_islandora_openseadragon_viewer', array(
+    'uri' => $page_metadata['identifier'],
+    'settings' => array(),
+    'fedora_object' => $object,
+  ));
 }
 
+/**
+ * Generates themed featured object output for the front page.
+ *
+ * Called by barnard_theme's template.php.
+ */
 function _bc_islandora_featured() {
   $output = '';
   // Get a random Featured Object node.
@@ -181,11 +216,19 @@ function _bc_islandora_featured() {
   return $output;
 }
 
+/**
+ * Generates OpenSeadragon viewer output and accompanying JavaScript and CSS.
+ * 
+ * We reimplement this in order to pass in custom settings via
+ * $variables['settings']. If we could set these values through the
+ * islandora_openseadragon admin page, this wouldn't be necessary...
+ */
 function theme_bc_islandora_openseadragon_viewer(&$variables) {
   // Variable fedora_object included in results, but not used.
   $library_path = libraries_get_path('openseadragon');
   $module_path = drupal_get_path('module', 'islandora_openseadragon');
   $variables['viewer_id'] = 'islandora-openseadragon';
+  // Here's where we look for additional custom settings.
   $settings = array_merge($variables['settings'] ? $variables['settings'] : array(), array(
     'id' => $variables['viewer_id'],
     'prefixUrl' => file_create_url("$library_path/images/"),
@@ -277,17 +320,19 @@ function theme_bc_islandora_openseadragon_viewer(&$variables) {
     }
   }
   drupal_add_css("$module_path/css/islandora_openseadragon.theme.css");
-  //return "<div id=\"osd-toolbar\"></div>\n<div id=\"{$variables['viewer_id']}\" class=\"islandora-openseadragon\"></div>";
   return "<div id=\"{$variables['viewer_id']}\" class=\"islandora-openseadragon\"></div>";
 }
 
+/**
+ * Generates themed breadcrumb output.
+ */
 function theme_bc_islandora_breadcrumb(&$vars) {
   $output = '';
   $bc = $vars['breadcrumb'];
 
   // Is this an islandora object?
   if (arg(2) && $object = islandora_object_load(arg(2))) {
-    $bc[] = l('Collections', 'collections');
+    $bc[] = l(t('Collections'), 'collections');
     $collection_results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
     $cm_results = $object->relationships->get(FEDORA_MODEL_URI, 'hasModel');
     $mods = isset($object['MODS']) ? simplexml_load_string($object['MODS']->getContent(NULL)) : NULL;
@@ -295,31 +340,54 @@ function theme_bc_islandora_breadcrumb(&$vars) {
       $identifier = preg_replace('/^BC/', '', array_shift(explode('_', (string) $mods->identifier)));
       switch ($identifier) {
         // Mortarboard.
-        case '12-01': 
-          $bc[] = l('Yearbook', 'yearbook');
+        case '12-01':
+          $bc[] = l(t('Yearbook'), 'yearbook');
           // Is it a page (= "member of" a book, not just book collection)?
           // If so, link to the parent book.
-          $parent = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
-          $book = islandora_object_load($parent[0]['object']['value']);
-          if ($book->id != variable_get('bc_islandora_yearbook_pid', 'islandora:bookCollection')) {
-            $bc[] = l($book->label, "islandora/object/{$book->id}");
+          if ($book_link = _bc_islandora_book_link($object, variable_get('bc_islandora_yearbook_pid', 'islandora:bookCollection'))) {
+            $bc[] = $book_link;
           }
-        break;
+          break;
+
+        // Student Publications.
+        case '12-04':
+        case '12-05':
+        case '12-06':
+        case '12-11':
+        case '12-14':
+        case '12-18':
+        case '12-22':
+        case '12-23':
+        case '12-24':
+          $bc[] = l(t('Student Publications'), 'student-publications');
+          $is_pub = TRUE;
+          if ($pub_link = _bc_islandora_book_link($object, variable_get('bc_islandora_pubs_pid', 'islandora:1022'))) {
+            $bc[] = $pub_link;
+          }
+          break;
+
+        // "Special" student publications: don't provide issue link.
+        case '12-09':
+        case '12-26':
+          $bc[] = l(t('Student Publications'), 'student-publications');
+          break;
+
         // Bulletin.
         case '12-03':
           module_load_include('inc', 'islandora_newspaper', 'includes/utilities');
-          $bc[] = l('Newspaper', 'bulletin');
+          $bc[] = l(t('Newspaper'), 'bulletin');
           // Is it a page? If so, link to parent issue.
           $issue_pid = islandora_newspaper_get_issue($object);
           if ($issue = islandora_object_load($issue_pid)) {
             $bc[] = l($issue->label, "islandora/object/{$issue->id}");
           }
-        break;
+          break;
+
         default:
           $genre = $mods && isset($mods->genre) ? (string) $mods->genre : NULL;
           // If a photo, generate search link for genre = photo.
           if ($genre == 'photographs') {
-            $bc[] = l('Photographs', 'islandora/search', array(
+            $bc[] = l(t('Photographs'), 'islandora/search', array(
               'query' => array(
                 'type' => 'dismax',
                 'f[0]' => 'mods_genre_ms:"' . $genre . '"',
@@ -355,7 +423,7 @@ function theme_bc_islandora_breadcrumb(&$vars) {
               $bc[] = $links['c'];
             }
           }
-        break;
+          break;
       }
     }
   }
@@ -364,83 +432,60 @@ function theme_bc_islandora_breadcrumb(&$vars) {
     $node = menu_get_object();
     $is_exhibition = $node->type == 'exhibition';
     $alias = drupal_get_path_alias(implode('/', arg()));
-    if (in_array($alias, array('bulletin', 'yearbook')) || $is_exhibition) {
-      $bc[] = l('Collections', 'collections');
-      if ($is_exhibition) {
-        $bc[] = l('Exhibits', 'exhibits');
-      }
+    if (in_array($alias, array('bulletin', 'yearbook'))) {
+      $bc[] = l(t('Collections'), 'collections');
+    }
+    elseif ($is_exhibition) {
+      $bc[] = l(t('Exhibits'), 'exhibits');
     }
   }
 
   // Add the current page's title to the existing breadcrumb.
   if (count($bc) >= 1 && $title = menu_get_active_title()) {
     $title_parts = explode(',', $title);
+    $last_part = array_pop($title_parts);
     // In these special cases, use whatever text occurs after the last comma
     // (e.g. "issue 1") as the title.
-    if ((preg_match('/^Barnard Bulletin/', $title) !== 0 && count($title_parts) == 4) ||
-     (preg_match('/^Annual|Mortarboard/', $title) !== 0 && count($title_parts) == 2))  {
-      $bc[] = array_pop($title_parts);
+    if (array_shift(explode(' ', preg_replace('/^ /', '', $last_part))) == 'page' || $is_pub) {
+      $bc[] = $last_part;
     }
     else {
       $bc[] = $title;
     }
   }
 
-  // Generate themed output.
   $output .= '<div class="breadcrumb">' . implode(' » ', $bc) . '</div>';
   return $output;
 }
 
-function _bc_islandora_np_link($object, $type = 'newspaper', $relationship = 'isMemberOfCollection') {
-  $collection_results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
-  $is_np = FALSE;
-  $np_link = NULL;
-
-  foreach ($collection_results as $cr) {
-    if ($cr['object']['value'] == variable_get('bc_islandora_newspaper_pid', 'islandora:74')) {
-      $is_np = TRUE;
-      $np_link = l('Newspaper', 'bulletin');
-    }
+/**
+ * Provides a link to a parent book object.
+ */
+function _bc_islandora_book_link($object, $parent_collection) {
+  $parent = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
+  $book = islandora_object_load($parent[0]['object']['value']);
+  // Don't generate a link to islandora:bookCollection or whatever.
+  if ($book->id != $parent_collection) {
+    return l($book->label, "islandora/object/{$book->id}");
   }
-  if (!$is_np) {
-    $get_np = "islandora_newspaper_get_{$type}";
-    $np_obj = islandora_object_load($get_np($object));
-    if ($np_collection = $np_obj->relationships->get(FEDORA_RELS_EXT_URI, $relationship)) {
-      $np_collection_obj = islandora_object_load($np_collection[0]['object']['value']);
-      $np_link = l($np_collection_obj->label, 'islandora/object/' . $np_collection_obj->id);
-    }
-  }
-  return $np_link;
+  return NULL;
 }
 
-function _bc_islandora_is_bulletin($object) {
-  $cm_results = $object->relationships->get(FEDORA_MODEL_URI, 'hasModel');
-  if ($cm_results[0]['object']['value'] == 'islandora:newspaperPageCModel') {
-    $np_issue = islandora_object_load(islandora_newspaper_get_issue($object));
-  }
-  $np_issue_rels = $np_issue->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
-  foreach ($np_issue_rels as $npr) {
-    if ($npr['object']['value'] == variable_get('bc_islandora_newspaper_pid', 'islandora:74')) {
-      return TRUE;
-    }
-  }
-  return FALSE;
-}
-
+/**
+ * Generates themed exhibit output.
+ *
+ * @todo A lot of this stuff could be done on the front end using AJAX calls...
+ */
 function theme_bc_islandora_exhibition($args) {
   $node = $args['node'];
   $objects = array();
   $themes = array();
   $slides_output = $img_output = '';
-  $nav_output = '<div id="ex-nav">
-      <a id="prev" href="#">&larr;&nbsp;prev</a>
-      <a id="next" href="#">next&nbsp;&rarr;</a>
-    </div>';
   $themes_output = '<div id="ex-themes">';
   // Create a structured list of exhibition objects.
   foreach ($node->field_object[$node->language] as $i => $object) {
     $objects[$i]['description'] = isset($object['node']->field_description[$node->language]) ?
-      $object['node']->field_description[$node->language][0]['value'] :
+      check_markup($object['node']->field_description[$node->language][0]['value'], $object['node']->field_description[$node->language][0]['format']) :
       '';
     $objects[$i]['pid'] = isset($object['node']->field_fedora_pid[$node->language]) ?
       $object['node']->field_fedora_pid[$node->language][0]['value'] :
@@ -452,24 +497,36 @@ function theme_bc_islandora_exhibition($args) {
     $images = isset($object['node']->field_images[$node->language]) ?
       $object['node']->field_images[$node->language] :
       array();
-    $objects[$i]['images'] = array();  
+    $objects[$i]['images'] = array();
     foreach ($images as $j => $fc_item) {
       $fc_id = $fc_item['value'];
       $fc_entity = entity_load('field_collection_item', array($fc_id));
       $objects[$i]['images'][$j] = array(
         'uri' => $fc_entity[$fc_id]->field_image[$node->language][0]['uri'],
         'caption' => $fc_entity[$fc_id]->field_caption[$node->language][0]['value'],
+        'pid' => $fc_entity[$fc_id]->field_fedora_pid[$node->language][0]['value'],
       );
     }
   }
   // Cycle through objects and generate output.
   foreach ($objects as $i => $item) {
+    // Anchor values for current, next, and previous page.
+    $pg_frag = 'page' . strval($i + 1);
+    $prev_frag = 'page' . ($i ? strval($i) : strval(count($objects)));
+    $next_frag = 'page' . ($i != count($objects) - 1 ? strval($i + 2) : '1');
     $first = !$i;
     $img_output = '';
     $slides_output .= '<div class="ex-obj';
+    // Generate a new theme link if we didn't get this theme yet.
     if (!in_array($item['theme'], $themes)) {
       $themes[] = $item['theme'];
-      $themes_output .= '<a href="#" class="theme" data-theme="' . $item['theme'] . '">' . $item['theme'] . '</a>';
+      $themes_output .= l($item['theme'], request_path(), array(
+        'attributes' => array(
+          'class' => 'theme',
+          'data-theme' => $item['theme'],
+        ),
+        'fragment' => $pg_frag,
+      ));
     }
     if ($first) {
       $slides_output .= ' first';
@@ -480,6 +537,7 @@ function theme_bc_islandora_exhibition($args) {
     $slides_output .= '<div class="ex-images">';
     $tn_output = '<div class="ex-thumbnails">';
     $show_tn = count($item['images']) > 1;
+    // Generate image output (including thumbnails).
     foreach ($item['images'] as $j => $img) {
       $first_img = !$j;
       $img_index = strval($j + 1);
@@ -489,47 +547,85 @@ function theme_bc_islandora_exhibition($args) {
         $img_output .= ' first';
       }
       $img_output .= '" id="' . $img_index . '">';
-      $img_output .= '<img src="/' . $img_path . '"><br>';
+      // (Uses the image style "exhibit" to get image URL.)
+      $img_output .= l(theme('image_style', array(
+          'style_name' => 'exhibit',
+          'path' => $img['uri'],
+        )),
+        $img_path,
+        array(
+          'attributes' => array(
+            'rel' => 'slide' . $i,
+            'class' => 'colorbox-load',
+            'title' => $img['caption'],
+          ),
+          'html' => TRUE,
+        )
+      );
+      $img_output .= '<br/>';
       $img_output .= '<span class="caption">' . $img['caption'];
-      if ($item['pid']) {
-        $img_output .= '&nbsp;(' . l('View object',
-          'islandora/object/' . $item['pid'], array(
-          'attributes' => array('target' => '_blank'),
-        )) . ')';
+      if ($img['pid']) {
+        $img_output .= '&nbsp;(' . l(t('View object'),
+          'islandora/object/' . $img['pid'], array(
+            'attributes' => array('target' => '_blank'),
+          )
+        ) . ')';
       }
       $img_output .= '</span>';
       $img_output .= '</div>';
+      // Show thumbnails below image if more than one image attached to slide.
       if ($show_tn) {
-        $tn_args = array(
-          'style_name' => 'thumbnail',
-          'path' => $img['uri'],
-          'attributes' => array('id' => 'tn' . $img_index),
+        $tn_id = 'tn' . $img_index;
+        // (Uses the image style "thumbnail" to get image URL.)
+        $tn_output .= l(theme('image_style', array(
+            'style_name' => 'thumbnail',
+            'path' => $img['uri'],
+            'attributes' => array('id' => $tn_id),
+          )),
+          request_path(),
+          array(
+            'fragment' => $pg_frag . '#' . $tn_id,
+            'html' => TRUE,
+          )
         );
-        $tn_output .= '<a href="#">';
-        $tn_output .= theme('image_style', $tn_args);
-        $tn_output .= '</a>';
       }
     }
     $tn_output .= '</div>';
     $img_output .= $tn_output;
     $slides_output .= $img_output . '</div>';
     $slides_output .= '<div class="ex-txt">' . $item['description'] . '</div>';
+    // Navigation links.
+    $slides_output .= '<div id="ex-nav">';
+    $slides_output .= l(t('« Prev'), request_path(), array(
+      'attributes' => array('id' => 'prev'),
+      'fragment' => $prev_frag,
+    ));
+    $slides_output .= l(t('Next »'), request_path(), array(
+      'attributes' => array('id' => 'next'),
+      'fragment' => $next_frag,
+    ));
+    $slides_output .= '</div>';
     $slides_output .= '</div>';
   }
   $themes_output .= '</div>';
-  $output = $themes_output . $nav_output . $slides_output;
+  $output = $themes_output . $slides_output;
   return $output;
 }
 
+/**
+ * Helper function to make exhibit layout field values human-readable.
+ */
 function _bc_islandora_get_ex_layout($lid) {
   $layout = '';
-  switch($lid) {
+  switch ($lid) {
     case 1:
       $layout = 'left';
       break;
+
     case 2:
       $layout = 'right';
       break;
+
     case 4:
       $layout = 'center';
       break;
@@ -537,6 +633,9 @@ function _bc_islandora_get_ex_layout($lid) {
   return $layout;
 }
 
+/**
+ * Helper function to generate download links for given datastreams.
+ */
 function _bc_islandora_dl_links($obj, $datastreams = array('PDF', 'JPG')) {
   module_load_include('inc', 'islandora', 'includes/datastream');
   $urls = array();
@@ -549,6 +648,11 @@ function _bc_islandora_dl_links($obj, $datastreams = array('PDF', 'JPG')) {
   return implode('<span class="separator">&nbsp;|&nbsp;</span>', $urls);
 }
 
+/**
+ * Helper function to determine whether $object is a textual document.
+ *
+ * Called by barnard_theme's template.php.
+ */
 function _bc_islandora_is_document($object) {
   module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
   $output = '';
@@ -556,31 +660,25 @@ function _bc_islandora_is_document($object) {
     $results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOfCollection');
     if (!empty($results) && $parent_collection = $results[0]['object']['value']) {
       $collection = islandora_object_load($parent_collection);
+      // If this object's parent collection's pid is the same as our database
+      // variable bc_islandora_documents_pid, the answer is YES.
       if ($collection->id == variable_get('bc_islandora_documents_pid', '')) {
         return TRUE;
       }
-      else { 
-        return FALSE;
-      }
-    }
-  }
-}
-
-function _bc_islandora_is_genre($object, $genre = array()) {
-  if (!empty($object['MODS']) && $mods = simplexml_load_string($object['MODS']->getContent(NULL))) {
-    if (isset($mods->genre) && in_array((string) $mods->genre, $genre)) {
-      return TRUE;
     }
   }
   return FALSE;
 }
 
+/**
+ * Helper function to get the sequential position of an object.
+ *
+ * Called by barnard_theme's template.php
+ */
 function _bc_islandora_get_sequence($object) {
   $seq_results = $object->relationships->get(ISLANDORA_RELS_EXT_URI, 'isSequenceNumber');
   if (!empty($seq_results)) {
     return $seq_results[0]['object']['value'];
   }
-  else {
-    return NULL;
-  }
+  return NULL;
 }
