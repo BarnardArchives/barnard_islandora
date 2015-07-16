@@ -180,30 +180,31 @@ function _bc_islandora_featured() {
   $output = '';
   // Get a random Featured Object node.
   $node_q = db_select('node', 'n')
-    ->fields('n', array('nid'))
+    ->fields('n', array('vid'))
     ->condition('type', 'featured_object')
     ->condition('status', 1)
     ->range(0, 1)
     ->orderRandom();
-
-  if ($nid = $node_q->execute()->fetchField()) {
+  if ($vid = $node_q->execute()->fetchField()) {
     // Get featured object image.
     $img_q = db_select('file_managed', 'fm')
       ->fields('fm', array('uri'));
     $img_q->join('field_data_field_object_image', 'foi', 'fm.fid = foi.field_object_image_fid');
-    $img_q->condition('foi.entity_id', $nid, '=');
+    $img_q->condition('foi.revision_id', $vid, '=');
     if ($img_uri = $img_q->execute()->fetchField()) {
       drupal_add_js(array('featured_img_path' => file_create_url($img_uri)), 'setting');
     }
     // Get caption.
     $cap_q = db_select('field_data_field_caption', 'c')
       ->fields('c', array('field_caption_value'))
-      ->condition('entity_id', $nid, '=');
+      ->condition('revision_id', $vid, '=')
+      ->condition('bundle', 'featured_object', '=');
     if ($cap = $cap_q->execute()->fetchField()) {
       // Get pid. !
       $pid_q = db_select('field_data_field_fedora_pid', 'fp')
         ->fields('fp', array('field_fedora_pid_value'))
-        ->condition('entity_id', $nid, '=');
+        ->condition('revision_id', $vid, '=')
+        ->condition('bundle', 'featured_object', '=');
       if ($pid = $pid_q->execute()->fetchField()) {
         $output .= l($cap, "islandora/object/{$pid}");
       }
