@@ -163,7 +163,6 @@ function theme_bc_islandora_newspaper_page(&$vars) {
   $issue = islandora_object_load(islandora_newspaper_get_issue($object));
   $pid = $object->id;
   $page_metadata = islandora_paged_content_get_page_metadata_from_djatoka($pid);
-
   return theme('bc_islandora_openseadragon_viewer', array(
     'uri' => $page_metadata['identifier'],
     'settings' => array(),
@@ -310,8 +309,8 @@ function theme_bc_islandora_openseadragon_viewer(&$variables) {
   ), 'setting');
 
   $js_files = array(
-    "$module_path/js/islandora_openseadragon.js",
     "$library_path/openseadragon.js",
+    "$module_path/js/islandora_openseadragon.js",
     "$module_path/js/djtilesource.js",
   );
   foreach ($js_files as $filepath) {
