@@ -43,14 +43,6 @@ body {
   @include landing-page;
 }
 
-.exhibition-object.inactive {
-    display: none;
-}
-
-.exhibition-object.active {
-    display: block;
-}
-
 #dl-links {
   margin-bottom: 10px;
 }
@@ -73,71 +65,6 @@ body {
 // Student publications.
 .islandora-basic-collection.student-pubs .islandora-basic-collection-object {
   margin-left: 0;
-}
-
-// Exhibits.
-.view-id-exhibition {
-  margin-top: 20px;
-  .pager {
-    margin-bottom: 50px;
-  }
-}
-
-.exhibition {
-  width: 960px;
-  height: 850px;
-  float: left;
-  overflow: hidden;
-}
-
-.exhibition-object {
-  width: 960px;
-  /*position: absolute;*/
-  .object-description {
-    float: left;
-    margin-right: 20px;
-    max-width: 340px;
-  }
-  .object-image {
-    float: right;
-    max-width: 600px;
-    .caption {
-      font-size: 0.9em;
-      display: block;
-      margin-top: 5px;
-    }
-  }
-  span.dc-link {
-    display: block;
-    margin-top: 5px;
-  }
-}
-
-#exhibition-nav {
-  position: relative;
-}
-
-.exhibition-tn {
-  float: left;
-}
-
-.exhibition-title {
-  position: relative;
-  left: 25px;
-  top: 20px;
-}
-
-.exhibition-body {
-  position: relative;
-  left: 25px;
-}
-
-.exhibition-next {
-  margin-left: 10px;
-}
-
-.node-exhibition {
-  margin-bottom: 50px;
 }
 
 // Newspaper issue.
