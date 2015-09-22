@@ -97,6 +97,12 @@ function bc_islandora_drush_command() {
       // We can pass in users id on the command line using drush -u.
       'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_LOGIN,
     ),
+    'bc_islandora_check_ocr' => array(
+      'examples' => array(
+        'drush -u 1 bcico',
+      ),
+      'aliases' => array('bcico'),
+    ),
   );
 }
 
@@ -517,6 +523,31 @@ SPARQL;
     }
     else {
       drush_log(dt('Couldn\'t load object at pid = @pid', array('@pid' => $pid)), 'warning');
+    }
+  }
+}
+
+function drush_bc_islandora_check_ocr($collection_pid = 'islandora:bookCollection') {
+  // SPARQL query for isMemberOf book collection and hasModel bookCModel.
+  $query = <<<EOQ
+PREFIX islandora-rels-ext: <http://islandora.ca/ontology/relsext#>
+PREFIX fedora-rels-ext: <info:fedora/fedora-system:def/relations-external#>
+SELECT ?object
+FROM <#ri>
+WHERE {
+  ?object fedora-rels-ext:isMemberOf <info:fedora/{$collection_pid}> ;
+       <fedora-model:hasModel> <info:fedora/islandora:bookCModel> ;
+}
+EOQ;
+  $tuque = islandora_get_tuque_connection();
+  $results = $tuque->repository->ri->query($query, 'sparql');
+  foreach ($results as $result) {
+    $pid = isset($result['object']['value']) && $result['object']['type'] == 'pid' ?
+      $result['object']['value'] : NULL;
+    if ($pid && $book = islandora_object_load($pid)) {
+      if (!isset($book['OCR'])) {
+        drush_log(dt('Didn\'t get OCR at pid = @pid', array('@pid' => $book->id)), 'warning');
+      }
     }
   }
 }
