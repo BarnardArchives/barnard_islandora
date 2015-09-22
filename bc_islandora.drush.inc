@@ -553,6 +553,10 @@ EOQ;
             print "Didn't get OCR at book = {$book->id}\n";
             break;
           }
+          elseif (!isset($page['HOCR'])) {
+            print "Didn't get HOCR at book = {$book->id}\n";
+            break;
+          }
         }
       }
     }
