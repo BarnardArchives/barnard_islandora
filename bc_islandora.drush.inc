@@ -528,6 +528,7 @@ SPARQL;
 }
 
 function drush_bc_islandora_check_ocr($collection_pid = 'islandora:bookCollection') {
+  module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
   // SPARQL query for isMemberOf book collection and hasModel bookCModel.
   $query = <<<EOQ
 PREFIX islandora-rels-ext: <http://islandora.ca/ontology/relsext#>
@@ -545,8 +546,14 @@ EOQ;
     $pid = isset($result['object']['value']) && $result['object']['type'] == 'pid' ?
       $result['object']['value'] : NULL;
     if ($pid && $book = islandora_object_load($pid)) {
-      if (!isset($book['OCR'])) {
-        drush_log(dt('Didn\'t get OCR at pid = @pid', array('@pid' => $book->id)), 'warning');
+      $pages = islandora_paged_content_get_pages($book);
+      foreach ($pages as $p) {
+        if ($page = islandora_object_load($p['pid'])) {
+          if (!isset($page['OCR'])) {
+            print "Didn't get OCR at book = {$book->id}\n";
+            break;
+          }
+        }
       }
     }
   }
