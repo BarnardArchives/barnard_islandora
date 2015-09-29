@@ -5,6 +5,18 @@
  * Custom behavior for Barnard Digital Collections.
  */
 
+
+/**
+ * Implements hook_init().
+ *
+ * Disable caching for the front page only.
+ */
+function bc_islandora_init() {
+  if (drupal_is_front_page()) {
+    drupal_page_is_cacheable(FALSE);
+  }
+}
+
 /**
  * Implements hook_permission().
  */
