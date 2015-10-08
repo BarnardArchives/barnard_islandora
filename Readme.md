@@ -26,16 +26,7 @@ Three custom blocks provide markup for navigating newspapers, books, and student
 
 ## Newspapers
 
-We implement our own theme functions—`theme_bc_islandora_newspaper_issue()` and `theme_bc_islandora_newspaper_page()`—for displaying newspaper issue and page objects. Both functions invoke `theme_bc_islandora_openseadragon_viewer()`, which mimics and slightly modifies the [islandora_openseadragon](https://github.com/Islandora/islandora_openseadragon)'s method of generating viewer output. The main purpose of these modifications is to display multiple-page newspaper issues in the OpenSeadragon viewer; we do this by passing an array of URIs to the viewer theme function instead of just one. When displaying newspaper issues, we also pass some additional settings to OpenSeadragon:
-
-```php
-// Extra settings to pass to the OpenSeadragon viewer.
-$osd_settings = $context == 'issue' ? array(
-  'preserveViewport' => 'true',
-  'showReferenceStrip' => 'true',
-  'referenceStripSizeRatio' => '0.15',
-) : array();
-```
+We display newspapers using the [islandora_openseadragon_paged](https://github.com/BarnardArchives/islandora_openseadragon_paged) viewer.
 
 ## Breadcrumbs
 
