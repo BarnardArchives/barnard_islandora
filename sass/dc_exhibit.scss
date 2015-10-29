@@ -1,10 +1,12 @@
+@import "dc_exhibit_responsive";
+
 .view-id-exhibition {
   margin-top: 20px;
   .views-row-1 {
     padding-top: 0 !important;
   }
   .exhibition-object {
-    width: 960px;
+    width: 90%;
     clear: left;
     padding-top: 25px;
     .views-field {
