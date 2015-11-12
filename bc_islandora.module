@@ -104,7 +104,7 @@ function bc_islandora_config($form, &$form_state) {
  */
 function bc_islandora_config_submit($form, &$form_state) {
   variable_set('bc_islandora_newspaper_pid', $form_state['values']['bc_islandora_collection_newspaper']);
-  variable_get('bc_islandora_pubs_pid', $form_state['values']['bc_islandora_student_pubs']);
+  variable_set('bc_islandora_pubs_pid', $form_state['values']['bc_islandora_student_pubs']);
   $form_state['redirect'] = 'admin/islandora/bc_config';
   drupal_set_message(t('Saved changes.'));
 }
@@ -320,7 +320,7 @@ EOQ;
 
     // Student publications landing page just uses standard islandora view.
     case 'bc_islandora_student_pubs':
-      $collection_pid = variable_get($delta . '_pid', 'islandora:1022');
+      $collection_pid = variable_get('bc_islandora_pubs_pid', 'islandora:1022');
       $pubs_collection = islandora_object_load($collection_pid);
       $block['content'] = islandora_view_object($pubs_collection);
       break;

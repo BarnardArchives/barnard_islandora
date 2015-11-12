@@ -325,7 +325,7 @@ function drush_bc_islandora_ingest_pubs($directory) {
       $pub_pid = 'bc:' . $pid_title;
       // Publication ids that constitute "exceptions" (different behavior
       // required).
-      $exceptions = array('BC12-9_1959', 'BC12-26_1970');
+      $exceptions = array('BC12-9_1959', 'BC12-26_1970', 'BC12-30_C19711972');
       $exception = in_array(array_pop(explode('/', $path)), $exceptions);
       // If pub object doesn't exist, create it.
       if (!islandora_object_load($pub_pid) && !$exception) {

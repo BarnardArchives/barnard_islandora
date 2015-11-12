@@ -203,6 +203,7 @@ function theme_bc_islandora_breadcrumb(&$vars) {
         // "Special" student publications: don't provide issue link.
         case '12-09':
         case '12-26':
+        case '12-30':
           $bc[] = l(t('Student Publications'), 'student-publications');
           if ($cm_results[0]['object']['value'] == 'islandora:pageCModel') {
             $bc[] = _bc_islandora_book_link($object, variable_get('bc_islandora_pubs_pid', 'islandora:1022'));
