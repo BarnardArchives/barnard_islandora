@@ -82,32 +82,32 @@ function bc_islandora_theme($existing, $type, $theme, $path) {
  */
 function bc_islandora_config($form, &$form_state) {
   // TODO others to add?
-  $form['bc_islandora_collection_newspaper'] = array(
+  $form['bc_islandora_newspaper_pid'] = array(
     '#type' => 'textfield',
     '#title' => t('Newspaper collection pid'),
     '#default_value' => variable_get('bc_islandora_newspaper_pid', ''),
   );
-  $form['bc_islandora_student_pubs'] = array(
+  $form['bc_islandora_pubs_pid'] = array(
     '#type' => 'textfield',
     '#title' => t('Student Publications collection pid'),
     '#default_value' => variable_get('bc_islandora_pubs_pid', 'islandora:1022'),
   );
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save'),
-  );
-  return $form;
+  // $form['submit'] = array(
+  //   '#type' => 'submit',
+  //   '#value' => t('Save'),
+  // );
+  return system_settings_form($form);
 }
 
 /**
  * Implements hook_form_submit().
  */
-function bc_islandora_config_submit($form, &$form_state) {
-  variable_set('bc_islandora_newspaper_pid', $form_state['values']['bc_islandora_collection_newspaper']);
-  variable_set('bc_islandora_pubs_pid', $form_state['values']['bc_islandora_student_pubs']);
-  $form_state['redirect'] = 'admin/islandora/bc_config';
-  drupal_set_message(t('Saved changes.'));
-}
+// function bc_islandora_config_submit($form, &$form_state) {
+//   variable_set('bc_islandora_newspaper_pid', $form_state['values']['bc_islandora_collection_newspaper']);
+//   variable_set('bc_islandora_pubs_pid', $form_state['values']['bc_islandora_student_pubs']);
+//   $form_state['redirect'] = 'admin/islandora/bc_config';
+//   drupal_set_message(t('Saved changes.'));
+// }
 
 /**
  * Implements hook_block_info().
