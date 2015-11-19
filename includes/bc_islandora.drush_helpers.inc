@@ -654,6 +654,9 @@ PAGE_RDF;
   return $pid;
 }
 
+/**
+ * Creates a pdf object.
+ */
 function create_pdf_object($pdf, $xml) {
   $connection = islandora_get_tuque_connection();
   $mods_xml = new DOMDocument();
@@ -663,7 +666,7 @@ function create_pdf_object($pdf, $xml) {
   print "$label\n";
   $obj_pid = 'bc:oh-' . str_replace(' ', '-', strtolower(str_replace('Oral history of ', '', $label)));
   $collection_pid = variable_get('bc_islandora_oh_pid', 'islandora:990');
-  
+
   if ($object = islandora_object_load($obj_pid)) {
     drush_log(dt('Object exists at @pid; skipping...', array('@pid' => $obj_pid)), 'ok');
     return $obj_pid;
@@ -740,7 +743,8 @@ PDF_RDF;
     drush_log(dt("There was an error creating the page object!\n"), 'error');
   }
 
-  unset($object); // make sure destructors are called as this script can run for a long time.
+  // Make sure destructors are called as this script can run for a long time.
+  unset($object);
   unset($pdf_datastream);
   unset($mods_datastream);
   unset($rels_datastream);

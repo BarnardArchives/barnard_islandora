@@ -469,7 +469,7 @@ function drush_bc_islandora_generate_newspaper_csv($directory = '/home/BCIT/dsav
 /**
  * Helper function to set and process derivative-creation batches.
  *
- * @see includes/bc_islandora.drush_batch.inc.
+ * @see includes/bc_islandora.drush_batch.inc
  */
 function _bc_islandora_create_derivatives($objects) {
   module_load_include('inc', 'bc_islandora', 'includes/bc_islandora.drush_batch');
@@ -527,6 +527,9 @@ SPARQL;
   }
 }
 
+/**
+ * Checks if book page objects have (H)OCR datastreams.
+ */
 function drush_bc_islandora_check_ocr($collection_pid = 'islandora:bookCollection') {
   module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
   // SPARQL query for isMemberOf book collection and hasModel bookCModel.

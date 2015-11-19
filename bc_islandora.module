@@ -92,22 +92,14 @@ function bc_islandora_config($form, &$form_state) {
     '#title' => t('Student Publications collection pid'),
     '#default_value' => variable_get('bc_islandora_pubs_pid', 'islandora:1022'),
   );
-  // $form['submit'] = array(
-  //   '#type' => 'submit',
-  //   '#value' => t('Save'),
-  // );
+  $form['bc_solr_date_facet_format'] = array(
+    '#type' => 'textfield',
+    '#title' => t('PHP date format that Solr should use for the date facet.'),
+    '#default_value' => variable_get('bc_solr_date_facet_format', 'Y/m/d'),
+    '#description' => t('<strong>Only accepts: day, month, and year format characters of d/j m/n Y/y.</strong> <br /><a target=_new href="http://php.net/manual/en/function.date.php#refsect1-function.date-parameters">PHP Date Format documentation.</a> <br />Format preview: @format', array('@format' => date(variable_get('bc_solr_date_facet_format', 'Y/m/d')))),
+  );
   return system_settings_form($form);
 }
-
-/**
- * Implements hook_form_submit().
- */
-// function bc_islandora_config_submit($form, &$form_state) {
-//   variable_set('bc_islandora_newspaper_pid', $form_state['values']['bc_islandora_collection_newspaper']);
-//   variable_set('bc_islandora_pubs_pid', $form_state['values']['bc_islandora_student_pubs']);
-//   $form_state['redirect'] = 'admin/islandora/bc_config';
-//   drupal_set_message(t('Saved changes.'));
-// }
 
 /**
  * Implements hook_block_info().
@@ -341,4 +333,24 @@ function _bc_islandora_newspaper_group_issues($issues) {
     $decades[$decade][$year] = $data;
   }
   return $decades;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function bc_islandora_form_islandora_solr_date_filter_form_alter(&$form, &$form_state) {
+  $facet_format = variable_get('bc_solr_date_facet_format', 'Y/m/d');
+
+  // Update the format helper text.
+  $form['date_filter']['date_filter']['#markup'] = '<div class="description">Format: ' . date($facet_format) . '</div>';
+
+  // Do some data validation here, check to see if we're just hitting "SHOW"
+  // and therefore there is no "FROM" nor "TO" date.
+  if (!empty($form['date_filter']['date_filter_from']['#default_value']) && !empty($form['date_filter']['date_filter_to']['#default_value'])) {
+    $date_from = new DateTime($form['date_filter']['date_filter_from']['#default_value']);
+    $date_to = new DateTime($form['date_filter']['date_filter_to']['#default_value']);
+
+    $form['date_filter']['date_filter_from']['#default_value'] = $date_from->format($facet_format);
+    $form['date_filter']['date_filter_to']['#default_value'] = $date_to->format($facet_format);
+  }
 }
