@@ -95,14 +95,7 @@ ISSUE_MODS;
   $mods_datastream->logMessage = 'MODS datastream created using Newspapers batch ingest script || SUCCESS';
 
   $object->ingestDatastream($mods_datastream);
-
-  $rels_datastream = new NewFedoraDatastream('RELS-EXT', 'X', $object, $connection->repository);
-  $rels_datastream->setContentFromString($rdf_string);
-  $rels_datastream->label = 'RELS-EXT';
-  $rels_datastream->mimetype = 'text/xml';
-  $rels_datastream->logMessage = 'RELS-EXT datastream created using Newspapers batch ingest script || SUCCESS';
-
-  $object->ingestDatastream($rels_datastream);
+  
   try {
     $object->state = 'A';
     $ingest = $tuque->repository->ingestObject($object);
@@ -120,7 +113,6 @@ ISSUE_MODS;
   }
   unset($object);
   unset($mods_datastream);
-  unset($rels_datastream);
   unset($dc_datastream);
 
   return $pid;
