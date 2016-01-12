@@ -16,6 +16,7 @@ function create_issue_object($pid, $data) {
 
   $tuque = islandora_get_tuque_connection();
   $connection = $tuque->connection;
+  $object = new NewFedoraObject($pid, $connection->repository);
 
   $title = $data[0];
   $date = date('Y-m-d', strtotime($data[1]));
@@ -57,16 +58,11 @@ function create_issue_object($pid, $data) {
     </mods> 
 ISSUE_MODS;
 
-  $rdf_string = <<<ISSUE_RDF
-    <rdf:RDF xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-      <rdf:Description rdf:about="info:fedora/$pid">
-        <fedora-model:hasModel rdf:resource="info:fedora/$content_model_pid"></fedora-model:hasModel>
-        <fedora:isMemberOf rdf:resource="info:fedora/$collection_pid"></fedora:isMemberOf>
-        <islandora:isSequenceNumber>1</islandora:isSequenceNumber>
-        <islandora:dateIssued>$date</islandora:dateIssued>
-      </rdf:Description>
-    </rdf:RDF>
-ISSUE_RDF;
+  $object->relationships->add(FEDORA_MODEL_URI, 'hasModel', $content_model_pid);
+  $object->relationships->add(FEDORA_RELS_EXT_URI, 'isMemberOf', $collection_pid);
+  $object->relationships->add(ISLANDORA_RELS_EXT_URI, 'isSequenceNumber', '1');
+  $object->relationships->add(ISLANDORA_RELS_EXT_URI, 'dateIssued', $date);
+  $object->relationships->add(ISLANDORA_RELS_EXT_URI, 'hasLanguage', 'eng');
 
   $mods_xml = new DOMDocument();
   $mods_xml->loadXML($xml);
@@ -78,8 +74,6 @@ ISSUE_RDF;
   $proc = new XSLTProcessor();
   $proc->importStylesheet($transform_xsl);
   $dc = $proc->transformToXML($mods_xml);
-
-  $object = new NewFedoraObject($pid, $connection->repository);
 
   $object->label = $title;
 
@@ -101,14 +95,7 @@ ISSUE_RDF;
   $mods_datastream->logMessage = 'MODS datastream created using Newspapers batch ingest script || SUCCESS';
 
   $object->ingestDatastream($mods_datastream);
-
-  $rels_datastream = new NewFedoraDatastream('RELS-EXT', 'X', $object, $connection->repository);
-  $rels_datastream->setContentFromString($rdf_string);
-  $rels_datastream->label = 'RELS-EXT';
-  $rels_datastream->mimetype = 'text/xml';
-  $rels_datastream->logMessage = 'RELS-EXT datastream created using Newspapers batch ingest script || SUCCESS';
-
-  $object->ingestDatastream($rels_datastream);
+  
   try {
     $object->state = 'A';
     $ingest = $tuque->repository->ingestObject($object);
@@ -126,7 +113,6 @@ ISSUE_RDF;
   }
   unset($object);
   unset($mods_datastream);
-  unset($rels_datastream);
   unset($dc_datastream);
 
   return $pid;
@@ -140,6 +126,9 @@ function create_book_object($pid, $data) {
 
   $tuque = islandora_get_tuque_connection();
   $connection = $tuque->connection;
+  
+  // Create the OBJ here, for FEDORA/ISLANDORA RELS-EXT/INT relationship->add method.
+  $object = new NewFedoraObject($pid, $connection->repository);
 
   $dsid = 'MODS';
 
@@ -247,30 +236,20 @@ function create_book_object($pid, $data) {
         </recordInfo>
       </mods>
 BOOK_MODS;
-    $rdf_string = <<<BOOK_RDF
-      <rdf:RDF xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-        <rdf:Description rdf:about="info:fedora/$pid">
-          <fedora-model:hasModel rdf:resource="info:fedora/$content_model_pid"></fedora-model:hasModel>
-          <fedora:isMemberOf rdf:resource="info:fedora/$collection_pid"></fedora:isMemberOf>
-          <islandora:isSequenceNumber>1</islandora:isSequenceNumber>
-          <islandora:dateIssued>$date</islandora:dateIssued>
-        </rdf:Description>
-      </rdf:RDF>
-BOOK_RDF;
+    $object->relationships->add(FEDORA_MODEL_URI, 'hasModel', $content_model_pid);
+    $object->relationships->add(FEDORA_RELS_EXT_URI, 'isMemberOf', $collection_pid);
+    $object->relationships->add(ISLANDORA_RELS_EXT_URI, 'isSequenceNumber', '1');
+    $object->relationships->add(ISLANDORA_RELS_EXT_URI, 'dateIssued', $date);
+    $object->relationships->add(ISLANDORA_RELS_EXT_URI, 'hasLanguage', 'eng');
   }
   // Just generate RDF if we got MODS in $data.
   else {
     $xml = $data['xml'];
     $date = $data['date'];
     $title = $data['title'];
-    $rdf_string = <<<BOOK_RDF
-      <rdf:RDF xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-        <rdf:Description rdf:about="info:fedora/$pid">
-          <fedora-model:hasModel rdf:resource="info:fedora/$content_model_pid"></fedora-model:hasModel>
-          <fedora:isMemberOf rdf:resource="info:fedora/$collection_pid"></fedora:isMemberOf>
-        </rdf:Description>
-      </rdf:RDF>
-BOOK_RDF;
+    $object->relationships->add(FEDORA_MODEL_URI, 'hasModel', $content_model_pid);
+    $object->relationships->add(FEDORA_RELS_EXT_URI, 'isMemberOf', $collection_pid);
+    $object->relationships->add(ISLANDORA_RELS_EXT_URI, 'hasLanguage', 'eng');
   }
 
   $mods_xml = new DOMDocument();
@@ -283,8 +262,6 @@ BOOK_RDF;
   $proc = new XSLTProcessor();
   $proc->importStylesheet($transform_xsl);
   $dc = $proc->transformToXML($mods_xml);
-
-  $object = new NewFedoraObject($pid, $connection->repository);
 
   $object->label = $title;
 
@@ -307,13 +284,6 @@ BOOK_RDF;
 
   $object->ingestDatastream($mods_datastream);
 
-  $rels_datastream = new NewFedoraDatastream('RELS-EXT', 'X', $object, $connection->repository);
-  $rels_datastream->setContentFromString($rdf_string);
-  $rels_datastream->label = 'RELS-EXT';
-  $rels_datastream->mimetype = 'text/xml';
-  $rels_datastream->logMessage = 'RELS-EXT datastream created using Newspapers batch ingest script || SUCCESS';
-
-  $object->ingestDatastream($rels_datastream);
   try {
     $object->state = 'A';
     $ingest = $tuque->repository->ingestObject($object);
@@ -331,7 +301,6 @@ BOOK_RDF;
   }
   unset($object);
   unset($mods_datastream);
-  unset($rels_datastream);
   unset($dc_datastream);
 
   return $pid;
@@ -353,15 +322,6 @@ function create_pub_object($pid, $data) {
 
   $xml = $data['xml'];
 
-  $rdf_string = <<<PUB_RDF
-    <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#">
-      <rdf:Description rdf:about="info:fedora/$pid">
-        <fedora:isMemberOf rdf:resource="info:fedora/$collection_pid"></fedora:isMemberOf>
-        <fedora-model:hasModel rdf:resource="info:fedora/$content_model_pid"></fedora-model:hasModel>
-      </rdf:Description>
-    </rdf:RDF>
-PUB_RDF;
-
   $mods_xml = new DOMDocument();
   $mods_xml->loadXML($xml);
 
@@ -376,6 +336,10 @@ PUB_RDF;
   $object = new NewFedoraObject($pid, $connection->repository);
 
   $object->label = $data['title'];
+
+  $object->relationships->add(FEDORA_MODEL_URI, 'hasModel', $content_model_pid);
+  $object->relationships->add(FEDORA_RELS_EXT_URI, 'isMemberOf', $collection_pid);
+  $object->relationships->add(ISLANDORA_RELS_EXT_URI, 'hasLanguage', 'eng');
 
   $dc_datastream = new NewFedoraDatastream('DC', 'X', $object, $connection->repository);
 
@@ -396,13 +360,6 @@ PUB_RDF;
 
   $object->ingestDatastream($mods_datastream);
 
-  $rels_datastream = new NewFedoraDatastream('RELS-EXT', 'X', $object, $connection->repository);
-  $rels_datastream->setContentFromString($rdf_string);
-  $rels_datastream->label = 'RELS-EXT';
-  $rels_datastream->mimetype = 'text/xml';
-  $rels_datastream->logMessage = 'RELS-EXT datastream created using Newspapers batch ingest script || SUCCESS';
-
-  $object->ingestDatastream($rels_datastream);
   try {
     $object->state = 'A';
     $ingest = $tuque->repository->ingestObject($object);
@@ -420,7 +377,6 @@ PUB_RDF;
   }
   unset($object);
   unset($mods_datastream);
-  unset($rels_datastream);
   unset($dc_datastream);
 
   return $pid;
@@ -433,6 +389,8 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid, $type
   $connection = islandora_get_tuque_connection();
 
   $pid = $page_pid;
+
+  $object = new NewFedoraObject($pid, $connection->repository);
 
   // Set variables for MODS generation below. (Values differ depending on
   // $type.)
@@ -560,20 +518,14 @@ PAGE_MODS;
       </mods>
 PAGE_MODS;
   }
-
-  $rdf_string = <<<PAGE_RDF
-    <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#">
-      <rdf:Description rdf:about="info:fedora/$pid">
-        <fedora-model:hasModel rdf:resource="info:fedora/$content_model_pid"></fedora-model:hasModel>
-        <islandora:hasLanguage></islandora:hasLanguage>
-        <islandora:isPageOf rdf:resource="info:fedora/$collection_pid"></islandora:isPageOf>
-        <islandora:isSequenceNumber>$page_number</islandora:isSequenceNumber>
-        <islandora:isPageNumber>$page_number</islandora:isPageNumber>
-        <islandora:isSection>1</islandora:isSection>
-        <fedora:isMemberOf rdf:resource="info:fedora/$collection_pid"></fedora:isMemberOf>
-      </rdf:Description>
-    </rdf:RDF>
-PAGE_RDF;
+  
+  $object->relationships->add(FEDORA_MODEL_URI, 'hasModel', $content_model_pid);
+  $object->relationships->add(FEDORA_RELS_EXT_URI, 'isMemberOf', $collection_pid);
+  $object->relationships->add(ISLANDORA_RELS_EXT_URI, 'isPageOf', $collection_pid);
+  $object->relationships->add(ISLANDORA_RELS_EXT_URI, 'isSequenceNumber', $page_number);
+  $object->relationships->add(ISLANDORA_RELS_EXT_URI, 'isPageNumber', $page_number);
+  $object->relationships->add(ISLANDORA_RELS_EXT_URI, 'isSection', '1');
+  $object->relationships->add(ISLANDORA_RELS_EXT_URI, 'hasLanguage', 'eng');
 
   $mods_xml = new DOMDocument();
   $mods_xml->loadXML($xml);
@@ -585,8 +537,6 @@ PAGE_RDF;
   $proc = new XSLTProcessor();
   $proc->importStylesheet($transform_xsl);
   $dc = $proc->transformToXML($mods_xml);
-
-  $object = new NewFedoraObject($pid, $connection->repository);
 
   $object->label = $label;
 
@@ -621,13 +571,6 @@ PAGE_RDF;
 
   $object->ingestDatastream($image_datastream);
 
-  $rels_datastream = new NewFedoraDatastream('RELS-EXT', 'X', $object, $connection->repository);
-  $rels_datastream->setContentFromString($rdf_string);
-  $rels_datastream->label = 'Fedora Object to Object Relationship Metadata.';
-  $rels_datastream->mimetype = 'text/xml';
-  $rels_datastream->logMessage = 'RELS-EXT datastream created using Newspapers batch ingest script || SUCCESS';
-
-  $object->ingestDatastream($rels_datastream);
   try {
     $object->state = 'A';
     $ingest = $connection->repository->ingestObject($object);
@@ -648,7 +591,6 @@ PAGE_RDF;
   unset($object);
   unset($image_datastream);
   unset($mods_datastream);
-  unset($rels_datastream);
   unset($dc_datastream);
 
   return $pid;
@@ -675,14 +617,8 @@ function create_pdf_object($pdf, $xml) {
     $object = new NewFedoraObject($obj_pid, $connection->repository);
   }
 
-  $rdf_string = <<<PDF_RDF
-    <rdf:RDF xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-      <rdf:Description rdf:about="info:fedora/$obj_pid">
-        <fedora:isMemberOfCollection rdf:resource="info:fedora/$collection_pid"/>
-        <fedora-model:hasModel rdf:resource="info:fedora/islandora:sp_pdf"/>
-      </rdf:Description>
-    </rdf:RDF>
-PDF_RDF;
+  $object->relationships->add(FEDORA_MODEL_URI, 'hasModel', 'sp_pdf');
+  $object->relationships->add(FEDORA_RELS_EXT_URI, 'isMemberOf', $collection_pid);
 
   $transform_xsl = new DOMDocument();
   $xsl_file = DRUPAL_ROOT . '/' . drupal_get_path('module', 'islandora_importer') . '/xsl/mods_to_dc.xsl';
@@ -720,13 +656,7 @@ PDF_RDF;
   $pdf_datastream->logMessage = 'OBJ datastream created using PDF batch ingest script || SUCCESS';
 
   $object->ingestDatastream($pdf_datastream);
-  $rels_datastream = new NewFedoraDatastream('RELS-EXT', 'X', $object, $connection->repository);
-  $rels_datastream->setContentFromString($rdf_string);
-  $rels_datastream->label = 'Fedora Object to Object Relationship Metadata.';
-  $rels_datastream->mimetype = 'text/xml';
-  $rels_datastream->logMessage = 'RELS-EXT datastream created using PDF batch ingest script || SUCCESS';
 
-  $object->ingestDatastream($rels_datastream);
   try {
     $object->state = 'A';
     $ingest = $connection->repository->ingestObject($object);
@@ -747,7 +677,6 @@ PDF_RDF;
   unset($object);
   unset($pdf_datastream);
   unset($mods_datastream);
-  unset($rels_datastream);
   unset($dc_datastream);
 
   return $obj_pid;
