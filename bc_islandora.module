@@ -98,6 +98,12 @@ function bc_islandora_config($form, &$form_state) {
     '#default_value' => variable_get('bc_solr_date_facet_format', 'Y/m/d'),
     '#description' => t('<strong>Only accepts: day, month, and year format characters of d/j m/n Y/y.</strong> <br /><a target=_new href="http://php.net/manual/en/function.date.php#refsect1-function.date-parameters">PHP Date Format documentation.</a> <br />Format preview: @format', array('@format' => date(variable_get('bc_solr_date_facet_format', 'Y/m/d')))),
   );
+  $form['bc_islandora_hide_datepicker'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Hide date picker?'),
+    '#default_value' => variable_get('bc_islandora_hide_datepicker', TRUE),
+    '#description' => t('Whether to hide the date picker when faceting search results by date range.'),
+  );
   return system_settings_form($form);
 }
 
@@ -339,6 +345,11 @@ function _bc_islandora_newspaper_group_issues($issues) {
  * Implements hook_form_alter().
  */
 function bc_islandora_form_islandora_solr_date_filter_form_alter(&$form, &$form_state) {
+  // Get rid of datepicker js if we have the correct setting.
+  if (variable_get('bc_islandora_hide_datepicker', FALSE)) {
+    unset($form['#attached']);    
+  }
+
   $facet_format = variable_get('bc_solr_date_facet_format', 'Y/m/d');
 
   // Update the format helper text.
