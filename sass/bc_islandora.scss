@@ -140,3 +140,14 @@ body {
 .islandora-openseadragon {
   width: 85% !important;
 }
+
+// Override solr styles. -BR 2016/3/11
+.form-item.form-type-textfield.form-item-date-filter-date-filter-from {
+    display: inline-block;
+    margin: 1em 0;
+}
+
+.form-item.form-type-textfield.form-item-date-filter-date-filter-to {
+    display: inline-block;
+    margin: 1em 0;
+}
