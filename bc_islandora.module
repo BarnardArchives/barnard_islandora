@@ -350,26 +350,38 @@ function _bc_islandora_newspaper_group_issues($issues) {
  * Implements hook_form_alter().
  */
 function bc_islandora_form_islandora_solr_date_filter_form_alter(&$form, &$form_state) {
+  global $_islandora_solr_queryclass;
+
   // Get rid of datepicker js if we have the correct setting.
   if (variable_get('bc_islandora_hide_datepicker', FALSE)) {
     unset($form['#attached']);    
   }
 
-  $facet_format = variable_get('bc_solr_date_facet_format', 'Y/m/d');
+  // Fetch our date facet_format.
+  $query_params = drupal_get_query_parameters();
+  $query_params['date_format'] ? $facet_format = $query_params['date_format'] : $facet_format = variable_get('bc_solr_date_facet_format', 'Y/m/d');
+
+  // Fetch our record start and end dates as DateTime objs.
+  $record_start = new DateTime($_islandora_solr_queryclass->islandoraSolrResult['facet_counts']['facet_dates']['mods_originInfo_dateCreated_mdt']['start']);
+  $record_end = new DateTime($_islandora_solr_queryclass->islandoraSolrResult['facet_counts']['facet_dates']['mods_originInfo_dateCreated_mdt']['end']);
 
   // Update the format helper text.
-  $form['date_filter']['date_filter']['#markup'] = '<div class="description">Format: '. date($facet_format) .'</div>';
+  $form['date_filter']['date_filter']['#markup'] = '<div class="description">(Valid formats: YYYY, YYYY/MM, YYYY/MM/DD)</div>';
+  $form['date_filter']['date_filter_submit']['#prefix'] = '<div class="description">Showing records from: '.$record_start->format($facet_format).' to '.$record_end->format($facet_format).'</div>';
+
+  // Add a handler to modify the date_filter_to to the latest date possible based on current input.
+  array_unshift($form['#submit'], 'bc_islandora_form_islandora_solr_date_filter_form_submit');
+
+  // Do not add anything to blank fields. Leave this function.
+  if (!$form['date_filter']['date_filter_from']['#default_value'] && !$form['date_filter']['date_filter_to']['#default_value']) {
+    return;
+  }
 
   // Modify the current form to use our facet_format. 
-  // This code will populate the field with the current date if no data was entered previously.
-  // Otherwise, this code will just conform the existing date.
   $date_from = new DateTime($form['date_filter']['date_filter_from']['#default_value']);
   $date_to = new DateTime($form['date_filter']['date_filter_to']['#default_value']);
   $form['date_filter']['date_filter_from']['#default_value'] = $date_from->format($facet_format);
   $form['date_filter']['date_filter_to']['#default_value'] = $date_to->format($facet_format);
-  
-  // Add a new handler to modify the date_filter_to to the oldest date possible.
-  array_unshift($form['#submit'], 'bc_islandora_form_islandora_solr_date_filter_form_submit');
 }
 
 /*
@@ -377,15 +389,19 @@ function bc_islandora_form_islandora_solr_date_filter_form_alter(&$form, &$form_
  * THIS IS A WIP.
  */ 
 function bc_islandora_form_islandora_solr_date_filter_form_submit(&$form, &$form_state) {
+  global $_islandora_solr_queryclass;
   $date_to = explode('/', $form_state['values']['date_filter']['date_filter_to']);
-  
   switch (count($date_to)) {
     case 1:
       $form_state['values']['date_filter']['date_filter_to'] .= "/12/31";
+      $_islandora_solr_queryclass->internalSolrParams['date_format'] = 'Y';
       break;
     case 2:
       $form_state['values']['date_filter']['date_filter_to'] .= "/31";
+      $_islandora_solr_queryclass->internalSolrParams['date_format'] = 'Y/m';
+      break;
+    case 3:
+      $_islandora_solr_queryclass->internalSolrParams['date_format'] = 'Y/m/d';
       break;
   }
-
 }
