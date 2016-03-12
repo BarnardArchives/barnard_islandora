@@ -350,7 +350,7 @@ function _bc_islandora_newspaper_group_issues($issues) {
  * Implements hook_form_alter().
  */
 function bc_islandora_form_islandora_solr_date_filter_form_alter(&$form, &$form_state) {
-  global $_islandora_solr_queryclass;
+  // global $_islandora_solr_queryclass;
 
   // Get rid of datepicker js if we have the correct setting.
   if (variable_get('bc_islandora_hide_datepicker', FALSE)) {
@@ -361,21 +361,20 @@ function bc_islandora_form_islandora_solr_date_filter_form_alter(&$form, &$form_
   $query_params['date_format'] ? $facet_format = $query_params['date_format'] : $facet_format = variable_get('bc_solr_date_facet_format', 'Y/m/d');
 
   // Fetch our record start and end dates as DateTime objs.
-  $record_start = new DateTime($_islandora_solr_queryclass->islandoraSolrResult['facet_counts']['facet_dates']['mods_originInfo_dateCreated_mdt']['start']);
-  $record_end = new DateTime($_islandora_solr_queryclass->islandoraSolrResult['facet_counts']['facet_dates']['mods_originInfo_dateCreated_mdt']['end']);
+  // $record_start = new DateTime($_islandora_solr_queryclass->islandoraSolrResult['facet_counts']['facet_dates']['mods_originInfo_dateCreated_mdt']['start']);
+  // $record_end = new DateTime($_islandora_solr_queryclass->islandoraSolrResult['facet_counts']['facet_dates']['mods_originInfo_dateCreated_mdt']['end']);
 
   // Update the format helper text.
   $form['date_filter']['date_filter']['#markup'] = '<div class="description">(Valid formats: YYYY, YYYY/MM, YYYY/MM/DD)</div>';
-  $form['date_filter']['date_filter_submit']['#prefix'] = '<div class="description">Showing records from: '.$record_start->format($facet_format).' to '.$record_end->format($facet_format).'</div>';
+  // $form['date_filter']['date_filter_submit']['#prefix'] = '<div class="description">Showing records from: '.$record_start->format($facet_format).' to '.$record_end->format($facet_format).'</div>';
   // Remove titles and add placeholder text instead.
   unset($form['date_filter']['date_filter_from']['#title']);
   unset($form['date_filter']['date_filter_to']['#title']);
+  $form['date_filter']['date_filter_from']['#suffix'] = '<span div="inbetween-to-worlds">to </span>';
   $form['date_filter']['date_filter_from']['#attributes']['placeholder'] = 'Start';
   $form['date_filter']['date_filter_to']['#attributes']['placeholder'] = 'End';
   // Change "Filter" to "Apply"
   $form['date_filter']['date_filter_submit']['#value'] = 'Apply';
-
-  dpm($form);
 
   // Add a handler to modify the date_filter_to to the latest date possible based on current input.
   array_unshift($form['#submit'], 'bc_islandora_form_islandora_solr_date_filter_form_submit');
