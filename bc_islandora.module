@@ -350,29 +350,32 @@ function _bc_islandora_newspaper_group_issues($issues) {
  * Implements hook_form_alter().
  */
 function bc_islandora_form_islandora_solr_date_filter_form_alter(&$form, &$form_state) {
-  // global $_islandora_solr_queryclass;
 
   // Get rid of datepicker js if we have the correct setting.
   if (variable_get('bc_islandora_hide_datepicker', FALSE)) {
     unset($form['#attached']);
   }
+
   // Fetch our date facet_format.
   $query_params = drupal_get_query_parameters();
   $query_params['date_format'] ? $facet_format = $query_params['date_format'] : $facet_format = variable_get('bc_solr_date_facet_format', 'Y/m/d');
 
   // Fetch our record start and end dates as DateTime objs.
+  // global $_islandora_solr_queryclass;
   // $record_start = new DateTime($_islandora_solr_queryclass->islandoraSolrResult['facet_counts']['facet_dates']['mods_originInfo_dateCreated_mdt']['start']);
   // $record_end = new DateTime($_islandora_solr_queryclass->islandoraSolrResult['facet_counts']['facet_dates']['mods_originInfo_dateCreated_mdt']['end']);
 
   // Update the format helper text.
   $form['date_filter']['date_filter']['#markup'] = '<div class="description">(Valid formats: YYYY, YYYY/MM, YYYY/MM/DD)</div>';
   // $form['date_filter']['date_filter_submit']['#prefix'] = '<div class="description">Showing records from: '.$record_start->format($facet_format).' to '.$record_end->format($facet_format).'</div>';
+
   // Remove titles and add placeholder text instead.
   unset($form['date_filter']['date_filter_from']['#title']);
   unset($form['date_filter']['date_filter_to']['#title']);
-  $form['date_filter']['date_filter_from']['#suffix'] = '<span div="inbetween-to-worlds">to </span>';
   $form['date_filter']['date_filter_from']['#attributes']['placeholder'] = 'Start';
+  $form['date_filter']['date_filter_from']['#suffix'] = '<span id="between-dates">to </span>';
   $form['date_filter']['date_filter_to']['#attributes']['placeholder'] = 'End';
+
   // Change "Filter" to "Apply"
   $form['date_filter']['date_filter_submit']['#value'] = 'Apply';
 
@@ -396,18 +399,31 @@ function bc_islandora_form_islandora_solr_date_filter_form_alter(&$form, &$form_
  */ 
 function bc_islandora_form_islandora_solr_date_filter_form_submit(&$form, &$form_state) {
   global $_islandora_solr_queryclass;
-  $date_to = explode('/', $form_state['values']['date_filter']['date_filter_to']);
-  switch (count($date_to)) {
-    case 1:
-      $form_state['values']['date_filter']['date_filter_to'] .= "/12/31";
-      $_islandora_solr_queryclass->internalSolrParams['date_format'] = 'Y';
-      break;
-    case 2:
-      $form_state['values']['date_filter']['date_filter_to'] .= "/31";
-      $_islandora_solr_queryclass->internalSolrParams['date_format'] = 'Y/m';
-      break;
-    case 3:
-      $_islandora_solr_queryclass->internalSolrParams['date_format'] = 'Y/m/d';
-      break;
+
+  $form_date_from = $form_state['values']['date_filter']['date_filter_from'];
+  $form_date_to = $form_state['values']['date_filter']['date_filter_to'];
+
+  $_islandora_solr_queryclass->internalSolrParams['date_format'] = bc_islandora_get_date_format($form_date_from, $form_date_to);
+  $form_state['values']['date_filter']['date_filter_to'] .= bc_islandora_get_latest_possible_date($form_date_to);
+}
+
+// TODO: describe function
+function bc_islandora_get_date_format($date1, $date2) {
+  $date_a = count(explode('/', $date1));
+  $date_b = count(explode('/', $date2));
+  switch (max($date_a, $date_b)) {
+    case 1: return 'Y';
+    case 2: return 'Y/m';
+    case 3: return 'Y/m/d';
+  }
+}
+
+// TODO: describe function
+function bc_islandora_get_latest_possible_date($date_to) {
+  $date_count = count(explode('/', $date_to));
+  switch ($date_count) {
+    case 1: return '/12/31';
+    case 2: return '/31';
+    case 3: return;
   }
 }
