@@ -69,7 +69,7 @@ function bc_islandora_drush_command() {
         'id' => 'Whether to import the publication corresponding to a certain internal identifier.',
       ),
       'examples' => array(
-        'drush -u 1 --uri=http://localhost bcii /path/to/pubs',
+        'drush -u 1 --uri=http://localhost bciip /path/to/pubs',
       ),
       'aliases' => array('bciip'),
       // We can pass in users id on the command line using drush -u.
@@ -102,6 +102,24 @@ function bc_islandora_drush_command() {
         'drush -u 1 bcico',
       ),
       'aliases' => array('bcico'),
+    ),
+    'bc_islandora_postprocess_manuscript' => array(
+      'examples' => array(
+        'drush bcippm',
+      ),
+      'arguments' => array(
+        'pid' => 'The pid of the object to process.',
+      ),
+      'aliases' => array('bcippm'),
+    ),
+    'bc_islandora_fix_pub_metadata' => array(
+      'examples' => array(
+        'drush bcifpm',
+      ),
+      'arguments' => array(
+        'pid' => 'The pid of the object to process.',
+      ),
+      'aliases' => array('bcifpm'),
     ),
   );
 }
@@ -333,7 +351,12 @@ function drush_bc_islandora_ingest_pubs($directory) {
       }
       elseif ($exception) {
         $collection_pid = variable_get('bc_islandora_pubs_pid', 'islandora:1022');
-        $book_pid = create_book_object($pub_pid, _bc_islandora_pub_data($xml_file, $collection_pid));
+        if (!$purge) {
+          $book_pid = create_book_object($pub_pid, _bc_islandora_pub_data($xml_file, $collection_pid));
+        }
+        else {
+          drush_bc_islandora_purge_object($pub_pid);
+        }
       }
       $pub_obj = islandora_object_load($pub_pid);
       // If we got an id, only look at the corresponding dir.
@@ -564,4 +587,244 @@ EOQ;
       }
     }
   }
+}
+
+
+function drush_bc_islandora_postprocess_manuscript($pid = NULL) {
+  module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
+
+  $pids = array();
+  $tuque = islandora_get_tuque_connection();
+  $repo = $tuque->repository;
+
+  if (!$pid) {
+    $ms_pid = variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection');
+    // Get every member of the manuscript collection.
+    $query = <<<EOQ
+PREFIX islandora-rels-ext: <http://islandora.ca/ontology/relsext#>
+PREFIX fedora-rels-ext: <info:fedora/fedora-system:def/relations-external#>
+SELECT ?object
+FROM <#ri>
+WHERE {
+  ?object fedora-rels-ext:isMemberOfCollection <info:fedora/{$ms_pid}> ;
+}
+EOQ;
+    $results = $repo->ri->query($query, 'sparql');
+    foreach ($results as $r) {
+      if (isset($r['object']['value']) && $r['object']['type'] == 'pid') {
+        $pids[] = $r['object']['value'];
+      }
+    }
+  }
+  else {
+    $pids = explode(',', $pid);
+  }
+
+  foreach ($pids as $object_id) {
+    $obj_ocr = array();
+    if ($ms_obj = islandora_object_load($object_id)) {
+      $ms_mods = isset($ms_obj['MODS']) ? $ms_obj['MODS']->getContent(NULL) : NULL;
+      if (!$ms_mods) {
+        // Do something here.
+        drush_log(dt("Didn't get MODS; using default instead..."), 'ok');
+        $ms_mods = _ms_default_mods($ms_obj);
+      }
+      $obj_mods = simplexml_load_string($ms_mods);
+      $ms_title = $obj_mods->titleInfo->title;
+      if ($ms_obj->label != $ms_title) {
+        $ms_obj->label = $ms_title;
+      }
+      foreach (islandora_paged_content_get_pages($ms_obj) as $page) {
+        $page_obj = islandora_object_load($page['pid']);
+        drush_log(dt("Processing page: @page_pid", array('@page_pid' => $page['pid'])), 'ok');
+        // Do stuff to each page.
+        // 1. Fix title
+        $page_label = $ms_obj->label . ', page ' . $page['page'];
+        if ($page_obj->label != $page_label) {
+          drush_log(dt("Setting new label: @page_label", array('@page_label' => $page_label)), 'ok');
+          $page_obj->label = $page_label;
+        }
+        // 2. Fix MODS
+        if (!isset($page_obj['MODS'])) {
+          $obj_mods->titleInfo->title = $page_label;
+          $mods_id = $obj_mods->identifier;
+          $obj_mods->identifier = $mods_id . '-' . str_pad($page['page'], 3, '0', STR_PAD_LEFT);
+          $page_mods = $page_obj->constructDatastream('MODS');
+          $page_mods->content = $obj_mods->asXML();
+          $page_mods->mimetype = 'text/xml';
+          $page_mods->label = 'MODS record';
+          $page_obj->ingestDatastream($page_mods);
+        }
+        else {
+          drush_log(dt('Page-level MODS already exists; skipping step...'), 'ok');
+        }
+        // 3. Add OCR to array—and change OCR DS label if necessary.
+        if (isset($page_obj['OCR'])) {
+          $obj_ocr[] = $page_obj['OCR']->getContent(NULL);
+          if ($page_obj['OCR']->label != 'Transcript') {
+            print "Changing label :)\n";
+            $page_obj['OCR']->label = 'Transcript';
+          }
+        }
+      }
+      if (!isset($ms_obj['OCR'])) {
+        $obj_ocr_ds = $ms_obj->constructDatastream('OCR');
+        $obj_ocr_ds->label = 'Transcript';
+        $obj_ocr_ds->mimetype = 'text/plain';
+        $obj_ocr_ds->content = implode('', $obj_ocr);
+        $ms_obj->ingestDatastream($obj_ocr_ds);
+      }
+      else {
+        drush_log(dt('Object-level OCR already exists; skipping step...'), 'ok');
+      }
+    }
+    else {
+      drush_log(dt("Couldn't get pages at pid: @pid", array('@pid' => $object_pid)), 'error');
+    }
+  }
+}
+
+function _ms_default_mods($ms_obj) {
+  $ms_title = $ms_obj->label;
+  $ms_id = 'BC13-58_' . preg_replace('/[^\p{L}\p{N}]/u', '', str_replace("'", '', $ms_title));
+
+  return <<<MODS
+<?xml version="1.0" encoding="UTF-8"?>
+<mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" xsi:schemaLocation="http://www.loc.gov/mods/v3     http://www.loc.gov/mods/v3/mods-3-5.xsd">
+  <titleInfo>
+    <title>{$ms_title}</title>
+  </titleInfo>
+  <identifier type="local">{$ms_id}</identifier>
+  <typeOfResource>text</typeOfResource>
+  <genre authority="aat" authorityURI="http://vocab.getty.edu/aat" valueURI="http://vocab.getty.edu/aat/300248280">brochures</genre>
+  <originInfo>
+    <place>
+      <placeTerm type="text" authorityURI="http://id.loc.gov/authorities/names" valueURI="http://id.loc.gov/authorities/names/n79007751">New York (N.Y.)</placeTerm>
+    </place>
+    <place>
+      <placeTerm type="code" authority="marccountry">nyu</placeTerm>
+    </place>
+    <publisher>Online collection published by Barnard Archives and Special Collections, Barnard College.</publisher>
+    <dateCreated encoding="w3cdtf" keyDate="yes" point="start" qualifier="approximate">1970</dateCreated>
+    <dateCreated encoding="w3cdtf" point="end" qualifier="approximate">1980</dateCreated>
+  </originInfo>
+  <language>
+    <languageTerm type="text" authority="iso639-2b">English</languageTerm>
+    <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+  </language>
+  <physicalDescription>
+    <form authority="marcform">print</form>
+    <form authority="marcform">elecronic</form>
+    <extent>2 pages</extent>
+    <digitalOrigin>reformatted digital</digitalOrigin>
+    <internetMediaType>image/tiff</internetMediaType>
+  </physicalDescription>
+  <abstract></abstract>
+  <subject>
+    <name type="corporate" authority="naf" authorityURI="http://id.loc.gov/authorities/names" valueURI="http://id.loc.gov/authorities/names/n79065105">
+      <namePart>Barnard College</namePart>
+    </name>
+  </subject>
+  <relatedItem type="host">
+    <titleInfo>
+      <title>Academic Departments and Programs Barnard Center for Research on Women</title>
+    </titleInfo>
+    <identifier type="local">BC37-02</identifier>
+    <typeOfResource>still image</typeOfResource>
+  </relatedItem>
+  <accessCondition type="useAndReproduction">Contact the Archives at archives@barnard.edu for more information on access and use.</accessCondition>
+  <location displayLabel="not a PURL">
+    <physicalLocation authority="marcorg">NNC</physicalLocation>
+    <physicalLocation authority="marcorg">NyNyBAW</physicalLocation>
+    <physicalLocation>Barnard College Library (New York, N.Y.)</physicalLocation>
+    <shelfLocator>test</shelfLocator>
+  </location>
+  <recordInfo>
+    <recordContentSource>Barnard Archives and Special Collections</recordContentSource>
+    <recordContentSource authority="marcorg">NNC</recordContentSource>
+    <recordContentSource authority="marcorg">NyNyBAW</recordContentSource>
+    <languageOfCataloging>
+      <languageTerm type="text" authority="iso639-2b">English</languageTerm>
+      <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+    </languageOfCataloging>
+  </recordInfo>
+  <name type="corporate" authorityURI="http://id.loc.gov/authorities/names" valueURI="http://id.loc.gov/authorities/names/no90023871">
+    <namePart>Barnard Center for Research on Women</namePart>
+    <role>
+      <roleTerm type="text" authority="marcrelator">Creator</roleTerm>
+    </role>
+  </name>
+</mods>
+MODS;
+}
+
+function drush_bc_islandora_fix_pub_metadata($pid) {
+  module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
+
+  $pub_obj = islandora_object_load($pid);
+  $pub_mods_xml = isset($pub_obj['MODS']) ? simplexml_load_string($pub_obj['MODS']->getContent(NULL)) : '';
+  $pub_obj_id = $pub_mods_xml->identifier;
+
+  // Publication ids that constitute "exceptions" (different behavior
+  // required).
+  $exceptions = array('BC12-9_1959', 'BC12-26_1970', 'BC12-30_C19711972');
+  $exception = in_array($pub_obj_id, $exceptions);
+  $query_term = $exception ? 'islandora-rels-ext:isPageOf' : 'fedora-rels-ext:isMemberOf';
+
+  $pub_pids = array();
+  $tuque = islandora_get_tuque_connection();
+  $repo = $tuque->repository;
+  $query = <<<EOQ
+PREFIX islandora-rels-ext: <http://islandora.ca/ontology/relsext#>
+PREFIX fedora-rels-ext: <info:fedora/fedora-system:def/relations-external#>
+SELECT ?object
+FROM <#ri>
+WHERE {
+  ?object $query_term <info:fedora/{$pid}> ;
+}
+EOQ;
+
+  $results = $repo->ri->query($query, 'sparql');
+  foreach ($results as $r) {
+    if (isset($r['object']) && $r['object']['type'] == 'pid') {
+      $pub_pids[] = $r['object']['value'];
+    }
+  }
+
+  foreach ($pub_pids as $pub_pid) {
+    $issue_obj = islandora_object_load($pub_pid);
+    $issue_rels = $issue_obj->relationships->get();
+
+    foreach ($issue_rels as $r) {
+      if ($r['predicate']['value'] == 'isMemberOf' && $parent_obj = islandora_object_load($r['object']['value'])) {
+        foreach (islandora_paged_content_get_pages($issue_obj) as $pub_page) {
+          _update_page_mods($parent_obj, $pub_page['pid']);
+        }
+      }
+      elseif ($exception) {
+        foreach ($pub_pids as $page_pid) {
+          _update_page_mods($pub_obj, $page_pid);
+        }
+      }
+      else {
+        continue;
+      }
+    }
+  }
+}
+
+function _update_page_mods($parent_obj, $page_pid) {
+  $page_obj = islandora_object_load($page_pid);
+  $page_mods = simplexml_load_string($page_obj['MODS']->getContent(NULL));
+  unset($page_mods->relatedItem->title);
+  $page_related_title = $page_mods->relatedItem[0]->titleInfo->title;
+  $page_host_title = $page_mods->relatedItem[1]->titleInfo->title;
+  if ($page_host_title != $parent_obj->label) {
+    $page_mods->relatedItem[1]->titleInfo->title = $parent_obj->label;
+  }
+  if ($page_related_title != 'Student Publications') {
+    $page_mods->relatedItem[0]->titleInfo->title = 'Student Publications';
+  }
+  $page_obj['MODS']->content = $page_mods->asXML();
+  $page_obj->ingestDatastream($page_obj['MODS']);
 }

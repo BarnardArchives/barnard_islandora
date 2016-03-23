@@ -85,6 +85,8 @@ function theme_bc_islandora_newspaper_page_controls(&$vars) {
  * Helper function to generate newspaper pager.
  */
 function _bc_islandora_np_page_pager($object) {
+  module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
+
   $results = $object->relationships->get(ISLANDORA_RELS_EXT_URI, 'isPageOf');
   $result = reset($results);
   $parent = $result ? islandora_object_load($result['object']['value']) : islandora_object_load($object);
@@ -218,6 +220,14 @@ function theme_bc_islandora_breadcrumb(&$vars) {
           $issue_pid = islandora_newspaper_get_issue($object);
           if ($issue = islandora_object_load($issue_pid)) {
             $bc[] = l($issue->label, "islandora/object/{$issue->id}");
+          }
+          break;
+
+        // Manuscripts. (Temporary?)
+        case '13-58':
+          $bc[] = l(t('Manuscripts'), 'collections/manuscripts');
+          if ($cm_results[0]['object']['value'] == 'islandora:manuscriptPageCModel') {
+            $bc[] = _bc_islandora_book_link($object, variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection'));
           }
           break;
 
@@ -479,8 +489,9 @@ function _bc_islandora_dl_links($obj, $datastreams = array('PDF', 'JPG')) {
   $urls = array();
   foreach ($datastreams as $ds) {
     if (isset($obj[$ds])) {
+      $ds_label = $obj[$ds]->label;
       $dl_url = islandora_datastream_get_url($obj[$ds], 'download');
-      $urls[] = l($ds, $dl_url);
+      $urls[] = l($ds_label, $dl_url);
     }
   }
   return implode('<span class="separator">&nbsp;|&nbsp;</span>', $urls);
@@ -491,7 +502,7 @@ function _bc_islandora_dl_links($obj, $datastreams = array('PDF', 'JPG')) {
  *
  * Called by barnard_theme's template.php.
  */
-function _bc_islandora_is_document($object) {
+function _bc_islandora_is_manuscript($object) {
   module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
   $output = '';
   if (is_object($object->relationships)) {
@@ -499,8 +510,8 @@ function _bc_islandora_is_document($object) {
     if (!empty($results) && $parent_collection = $results[0]['object']['value']) {
       $collection = islandora_object_load($parent_collection);
       // If this object's parent collection's pid is the same as our database
-      // variable bc_islandora_documents_pid, the answer is YES.
-      if ($collection->id == variable_get('bc_islandora_documents_pid', '')) {
+      // variable bc_islandora_manuscripts_pid, the answer is YES.
+      if ($collection->id == variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection')) {
         return TRUE;
       }
     }
