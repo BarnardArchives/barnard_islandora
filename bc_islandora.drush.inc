@@ -791,6 +791,9 @@ EOQ;
     }
   }
 
+  // Whether to interrupt the loop.
+  $interrupt = FALSE;
+
   foreach ($pub_pids as $pub_pid) {
     $issue_obj = islandora_object_load($pub_pid);
     $issue_rels = $issue_obj->relationships->get();
@@ -807,7 +810,8 @@ EOQ;
           }
         }
       }
-      elseif ($exception) {
+      elseif ($exception && !$interrupt) {
+        $interrupt = TRUE;
         foreach ($pub_pids as $page_pid) {
           try {
             drush_log(dt("Updating MODS at pid = @pid", array('@pid' => $page_pid)), 'ok');
