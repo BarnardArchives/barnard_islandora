@@ -410,7 +410,7 @@ function _bc_islandora_pub_data($xml_file, $pid = '', $type = '', $page_number =
     $data['genre'] = (string) $mods->genre;
     $data['title_related'] = (string) $mods->titleInfo->title;
     $data['host_id'] = (string) $mods->relatedItem[1]->identifier;
-    $data['page_id'] = (string) $mods->identifier . '_' . str_pad($page_number, 3, STR_PAD_LEFT);
+    $data['page_id'] = (string) $mods->identifier . '_' . str_pad($page_number, 3, '0', STR_PAD_LEFT);
   }
   return $data;
 }
@@ -767,7 +767,7 @@ function drush_bc_islandora_fix_pub_metadata($pid) {
 
   // Publication ids that constitute "exceptions" (different behavior
   // required).
-  $exceptions = array('BC12-9_1959', 'BC12-26_1970', 'BC12-30_C19711972');
+  $exceptions = array('BC12-09_1959', 'BC12-26_1970', 'BC12-30_C19711972');
   $exception = in_array($pub_obj_id, $exceptions);
   $query_term = $exception ? 'islandora-rels-ext:isPageOf' : 'fedora-rels-ext:isMemberOf';
 
@@ -798,12 +798,24 @@ EOQ;
     foreach ($issue_rels as $r) {
       if ($r['predicate']['value'] == 'isMemberOf' && $parent_obj = islandora_object_load($r['object']['value'])) {
         foreach (islandora_paged_content_get_pages($issue_obj) as $pub_page) {
-          _update_page_mods($parent_obj, $pub_page['pid']);
+          try {
+            drush_log(dt("Updating MODS at pid = @pid", array('@pid' => $pub_page['pid'])), 'ok');
+            _update_page_mods($parent_obj, $pub_page['pid']);
+          }
+          catch (Exception $e) {
+            drush_log(dt('Caught exception: @e', array('@e' => $e->getMessage())), 'warning');
+          }
         }
       }
       elseif ($exception) {
         foreach ($pub_pids as $page_pid) {
-          _update_page_mods($pub_obj, $page_pid);
+          try {
+            drush_log(dt("Updating MODS at pid = @pid", array('@pid' => $page_pid)), 'ok');
+            _update_page_mods($pub_obj, $page_pid);
+          }
+          catch (Exception $e) {
+            drush_log(dt('Caught exception: @e', array('@e' => $e->getMessage())), 'warning');
+          }
         }
       }
       else {
@@ -816,6 +828,8 @@ EOQ;
 function _update_page_mods($parent_obj, $page_pid) {
   $page_obj = islandora_object_load($page_pid);
   $page_mods = simplexml_load_string($page_obj['MODS']->getContent(NULL));
+  // Get page number from title.
+  preg_match('/[1-9]+$/', $page_mods->titleInfo->title, $page_match);
   unset($page_mods->relatedItem->title);
   $page_related_title = $page_mods->relatedItem[0]->titleInfo->title;
   $page_host_title = $page_mods->relatedItem[1]->titleInfo->title;
@@ -824,6 +838,12 @@ function _update_page_mods($parent_obj, $page_pid) {
   }
   if ($page_related_title != 'Student Publications') {
     $page_mods->relatedItem[0]->titleInfo->title = 'Student Publications';
+  }
+  if (!empty($page_match)) {
+    $id_parts = explode('_', $page_mods->identifier);
+    array_pop($id_parts);
+    $id_parts[] = str_pad($page_match[0], 3, '0', STR_PAD_LEFT);
+    $page_mods->identifier = implode($id_parts, '_') . "\n";
   }
   $page_obj['MODS']->content = $page_mods->asXML();
   $page_obj->ingestDatastream($page_obj['MODS']);
