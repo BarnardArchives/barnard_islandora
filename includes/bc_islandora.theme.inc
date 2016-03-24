@@ -85,6 +85,8 @@ function theme_bc_islandora_newspaper_page_controls(&$vars) {
  * Helper function to generate newspaper pager.
  */
 function _bc_islandora_np_page_pager($object) {
+  module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
+
   $results = $object->relationships->get(ISLANDORA_RELS_EXT_URI, 'isPageOf');
   $result = reset($results);
   $parent = $result ? islandora_object_load($result['object']['value']) : islandora_object_load($object);
