@@ -408,7 +408,7 @@ function _bc_islandora_pub_data($xml_file, $pid = '', $type = '', $page_number =
   );
   if ($type == 'page') {
     $data['genre'] = (string) $mods->genre;
-    $data['title_related'] = (string) $mods->titleInfo->title;
+    $data['title_host'] = (string) $mods->titleInfo->title;
     $data['host_id'] = (string) $mods->relatedItem[1]->identifier;
     $data['page_id'] = (string) $mods->identifier . '_' . str_pad($page_number, 3, '0', STR_PAD_LEFT);
   }

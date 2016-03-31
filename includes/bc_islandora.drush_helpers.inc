@@ -437,7 +437,6 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid, $type
 
       $title = $label;
       $genre = $data['genre'];
-      $title_related = $data['title_related'];
       $title_host = $data['title_host'];
       $host_id = $data['host_id'];
       $date = $data['date'];
@@ -453,7 +452,7 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid, $type
           <genre authority="lcgft" authorityURI="http://id.loc.gov/authorities/genreForms" valueURI="http://id.loc.gov/authorities/genreForms/gf2014026139">$genre</genre>
           <relatedItem type="host" displayLabel="Record Group">
             <titleInfo>
-              <title>$title_related</title>
+              <title>Student Publications</title>
             </titleInfo>
           </relatedItem>
           <relatedItem type="host">
