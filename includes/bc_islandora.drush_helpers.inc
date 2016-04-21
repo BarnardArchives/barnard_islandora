@@ -307,7 +307,7 @@ BOOK_MODS;
 }
 
 /**
- * Creates a student publication object.
+ * Creates a student publication (or manuscript) object.
  */
 function create_pub_object($pid, $data) {
   module_load_include('inc', 'islandora', 'RestConnection');
@@ -317,8 +317,9 @@ function create_pub_object($pid, $data) {
 
   $dsid = 'MODS';
 
-  $content_model_pid = 'islandora:collectionCModel';
-  $collection_pid = variable_get('bc_islandora_pubs_pid', 'islandora:1022');
+  // $content_model_pid = 'islandora:collectionCModel';
+  $content_model_pid = $data['cm_pid'];
+  $collection_pid = $data['collection_pid'];
 
   $xml = $data['xml'];
 
@@ -469,7 +470,11 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid, $type
         </mods>
 PAGE_MODS;
       break;
-
+    case 'ms':
+      $file_name = $file_path;
+      $content_model_pid = 'islandora:manuscriptPageCModel';
+      $xml = $data['xml'];
+      break;
   }
 
   // Ingest a thumbnail of the first page to the parent object collection.
