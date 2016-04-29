@@ -60,7 +60,7 @@ function bc_islandora_drush_command() {
     'bc_islandora_ingest_pubs' => array(
       'description' => 'Ingests student publications.',
       'arguments' => array(
-        'directory' => 'The directory in which the publication data/files are held.',
+        'md_file' => 'The metadata file.',
       ),
       'options' => array(
         'derivatives' => 'Whether to create derivatives.',
@@ -72,6 +72,24 @@ function bc_islandora_drush_command() {
         'drush -u 1 --uri=http://localhost bciip /path/to/pubs',
       ),
       'aliases' => array('bciip'),
+      // We can pass in users id on the command line using drush -u.
+      'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_LOGIN,
+    ),
+    'bc_islandora_ingest_ms' => array(
+      'description' => 'Ingests manuscripts.',
+      'arguments' => array(
+        'directory' => 'The directory in which the manuscript data/files are held.',
+      ),
+      'options' => array(
+        'derivatives' => 'Whether to create derivatives.',
+        'overwrite-existing' => 'Whether to overwrite existing objects.',
+        'purge' => 'Whether to purge instead of ingesting.',
+        'id' => 'Whether to import the publication corresponding to a certain internal identifier.',
+      ),
+      'examples' => array(
+        'drush -u 1 --uri=http://localhost bciim /path/to/mss',
+      ),
+      'aliases' => array('bciim'),
       // We can pass in users id on the command line using drush -u.
       'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_LOGIN,
     ),
@@ -401,8 +419,9 @@ function _bc_islandora_pub_data($xml_file, $pid = '', $type = '', $page_number =
   $xml = file_get_contents($xml_file);
   $mods = simplexml_load_string($xml);
   $data = array(
+    'cm_pid' => 'islandora:collectionCModel',
     'xml' => $xml,
-    'collection_pid' => $pid,
+    'collection_pid' => variable_get('bc_islandora_pubs_pid', 'islandora:1022'),
     'date' => (string) $mods->originInfo->dateCreated,
     'title' => (string) $mods->titleInfo->title,
   );
@@ -438,6 +457,178 @@ function _bc_islandora_process_pub_pages($parent_pid, $parent_xml_file, $path, $
       }
     }
   }
+}
+
+/**
+ * Ingests manuscripts.
+ */
+function drush_bc_islandora_ingest_ms($md_file) {
+  if (file_exists($md_file)) {
+    $md_fh = fopen($md_file, 'r');
+    while (($data = fgetcsv($md_fh)) !== FALSE) {
+      $ms_data = array();
+      $ms_data['id'] = $data[0];
+      $ms_data_dir = dirname($md_file) . '/' . $ms_data['id'];
+      if (is_dir($ms_data_dir)) {
+        $ms_data['title'] = $data[1];
+        $ms_mods_file = $ms_data_dir . '/' . $ms_data['id'] . '.xml';
+        if (file_exists($ms_mods_file)) {
+          $ms_data['xml'] = file_get_contents($ms_mods_file);
+        }
+        else {
+          $ms_data['creator'] = $data[2];
+          $ms_data['date'] = $data[4];
+          $ms_data['date_qualifier'] = $data[5];
+          $ms_data['extent'] = $data[6];
+          $ms_data['description'] = $data[7];
+          $ms_data['location'] = $data[8];
+        }
+        $ms_pid = 'bcrw:' . str_replace(' ', '-', preg_replace('/[^a-z\d\s+]/', '', strtolower($data[1])));
+        if (!islandora_object_load($ms_pid)) {
+          $ms_data['collection_pid'] = variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection');
+          $ms_data['cm_pid'] = 'islandora:manuscriptCModel';
+          $ms_data['xml'] = _bc_islandora_ms_mods($ms_data);
+          create_pub_object($ms_pid, $ms_data);
+        }
+        else {
+          drush_log(dt('Object exists: @ms_pid', array('@ms_pid' => $ms_pid)), 'ok');
+        }
+        foreach (scandir($ms_data_dir) as $ms_file) {
+          if (preg_match('/\.tif$/', $ms_file)) {
+            $page_padded = str_replace('.tif', '', array_pop(explode('_', $ms_file)));
+            $page_number = preg_replace('/^0+/', '', $page_padded);
+            $page_pid = $ms_pid . '-' . $page_number;
+            $filepath = $ms_data_dir . '/' . $ms_file;
+            $ms_data['id'] = $data[0] . '_' . $page_padded;
+            $ms_data['title'] = $data[1] . ', page ' . $page_number;
+            $ms_data['cm_pid'] = $ms_pid;
+            $ms_data['xml'] = _bc_islandora_ms_mods($ms_data);
+            if (!islandora_object_load($page_pid)) {
+              create_page_object($ms_data_dir . '/' . $ms_file, $ms_data, $ms_pid, $page_pid, 'ms');
+            }
+            else {
+              drush_log(dt('Object exists: @page_pid', array('@page_pid' => $page_pid)), 'ok');
+            }
+          }
+        }
+        _bc_islandora_ms_transcript($ms_pid);
+      }
+    }
+  }
+}
+
+/**
+ * Helper function: generate manuscript MODS.
+ */
+function _bc_islandora_ms_mods($ms_data) {
+  return <<<MANUSCRIPT_MODS
+  <mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/mods/v3/mods-3-5.xsd">
+  <titleInfo>
+    <title>{$ms_data['title']}</title>
+  </titleInfo>
+  <name type="corporate" authority="naf" authorityURI="http://id.loc.gov/authorities/names" valueURI="http://id.loc.gov/authorities/names/no2006052179">
+      <namePart>{$ms_data['creator']}</namePart>
+    <role>
+      <roleTerm type="text" authority="marcrelator">Creator</roleTerm>
+    </role>
+  </name>
+  <typeOfResource>text</typeOfResource>
+  <genre authority="lcgft" authorityURI="http://id.loc.gov/authorities/genreForms" valueURI="http://id.loc.gov/authorities/genreForms/gf2015026053">Tracts (Ephemera)</genre>
+  <originInfo>
+    <place>
+      <placeTerm type="text" authorityURI="http://id.loc.gov/authorities/names" valueURI="http://id.loc.gov/authorities/names/n79007751">New York (N.Y.)</placeTerm>
+    </place>
+    <place>
+      <placeTerm type="code" authority="marccountry">nyu</placeTerm>
+    </place>
+    <publisher>
+      Online collection published by Barnard Archives and Special Collections, Barnard College.
+    </publisher>
+    <dateCreated encoding="w3cdtf" keyDate="yes">{$ms_data['date']}</dateCreated>
+  </originInfo>
+  <language>
+    <languageTerm type="text">English</languageTerm>
+    <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+  </language>
+  <physicalDescription>
+    <form authority="marcform">print</form>
+    <form authority="marcform">elecronic</form>
+    <extent>${data['extent']}</extent>
+    <digitalOrigin>reformatted digital</digitalOrigin>
+    <internetMediaType>image/tiff</internetMediaType>
+  </physicalDescription>
+  <abstract>${data['description']}</abstract>
+  <subject>
+    <name type="corporate" authority="naf" authorityURI="http://id.loc.gov/authorities/names" valueURI="http://id.loc.gov/authorities/names/n79065105">
+      <namePart>Barnard College</namePart>
+    </name>
+  </subject>
+  <subject>
+    <name type="corporate" authority="naf" authorityURI="http://id.loc.gov/authorities/names" valueURI="http://id.loc.gov/authorities/names/no90023871">
+      <namePart>Barnard Center for Research on Women</namePart>
+    </name>
+  </subject>
+  <relatedItem type="host" displayLabel="Record Group">
+    <titleInfo>
+      <title>Academic Departments and Programs</title>
+    </titleInfo>
+  </relatedItem>
+  <relatedItem type="host">
+    <titleInfo>
+      <title>Barnard Center for Research on Women</title>
+    </titleInfo>
+    <identifier type="local">BC13-58</identifier>
+    <typeOfResource>mixed material</typeOfResource>
+  </relatedItem>
+  <identifier type="local">{$ms_data['id']}</identifier>
+  <location displayLabel="not a PURL">
+    <physicalLocation authority="marcorg">NNC</physicalLocation>
+    <physicalLocation authority="marcorg">NyNyBAW</physicalLocation>
+    <physicalLocation>Barnard College Library (New York, N.Y.)</physicalLocation>
+    <shelfLocator>{$ms_data['location']}</shelfLocator>
+  </location>
+  <accessCondition type="useAndReproduction">
+    Contact the Archives at archives@barnard.edu for more information on access and use.
+  </accessCondition>
+  <recordInfo>
+    <recordContentSource>Barnard Archives and Special Collections</recordContentSource>
+    <recordContentSource authority="marcorg">NNC</recordContentSource>
+    <recordContentSource authority="marcorg">NyNyBAW</recordContentSource>
+    <languageOfCataloging>
+      <languageTerm type="text" authority="iso639-2b">English</languageTerm>
+      <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+    </languageOfCataloging>
+  </recordInfo>
+</mods>
+MANUSCRIPT_MODS;
+}
+
+function _bc_islandora_ms_transcript($ms_pid) {
+  module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
+  $ms_obj = islandora_object_load($ms_pid);
+  if (isset($ms_obj['TRANSCRIPT'])) {
+    drush_log(dt('Transcript already exists for object: @ms_pid', array('@ms_pid' => $ms_pid)), 'ok');
+    return;
+  }
+  else {
+    $ms_ts = '';
+  }
+  foreach (islandora_paged_content_get_pages($ms_obj) as $page_pid => $page_data) {
+    if ($page_obj = islandora_object_load($page_pid)) {
+      if ($page_ocr = islandora_datastream_load('OCR', $page_obj)) {
+        $ms_ts .= $page_ocr->getContent(NULL);
+      }
+    }
+    else {
+      drush_log(dt("Couldn't get page: @page_pid", array('@page_pid' => $page_pid)), 'warning');
+    }
+  }
+  // Create transcript datastream.
+  $transcript_ds = $ms_obj->constructDatastream('TRANSCRIPT');
+  $transcript_ds->label = 'Transcript';
+  $transcript_ds->mimetype = 'text/plain';
+  $transcript_ds->setContentFromString($ms_ts);
+  $ms_obj->ingestDatastream($transcript_ds);
 }
 
 /**
