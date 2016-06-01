@@ -225,9 +225,11 @@ function theme_bc_islandora_breadcrumb(&$vars) {
 
         // Manuscripts. (Temporary?)
         case '13-58':
-          $bc[] = l(t('Manuscripts'), 'collections/manuscripts');
+          $ms_collection_pid = variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection');
+          // $bc[] = l(t('Manuscripts'), 'collections/manuscripts');
+          $bc[] = l(t('Manuscripts'), 'islandora/object/' . $ms_collection_pid);
           if ($cm_results[0]['object']['value'] == 'islandora:manuscriptPageCModel') {
-            $bc[] = _bc_islandora_book_link($object, variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection'));
+            $bc[] = _bc_islandora_book_link($object, $ms_collection_pid);
           }
           break;
 

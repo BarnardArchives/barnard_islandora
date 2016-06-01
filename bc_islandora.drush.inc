@@ -479,16 +479,16 @@ function drush_bc_islandora_ingest_ms($md_file) {
           $ms_data['creator'] = $data[2];
           $ms_data['date'] = $data[4];
           $ms_data['date_qualifier'] = $data[5];
-          $ms_data['extent'] = $data[6];
-          $ms_data['description'] = $data[7];
-          $ms_data['location'] = $data[8];
+          $ms_data['extent'] = $data[8];
+          $ms_data['description'] = $data[9];
+          $ms_data['location'] = $data[10];
         }
         $ms_pid = 'bcrw:' . str_replace(' ', '-', preg_replace('/[^a-z\d\s+]/', '', strtolower($data[1])));
         if (!islandora_object_load($ms_pid)) {
           $ms_data['collection_pid'] = variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection');
           $ms_data['cm_pid'] = 'islandora:manuscriptCModel';
           $ms_data['xml'] = _bc_islandora_ms_mods($ms_data);
-          create_pub_object($ms_pid, $ms_data);
+          // create_pub_object($ms_pid, $ms_data);
         }
         else {
           drush_log(dt('Object exists: @ms_pid', array('@ms_pid' => $ms_pid)), 'ok');
@@ -504,14 +504,15 @@ function drush_bc_islandora_ingest_ms($md_file) {
             $ms_data['cm_pid'] = $ms_pid;
             $ms_data['xml'] = _bc_islandora_ms_mods($ms_data);
             if (!islandora_object_load($page_pid)) {
-              create_page_object($ms_data_dir . '/' . $ms_file, $ms_data, $ms_pid, $page_pid, 'ms');
+              // create_page_object($ms_data_dir . '/' . $ms_file, $ms_data, $ms_pid, $page_pid, 'ms');
             }
             else {
               drush_log(dt('Object exists: @page_pid', array('@page_pid' => $page_pid)), 'ok');
             }
+            var_export($ms_data);
           }
         }
-        _bc_islandora_ms_transcript($ms_pid);
+        // _bc_islandora_ms_transcript($ms_pid);
       }
     }
   }
@@ -521,9 +522,8 @@ function drush_bc_islandora_ingest_ms($md_file) {
  * Helper function: generate manuscript MODS.
  */
 function _bc_islandora_ms_mods($ms_data) {
-  return <<<MANUSCRIPT_MODS
-  <mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/mods/v3/mods-3-5.xsd">
-  <titleInfo>
+  /* excised MODS
+    <titleInfo>
     <title>{$ms_data['title']}</title>
   </titleInfo>
   <name type="corporate" authority="naf" authorityURI="http://id.loc.gov/authorities/names" valueURI="http://id.loc.gov/authorities/names/no2006052179">
@@ -599,6 +599,10 @@ function _bc_islandora_ms_mods($ms_data) {
       <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
     </languageOfCataloging>
   </recordInfo>
+*/
+  return <<<MANUSCRIPT_MODS
+<mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/mods/v3/mods-3-5.xsd">
+  <identifier type="local">VALUE</identifier>
 </mods>
 MANUSCRIPT_MODS;
 }
