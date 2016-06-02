@@ -477,22 +477,27 @@ function drush_bc_islandora_ingest_ms($md_file) {
         }
         else {
           $ms_data['creator'] = $data[2];
+          $ms_data['type'] = $data[3];
           $ms_data['date'] = $data[4];
           $ms_data['date_qualifier'] = $data[5];
+          $ms_data['date_start'] = $data[6];
+          $ms_data['date_end'] = $data[7];
           $ms_data['extent'] = $data[8];
           $ms_data['description'] = $data[9];
           $ms_data['location'] = $data[10];
+          $ms_data['topic'] = $data[11];
         }
         $ms_pid = 'bcrw:' . str_replace(' ', '-', preg_replace('/[^a-z\d\s+]/', '', strtolower($data[1])));
         if (!islandora_object_load($ms_pid)) {
           $ms_data['collection_pid'] = variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection');
           $ms_data['cm_pid'] = 'islandora:manuscriptCModel';
           $ms_data['xml'] = _bc_islandora_ms_mods($ms_data);
-          // create_pub_object($ms_pid, $ms_data);
+          create_pub_object($ms_pid, $ms_data);
         }
         else {
           drush_log(dt('Object exists: @ms_pid', array('@ms_pid' => $ms_pid)), 'ok');
         }
+
         foreach (scandir($ms_data_dir) as $ms_file) {
           if (preg_match('/\.tif$/', $ms_file)) {
             $page_padded = str_replace('.tif', '', array_pop(explode('_', $ms_file)));
@@ -500,19 +505,20 @@ function drush_bc_islandora_ingest_ms($md_file) {
             $page_pid = $ms_pid . '-' . $page_number;
             $filepath = $ms_data_dir . '/' . $ms_file;
             $ms_data['id'] = $data[0] . '_' . $page_padded;
+            $ms_data['page_number'] = $page_number;
             $ms_data['title'] = $data[1] . ', page ' . $page_number;
             $ms_data['cm_pid'] = $ms_pid;
+            $ms_data['type'] = 'page';
             $ms_data['xml'] = _bc_islandora_ms_mods($ms_data);
             if (!islandora_object_load($page_pid)) {
-              // create_page_object($ms_data_dir . '/' . $ms_file, $ms_data, $ms_pid, $page_pid, 'ms');
+              create_page_object($ms_data_dir . '/' . $ms_file, $ms_data, $ms_pid, $page_pid, 'ms');
             }
             else {
               drush_log(dt('Object exists: @page_pid', array('@page_pid' => $page_pid)), 'ok');
             }
-            var_export($ms_data);
           }
         }
-        // _bc_islandora_ms_transcript($ms_pid);
+        _bc_islandora_ms_transcript($ms_pid);
       }
     }
   }
@@ -522,89 +528,157 @@ function drush_bc_islandora_ingest_ms($md_file) {
  * Helper function: generate manuscript MODS.
  */
 function _bc_islandora_ms_mods($ms_data) {
-  /* excised MODS
-    <titleInfo>
-    <title>{$ms_data['title']}</title>
-  </titleInfo>
-  <name type="corporate" authority="naf" authorityURI="http://id.loc.gov/authorities/names" valueURI="http://id.loc.gov/authorities/names/no2006052179">
-      <namePart>{$ms_data['creator']}</namePart>
-    <role>
-      <roleTerm type="text" authority="marcrelator">Creator</roleTerm>
-    </role>
-  </name>
-  <typeOfResource>text</typeOfResource>
-  <genre authority="lcgft" authorityURI="http://id.loc.gov/authorities/genreForms" valueURI="http://id.loc.gov/authorities/genreForms/gf2015026053">Tracts (Ephemera)</genre>
-  <originInfo>
+/* $sample_data = array(
+  'id' => 'BC13-58_MensAllyshipLetterC1971',
+  'title' => 'Why Does the Male Chauvinism Panel Consist of Men?',
+  'creator' => '',
+  'type' => 'text',
+  'date' => '1971',
+  'date_qualifier' => 'approximate',
+  'date_start' => '',
+  'date_end' => '',
+  'extent' => '4 pages',
+  'description' => 'A note from a man on the "Male Chauvinism at Columbia: Does It Exist?" panel explaining why men\'s allyship is important for combating male chauvinism',
+  'location' => 'Box 9, Folder 2',
+  'collection_pid' => 'islandora:manuscriptCollection',
+  'cm_pid' => 'islandora:manuscriptCModel',
+)
+*/
+  if (isset($ms_data['type']) && $ms_data['type'] == 'page') {
+    $date_xml = '<originInfo>';
+  }
+  else {
+    $date_xml = "<originInfo>
     <place>
-      <placeTerm type="text" authorityURI="http://id.loc.gov/authorities/names" valueURI="http://id.loc.gov/authorities/names/n79007751">New York (N.Y.)</placeTerm>
+      <placeTerm type=\"text\" authorityURI=\"http://id.loc.gov/authorities/names\" valueURI=\"http://id.loc.gov/authorities/names/n79007751\">New York (N.Y.)</placeTerm>
     </place>
     <place>
-      <placeTerm type="code" authority="marccountry">nyu</placeTerm>
+      <placeTerm type=\"code\" authority=\"marccountry\">nyu</placeTerm>
     </place>
-    <publisher>
-      Online collection published by Barnard Archives and Special Collections, Barnard College.
-    </publisher>
-    <dateCreated encoding="w3cdtf" keyDate="yes">{$ms_data['date']}</dateCreated>
-  </originInfo>
-  <language>
-    <languageTerm type="text">English</languageTerm>
-    <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
-  </language>
+    <publisher>Online collection published by Barnard Archives and Special Collections, Barnard College.</publisher>";
+    $extent_xml = "
   <physicalDescription>
-    <form authority="marcform">print</form>
-    <form authority="marcform">elecronic</form>
-    <extent>${data['extent']}</extent>
+    <form authority=\"marcform\">print</form>
+    <form authority=\"marcform\">elecronic</form>
+    <extent>{$ms_data['extent']}</extent>
     <digitalOrigin>reformatted digital</digitalOrigin>
     <internetMediaType>image/tiff</internetMediaType>
-  </physicalDescription>
-  <abstract>${data['description']}</abstract>
+  </physicalDescription>";
+    $description_xml = "
+  <abstract>{$ms_data['description']}</abstract>";
+    $location_xml = "
+  <location displayLabel=\"not a PURL\">
+    <physicalLocation authority=\"marcorg\">NNC</physicalLocation>
+    <physicalLocation authority=\"marcorg\">NyNyBAW</physicalLocation>
+    <physicalLocation>Barnard College Library (New York, N.Y.)</physicalLocation>
+    <shelfLocator>{$ms_data['location']}</shelfLocator>
+  </location>";
+    $language_xml = "
+  <language>
+    <languageTerm type=\"text\">English</languageTerm>
+    <languageTerm type=\"code\" authority=\"iso639-2b\">eng</languageTerm>
+  </language>";
+    $access_condition_xml = "
+  <accessCondition type=\"useAndReproduction\">Contact the Archives at archives@barnard.edu for more information on access and use.</accessCondition>";
+    $record_info_xml = "
+  <recordInfo>
+    <recordContentSource>Barnard Archives and Special Collections</recordContentSource>
+    <recordContentSource authority=\"marcorg\">NNC</recordContentSource>
+    <recordContentSource authority=\"marcorg\">NyNyBAW</recordContentSource>
+    <languageOfCataloging>
+      <languageTerm type=\"text\" authority=\"iso639-2b\">English</languageTerm>
+      <languageTerm type=\"code\" authority=\"iso639-2b\">eng</languageTerm>
+    </languageOfCataloging>
+  </recordInfo>";
+  }
+  // TODO how to handle multiple creators?
+  $creator_xml = "<name type=\"personal\" authority=\"\" authorityURI=\"\" valueURI=\"\">
+    <namePart>{$ms_data['creator']}</namePart>
+    <role>
+      <roleTerm type=\"text\" authority=\"marcrelator\">Creator</roleTerm>
+    </role>
+  </name>";
+
+  switch ($ms_data['date_qualifier']) {
+    case 'approximate':
+      // TODO this should be different depending whether a range is present.
+      if (!empty($ms_data['date_start'] && !empty($ms_data['date_end']))) {
+        $date_xml .= "
+    <dateCreated encoding=\"w3cdtf\" keyDate=\"yes\" point=\"start\" qualifier=\"approximate\">{$ms_data['date_start']}</dateCreated>
+    <dateCreated encoding=\"w3cdtf\" point=\"end\" qualifier=\"approximate\">{$ms_data['date_end']}</dateCreated>";
+      }
+      else {
+        $date_xml .= "
+    <dateCreated encoding=\"w3cdtf\" keyDate=\"yes\" qualifier=\"approximate\">{$ms_data['date']}</dateCreated>";
+      }
+    break;
+    // Assume exact date by default?
+    case 'exact':
+    default:
+      $date_xml .= "
+    <dateCreated encoding=\"w3cdtf\" keyDate=\"yes\">{$ms_data['date']}</dateCreated>";  
+    break;
+  }
+  $date_xml .= "
+  </originInfo>";
+  $mods_xml = "<mods xmlns=\"http://www.loc.gov/mods/v3\" xmlns:mods=\"http://www.loc.gov/mods/v3\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" xsi:schemaLocation=\"http://www.loc.gov/mods/v3 http://www.loc.gov/mods/v3/mods-3-5.xsd\">
+  <identifier type=\"local\">{$ms_data['id']}</identifier>
+  <titleInfo>
+    <title>{$ms_data['title']}</title>
+  </titleInfo>
+  {$creator_xml}
+  <typeOfResource>{$ms_data['type']}</typeOfResource>
+  {$date_xml}";
+  if (isset($extent_xml)) {
+    $mods_xml .= "$extent_xml";
+  }
+  if (isset($description_xml)) {
+    $mods_xml .= "{$description_xml}";
+  }
+  if (isset($location_xml)) {
+    $mods_xml .= "{$location_xml}";
+  }
+  $mods_xml .= "
+  <subject authority=\"lcsh\" authorityURI=\"http://id.loc.gov/authorities/subjects\" valueURI=\"\">
+    <topic>{$ms_data['topic']}</topic>
+  </subject>";
+  if (isset($language_xml)) {
+    $mods_xml .= "{$language_xml}";
+  }
+  $mods_xml .= "
   <subject>
-    <name type="corporate" authority="naf" authorityURI="http://id.loc.gov/authorities/names" valueURI="http://id.loc.gov/authorities/names/n79065105">
+    <name type=\"corporate\" authority=\"naf\" authorityURI=\"http://id.loc.gov/authorities/names\" valueURI=\"http://id.loc.gov/authorities/names/n79065105\">
       <namePart>Barnard College</namePart>
     </name>
   </subject>
   <subject>
-    <name type="corporate" authority="naf" authorityURI="http://id.loc.gov/authorities/names" valueURI="http://id.loc.gov/authorities/names/no90023871">
+    <name type=\"corporate\" authority=\"naf\" authorityURI=\"http://id.loc.gov/authorities/names\" valueURI=\"http://id.loc.gov/authorities/names/no90023871\">
       <namePart>Barnard Center for Research on Women</namePart>
     </name>
   </subject>
-  <relatedItem type="host" displayLabel="Record Group">
+  <subject authority=\"lcsh\" authorityURI=\"http://id.loc.gov/authorities/subjects\" valueURI=\"http://id.loc.gov/authorities/subjects/sh2008001560\">
+    <topic>Second-wave feminism</topic>
+  </subject>
+  <relatedItem type=\"host\" displayLabel=\"Record Group\">
     <titleInfo>
       <title>Academic Departments and Programs</title>
     </titleInfo>
   </relatedItem>
-  <relatedItem type="host">
+  <relatedItem type=\"host\">
     <titleInfo>
       <title>Barnard Center for Research on Women</title>
     </titleInfo>
-    <identifier type="local">BC13-58</identifier>
+    <identifier type=\"local\">BC13-58</identifier>
     <typeOfResource>mixed material</typeOfResource>
-  </relatedItem>
-  <identifier type="local">{$ms_data['id']}</identifier>
-  <location displayLabel="not a PURL">
-    <physicalLocation authority="marcorg">NNC</physicalLocation>
-    <physicalLocation authority="marcorg">NyNyBAW</physicalLocation>
-    <physicalLocation>Barnard College Library (New York, N.Y.)</physicalLocation>
-    <shelfLocator>{$ms_data['location']}</shelfLocator>
-  </location>
-  <accessCondition type="useAndReproduction">
-    Contact the Archives at archives@barnard.edu for more information on access and use.
-  </accessCondition>
-  <recordInfo>
-    <recordContentSource>Barnard Archives and Special Collections</recordContentSource>
-    <recordContentSource authority="marcorg">NNC</recordContentSource>
-    <recordContentSource authority="marcorg">NyNyBAW</recordContentSource>
-    <languageOfCataloging>
-      <languageTerm type="text" authority="iso639-2b">English</languageTerm>
-      <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
-    </languageOfCataloging>
-  </recordInfo>
-*/
-  return <<<MANUSCRIPT_MODS
-<mods xmlns="http://www.loc.gov/mods/v3" xmlns:mods="http://www.loc.gov/mods/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/mods/v3/mods-3-5.xsd">
-  <identifier type="local">VALUE</identifier>
-</mods>
-MANUSCRIPT_MODS;
+  </relatedItem>";
+  if (isset($access_condition_xml)) {
+    $mods_xml .= "{$access_condition_xml}";
+  }
+  if (isset($record_info_xml)) {
+    $mods_xml .= "{$record_info_xml}";
+  }
+  $mods_xml .= "\n</mods>";
+  return $mods_xml;
 }
 
 function _bc_islandora_ms_transcript($ms_pid) {

@@ -471,10 +471,12 @@ function create_page_object($file_path, $data, $collection_pid, $page_pid, $type
 PAGE_MODS;
       break;
     case 'ms':
+      $page_number = $data['page_number'];
       $label = $data['title'];
       $file_name = $file_path;
       $content_model_pid = 'islandora:manuscriptPageCModel';
       $xml = $data['xml'];
+      $img_mime = 'image/tiff';
       break;
   }
 
