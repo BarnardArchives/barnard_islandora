@@ -602,7 +602,7 @@ function _bc_islandora_ms_mods($ms_data) {
   switch ($ms_data['date_qualifier']) {
     case 'approximate':
       // TODO this should be different depending whether a range is present.
-      if (!empty($ms_data['date_start'] && !empty($ms_data['date_end']))) {
+      if (!empty($ms_data['date_start']) && !empty($ms_data['date_end'])) {
         $date_xml .= "
     <dateCreated encoding=\"w3cdtf\" keyDate=\"yes\" point=\"start\" qualifier=\"approximate\">{$ms_data['date_start']}</dateCreated>
     <dateCreated encoding=\"w3cdtf\" point=\"end\" qualifier=\"approximate\">{$ms_data['date_end']}</dateCreated>";
