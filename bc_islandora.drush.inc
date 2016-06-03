@@ -477,15 +477,20 @@ function drush_bc_islandora_ingest_ms($md_file) {
         }
         else {
           $ms_data['creator'] = $data[2];
-          $ms_data['type'] = $data[3];
-          $ms_data['date'] = $data[4];
-          $ms_data['date_qualifier'] = $data[5];
-          $ms_data['date_start'] = $data[6];
-          $ms_data['date_end'] = $data[7];
-          $ms_data['extent'] = $data[8];
-          $ms_data['description'] = $data[9];
-          $ms_data['location'] = $data[10];
-          $ms_data['topic'] = $data[11];
+          $ms_data['creator_uri'] = $data[3];
+          $ms_data['resource_type'] = $data[4];
+          $ms_data['genre'] = $data[5];
+          $ms_data['genre_uri'] = $data[6];
+          $ms_data['date'] = $data[7];
+          // $ms_data['date_qualifier'] = $data[8];
+          // NB start and end date only present if date is approx range...
+          $ms_data['date_start'] = $data[8];
+          $ms_data['date_end'] = $data[9];
+          $ms_data['extent'] = $data[10];
+          $ms_data['description'] = $data[11];
+          $ms_data['location'] = $data[12];
+          $ms_data['topic'] = $data[13];
+          $ms_data['topic_uri'] = $data[14];
         }
         $ms_pid = 'bcrw:' . str_replace(' ', '-', preg_replace('/[^a-z\d\s+]/', '', strtolower($data[1])));
         if (!islandora_object_load($ms_pid)) {
@@ -510,6 +515,7 @@ function drush_bc_islandora_ingest_ms($md_file) {
             $ms_data['cm_pid'] = $ms_pid;
             $ms_data['type'] = 'page';
             $ms_data['xml'] = _bc_islandora_ms_mods($ms_data);
+
             if (!islandora_object_load($page_pid)) {
               create_page_object($ms_data_dir . '/' . $ms_file, $ms_data, $ms_pid, $page_pid, 'ms');
             }
@@ -528,22 +534,6 @@ function drush_bc_islandora_ingest_ms($md_file) {
  * Helper function: generate manuscript MODS.
  */
 function _bc_islandora_ms_mods($ms_data) {
-/* $sample_data = array(
-  'id' => 'BC13-58_MensAllyshipLetterC1971',
-  'title' => 'Why Does the Male Chauvinism Panel Consist of Men?',
-  'creator' => '',
-  'type' => 'text',
-  'date' => '1971',
-  'date_qualifier' => 'approximate',
-  'date_start' => '',
-  'date_end' => '',
-  'extent' => '4 pages',
-  'description' => 'A note from a man on the "Male Chauvinism at Columbia: Does It Exist?" panel explaining why men\'s allyship is important for combating male chauvinism',
-  'location' => 'Box 9, Folder 2',
-  'collection_pid' => 'islandora:manuscriptCollection',
-  'cm_pid' => 'islandora:manuscriptCModel',
-)
-*/
   if (isset($ms_data['type']) && $ms_data['type'] == 'page') {
     $date_xml = '<originInfo>';
   }
@@ -598,26 +588,29 @@ function _bc_islandora_ms_mods($ms_data) {
       <roleTerm type=\"text\" authority=\"marcrelator\">Creator</roleTerm>
     </role>
   </name>";
+  $creator_uri_xml = isset($ms_data['creator_uri']) && !empty($ms_data['creator_uri']) ?
+    "<name type=\"personal\" authority=\"naf\" authorityURI=\"http://id.loc.gov/authorities/names\" valueURI=\"{$ms_data['creator_uri']}\">
+    <namePart></namePart>
+    <role>
+      <roleTerm type=\"text\" authority=\"marcrelator\">{$ms_data['creator']}</roleTerm>
+    </role>
+  </name>" :
+    "<name type=\"personal\" authority=\"local\">
+    <namePart></namePart>
+    <role>
+      <roleTerm type=\"text\" authority=\"marcrelator\">{$ms_data['creator']}</roleTerm>
+    </role>
+  </name>";
 
-  switch ($ms_data['date_qualifier']) {
-    case 'approximate':
-      // TODO this should be different depending whether a range is present.
-      if (!empty($ms_data['date_start']) && !empty($ms_data['date_end'])) {
-        $date_xml .= "
+  // TODO this should be different depending whether a range is present.
+  if (!empty($ms_data['date_start']) && !empty($ms_data['date_end'])) {
+    $date_xml .= "
     <dateCreated encoding=\"w3cdtf\" keyDate=\"yes\" point=\"start\" qualifier=\"approximate\">{$ms_data['date_start']}</dateCreated>
     <dateCreated encoding=\"w3cdtf\" point=\"end\" qualifier=\"approximate\">{$ms_data['date_end']}</dateCreated>";
-      }
-      else {
-        $date_xml .= "
-    <dateCreated encoding=\"w3cdtf\" keyDate=\"yes\" qualifier=\"approximate\">{$ms_data['date']}</dateCreated>";
-      }
-    break;
-    // Assume exact date by default?
-    case 'exact':
-    default:
-      $date_xml .= "
+  }
+  else {
+    $date_xml .= "
     <dateCreated encoding=\"w3cdtf\" keyDate=\"yes\">{$ms_data['date']}</dateCreated>";  
-    break;
   }
   $date_xml .= "
   </originInfo>";
@@ -627,7 +620,9 @@ function _bc_islandora_ms_mods($ms_data) {
     <title>{$ms_data['title']}</title>
   </titleInfo>
   {$creator_xml}
-  <typeOfResource>{$ms_data['type']}</typeOfResource>
+  {$creator_uri_xml}
+  <typeOfResource>{$ms_data['resource_type']}</typeOfResource>
+  <genre authority=\"aat\" authorityURI=\"http://vocab.getty.edu/aat\" valueURI=\"{$ms_data['genre_uri']}\">{$ms_data['genre']}</genre>
   {$date_xml}";
   if (isset($extent_xml)) {
     $mods_xml .= "$extent_xml";
@@ -639,7 +634,7 @@ function _bc_islandora_ms_mods($ms_data) {
     $mods_xml .= "{$location_xml}";
   }
   $mods_xml .= "
-  <subject authority=\"lcsh\" authorityURI=\"http://id.loc.gov/authorities/subjects\" valueURI=\"\">
+  <subject authority=\"lcsh\" authorityURI=\"http://id.loc.gov/authorities/subjects\" valueURI=\"{$ms_data['topic_uri']}\">
     <topic>{$ms_data['topic']}</topic>
   </subject>";
   if (isset($language_xml)) {
