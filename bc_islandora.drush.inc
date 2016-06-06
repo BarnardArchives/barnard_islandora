@@ -492,7 +492,9 @@ function drush_bc_islandora_ingest_ms($md_file) {
           $ms_data['topic'] = $data[13];
           $ms_data['topic_uri'] = $data[14];
         }
-        $ms_pid = 'bcrw:' . str_replace(' ', '-', preg_replace('/[^a-z\d\s+]/', '', strtolower($data[1])));
+
+        $ms_pid = _bc_islandora_ms_pid($ms_data['title']);
+
         if (!islandora_object_load($ms_pid)) {
           $ms_data['collection_pid'] = variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection');
           $ms_data['cm_pid'] = 'islandora:manuscriptCModel';
@@ -528,6 +530,27 @@ function drush_bc_islandora_ingest_ms($md_file) {
       }
     }
   }
+  else {
+    drush_log(dt("File not found: @md_file", array('@md_file' => $md_file)), 'error');
+    return;
+  }
+}
+
+/**
+ * Helper function: generate manuscript pid.
+ */
+function _bc_islandora_ms_pid($ms_title) {
+  $ms_pid = 'bcrw:' . str_replace(' ', '-', preg_replace('/[^a-z\d\s+]/', '', strtolower($ms_title)));
+
+  if (strlen($ms_pid) >= 60) {
+    $ms_pid = drush_prompt(dt("Got a long title: @ms_title. Enter pid: ", array('@ms_title' => $ms_title)));
+  }
+
+  if (strlen($ms_pid) >= 60) {
+    drush_log(dt("The pid you chose is too long! :("), 'error');
+    $ms_pid = _bc_islandora_ms_pid($ms_title);
+  }
+  return $ms_pid;
 }
 
 /**
