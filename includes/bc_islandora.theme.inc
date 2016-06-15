@@ -164,7 +164,8 @@ function _bc_islandora_featured() {
  */
 function theme_bc_islandora_breadcrumb(&$vars) {
   $output = '';
-  $bc = $vars['breadcrumb'];
+  // All breadcrumbs begin with a link to go "Home."
+  $bc = array(l(t('Home'), '/'));
 
   // Is this an islandora object?
   if (arg(2) && $object = islandora_object_load(arg(2))) {
@@ -225,11 +226,9 @@ function theme_bc_islandora_breadcrumb(&$vars) {
 
         // Manuscripts. (Temporary?)
         case '13-58':
-          $ms_collection_pid = variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection');
-          // $bc[] = l(t('Manuscripts'), 'collections/manuscripts');
-          $bc[] = l(t('Manuscripts'), 'islandora/object/' . $ms_collection_pid);
+          $bc[] = l(t('Manuscripts'), 'collections/manuscripts');
           if ($cm_results[0]['object']['value'] == 'islandora:manuscriptPageCModel') {
-            $bc[] = _bc_islandora_book_link($object, $ms_collection_pid);
+            $bc[] = _bc_islandora_book_link($object, variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection'));
           }
           break;
 
