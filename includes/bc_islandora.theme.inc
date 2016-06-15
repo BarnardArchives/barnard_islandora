@@ -164,8 +164,15 @@ function _bc_islandora_featured() {
  */
 function theme_bc_islandora_breadcrumb(&$vars) {
   $output = '';
+  $home_link = l(t('Home'), '/');
+
   // All breadcrumbs begin with a link to go "Home."
-  $bc = array(l(t('Home'), '/'));
+  if (!in_array($home_link, $vars['breadcrumb'])) {
+    $bc = array($home_link);
+  }
+  else {
+    $bc = $vars['breadcrumb'];
+  }
 
   // Is this an islandora object?
   if (arg(2) && $object = islandora_object_load(arg(2))) {
