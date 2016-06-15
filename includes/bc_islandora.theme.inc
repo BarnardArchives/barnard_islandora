@@ -283,15 +283,10 @@ function theme_bc_islandora_breadcrumb(&$vars) {
       }
     }
   }
-  // Is this a landing page or exhibition node?
+  // Is this an exhibition node?
   elseif (arg(0) == 'node' && is_numeric(arg(1))) {
     $node = menu_get_object();
-    $is_exhibition = $node->type == 'exhibition';
-    $alias = drupal_get_path_alias(implode('/', arg()));
-    if (in_array($alias, array('bulletin', 'yearbook'))) {
-      $bc[] = l(t('Collections'), 'collections');
-    }
-    elseif ($is_exhibition) {
+    if ($node->type == 'exhibition') {
       $bc[] = l(t('Exhibits'), 'exhibits');
     }
   }
