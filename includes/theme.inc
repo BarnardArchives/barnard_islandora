@@ -496,6 +496,12 @@ function _bc_islandora_dl_links($obj, $datastreams = array('PDF', 'JPG')) {
       $dl_url = islandora_datastream_get_url($obj[$ds], 'download');
       $urls[] = l($ds_label, $dl_url);
     }
+    elseif ($ds == 'TRANSCRIPT') {
+      $ts_path = "islandora/object/{$obj->id}/download_transcript";
+      // We set alias = TRUE here to avoid generating an aliased URL.
+      // @see https://api.drupal.org/api/drupal/includes%21common.inc/function/url/7.x
+      $urls[] = l('Transcript', $ts_path, array('alias' => TRUE));
+    }
   }
   return implode('<span class="separator">&nbsp;|&nbsp;</span>', $urls);
 }
