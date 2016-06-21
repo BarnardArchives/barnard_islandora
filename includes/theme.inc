@@ -243,12 +243,7 @@ function theme_bc_islandora_breadcrumb(&$vars) {
           $genre = $mods && isset($mods->genre) ? (string) $mods->genre : NULL;
           // If a photo, generate search link for genre = photo.
           if ($genre == 'photographs') {
-            $bc[] = l(t('Photographs'), 'islandora/search', array(
-              'query' => array(
-                'type' => 'dismax',
-                'f[0]' => 'mods_genre_ms:"' . $genre . '"',
-              ),
-            ));
+            $bc[] = l(t('Photographs'), 'photographs');
           }
           // If not a photo, generate links based on relatedItem metadata.
           else {
