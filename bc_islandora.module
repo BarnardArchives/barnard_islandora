@@ -120,6 +120,12 @@ function bc_islandora_config($form, &$form_state) {
   return system_settings_form($form);
 }
 
+/**
+ * Makes a "transcript" (concatenated page OCR) available for download.
+ * This is not optimized for performance; we might want to add caching at some
+ * point...
+ * @see islandora.module: islandora_download_datastream().
+ */
 function bc_islandora_download_transcript($islandora_pid) {
   module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
 
@@ -133,15 +139,20 @@ function bc_islandora_download_transcript($islandora_pid) {
           $object_ocr .= $page_object['OCR']->getContent(NULL);
         }
       }
-      if (!empty($object_ocr)) {
-        header('Content-type: text/plain');
-        header("Content-Disposition: attachment; filename=\"transcript.txt\"");
-        print $object_ocr;
-        exit();
-      }
+    }
+    // If it's not a paged object, just download OCR data (if available).
+    elseif (isset($object['OCR'])) {
+      $object_ocr .= $object['OCR']->getContent(NULL);
+    }
+    if (!empty($object_ocr)) {
+      header('Content-type: text/plain');
+      // We're just using a default filename for now: "transcript.txt."
+      header('Content-Disposition: attachment; filename=\"transcript.txt\"');
+      print $object_ocr;
+      exit();
     }
   }
-  
+
   return drupal_not_found();
 }
 
