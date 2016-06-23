@@ -76,12 +76,6 @@ function bc_islandora_theme($existing, $type, $theme, $path) {
       ),
       'file' => 'includes/theme.inc',
     ),
-    'bc_islandora_exhibition' => array(
-      'variables' => array(
-        'node' => array(),
-      ),
-      'file' => 'includes/theme.inc',
-    ),
   );
 }
 
