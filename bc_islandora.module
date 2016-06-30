@@ -5,7 +5,6 @@
  * Custom behavior for Barnard Digital Collections.
  */
 
-
 /**
  * Implements hook_init().
  *
@@ -116,38 +115,50 @@ function bc_islandora_config($form, &$form_state) {
 
 /**
  * Makes a "transcript" (concatenated page OCR) available for download.
- * This is not optimized for performance; we might want to add caching at some
- * point...
- * @see islandora.module: islandora_download_datastream().
+ * @see islandora_download_datastream()
  */
 function bc_islandora_download_transcript($islandora_pid) {
   module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
+  module_load_include('inc', 'bc_islandora', 'includes/utilities');
 
   if ($object = islandora_object_load($islandora_pid)) {
-    $object_ocr = '';
-    if ($pages = islandora_paged_content_get_pages($object)) {
-      foreach ($pages as $page_pid => $page) {
-        $page_object = islandora_object_load($page_pid);
-        if (isset($page_object['OCR'])) {
-          //$object_ocr[] = $page_object['OCR']->content;
-          $object_ocr .= $page_object['OCR']->getContent(NULL);
-        }
-      }
+    $object_cid = _bc_islandora_get_transcript_cid($object);
+
+    // If this object's transcript has been cached, use the cached version.
+    if ($cached_ocr = cache_get($object_cid)) {
+      $object_ocr = $cached_ocr->data;
     }
-    // If it's not a paged object, just download OCR data (if available).
-    elseif (isset($object['OCR'])) {
-      $object_ocr .= $object['OCR']->getContent(NULL);
+    // Otherwise, generate a new transcript and cache it.
+    else {
+      $object_ocr = _bc_islandora_generate_transcript($object);
+      cache_set($object_cid, $object_ocr);
     }
-    if (!empty($object_ocr)) {
-      header('Content-type: text/plain');
-      // We're just using a default filename for now: "transcript.txt."
-      header('Content-Disposition: attachment; filename=\"transcript.txt\"');
-      print $object_ocr;
-      exit();
-    }
+
+    // Download the transcript as a text file.
+    header('Content-type: text/plain');
+    header("Content-Disposition: attachment; filename=\"{$object_cid}.txt\"");
+    print $object_ocr;
+    exit();
   }
 
   return drupal_not_found();
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function bc_islandora_form_islandora_paged_content_manage_page_edit_ocr_form_alter(&$form, &$form_state, $form_id) {
+  $form['#submit'][] = '_bc_islandora_update_transcript_cache';
+}
+
+/**
+ * Submit handler for page OCR form.
+ */
+function _bc_islandora_update_transcript_cache($form, &$form_state) {
+  module_load_include('inc', 'bc_islandora', 'includes/utilities');
+  $object = $form_state['object'];
+  $object_cid = _bc_islandora_get_transcript_cid($object);
+  cache_set($object_cid, _bc_islandora_generate_transcript($object));
 }
 
 /**
@@ -164,14 +175,8 @@ function bc_islandora_form_islandora_solr_date_filter_form_alter(&$form, &$form_
   $query_params = drupal_get_query_parameters();
   $query_params['date_format'] ? $facet_format = $query_params['date_format'] : $facet_format = variable_get('bc_solr_date_facet_format', 'Y/m/d');
 
-  // Fetch our record start and end dates as DateTime objs.
-  // global $_islandora_solr_queryclass;
-  // $record_start = new DateTime($_islandora_solr_queryclass->islandoraSolrResult['facet_counts']['facet_dates']['mods_originInfo_dateCreated_mdt']['start']);
-  // $record_end = new DateTime($_islandora_solr_queryclass->islandoraSolrResult['facet_counts']['facet_dates']['mods_originInfo_dateCreated_mdt']['end']);
-
   // Update the format helper text.
   $form['date_filter']['date_filter']['#markup'] = '<div class="description">(Valid formats: YYYY, YYYY/MM, YYYY/MM/DD)</div>';
-  // $form['date_filter']['date_filter_submit']['#prefix'] = '<div class="description">Showing records from: '.$record_start->format($facet_format).' to '.$record_end->format($facet_format).'</div>';
 
   // Remove titles and add placeholder text instead.
   unset($form['date_filter']['date_filter_from']['#title']);
@@ -183,7 +188,8 @@ function bc_islandora_form_islandora_solr_date_filter_form_alter(&$form, &$form_
   // Change "Filter" to "Apply"
   $form['date_filter']['date_filter_submit']['#value'] = 'Apply';
 
-  // Add a handler to modify the date_filter_to to the latest date possible based on current input.
+  // Add a handler to modify the date_filter_to to the latest date possible
+  // based on current input.
   array_unshift($form['#submit'], 'bc_islandora_form_islandora_solr_date_filter_form_submit');
 
   // Do not add anything to blank fields. Leave this function.
@@ -191,17 +197,18 @@ function bc_islandora_form_islandora_solr_date_filter_form_alter(&$form, &$form_
     return;
   }
 
-  // Modify the current form to use our facet_format. 
+  // Modify the current form to use our facet_format.
   $date_from = new DateTime($form['date_filter']['date_filter_from']['#default_value']);
   $date_to = new DateTime($form['date_filter']['date_filter_to']['#default_value']);
   $form['date_filter']['date_filter_from']['#default_value'] = $date_from->format($facet_format);
   $form['date_filter']['date_filter_to']['#default_value'] = $date_to->format($facet_format);
 }
 
-/*
- * When using a facet_format, this simply appends the "oldest date" as the date_filter_to.
- */ 
+/**
+ * When using a facet_format, appends the "oldest date" as the date_filter_to.
+ */
 function bc_islandora_form_islandora_solr_date_filter_form_submit(&$form, &$form_state) {
+  module_load_include('inc', 'bc_islandora', 'includes/utilities');
   global $_islandora_solr_queryclass;
 
   $form_date_from = $form_state['values']['date_filter']['date_filter_from'];
@@ -209,30 +216,4 @@ function bc_islandora_form_islandora_solr_date_filter_form_submit(&$form, &$form
 
   $_islandora_solr_queryclass->internalSolrParams['date_format'] = bc_islandora_get_date_format($form_date_from, $form_date_to);
   $form_state['values']['date_filter']['date_filter_to'] .= bc_islandora_get_latest_possible_date($form_date_to);
-}
-
-// TODO: describe function
-function bc_islandora_get_date_format($date1, $date2) {
-  $date_a = count(explode('/', $date1));
-  $date_b = count(explode('/', $date2));
-  switch (max($date_a, $date_b)) {
-    case 1: return 'Y';
-    case 2: return 'Y/m';
-    case 3: return 'Y/m/d';
-  }
-}
-
-// TODO: describe function
-function bc_islandora_get_latest_possible_date($date_to) {
-  $date_count = count(explode('/', $date_to));
-  switch ($date_count) {
-    case 1: // We always end a year in December, which has 31days, at least for the foreseeable future.
-      return '/12/31'; 
-    case 2: // All this code just figures out what the last day of the month is, and returns it. Convoluted much??
-      $dto = new DateTime($date_to.'/1');
-      $dto->add(new DateInterval('P1M'))->sub(new DateInterval('P1D'));
-      return '/'.$dto->format('d');
-    case 3: 
-      return;
-  }
 }
