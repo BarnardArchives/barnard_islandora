@@ -89,9 +89,11 @@ function _bc_islandora_np_page_pager($object) {
 
   $results = $object->relationships->get(ISLANDORA_RELS_EXT_URI, 'isPageOf');
   $result = reset($results);
+  $is_parent = $result ? FALSE : TRUE;
   $parent = $result ? islandora_object_load($result['object']['value']) : islandora_object_load($object);
   $pages = $parent ? islandora_paged_content_get_pages($parent) : array();
   $pages = array_keys($pages);
+
   if (empty($pages)) {
     // The page object pid.
     $pages[] = $object->id;
@@ -110,6 +112,7 @@ function _bc_islandora_np_page_pager($object) {
       $page_links[] = l($title, "islandora/object/{$pid}");
     }
   }
+  $page_links[] = $is_parent ? 'View All' : l('View All', "islandora/object/{$parent->id}");
   return implode($page_links, '&nbsp;');
 }
 
