@@ -202,10 +202,14 @@ function theme_bc_islandora_breadcrumb(&$vars) {
         case '12-06':
         case '12-11':
         case '12-14':
+        case '12-17': // Emanon
         case '12-18':
         case '12-22':
         case '12-23':
         case '12-24':
+        case '12-29': // QZine
+        case '12-31': // Well-Woman Newsletter
+
           $bc[] = l(t('Student Publications'), 'student-publications');
           $is_pub = TRUE;
           if ($pub_link = _bc_islandora_book_link($object, variable_get('bc_islandora_pubs_pid', 'islandora:1022'))) {
