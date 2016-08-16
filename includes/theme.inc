@@ -207,7 +207,6 @@ function theme_bc_islandora_breadcrumb(&$vars) {
         case '12-22':
         case '12-23':
         case '12-24':
-        case '12-29': // QZine
         case '12-31': // Well-Woman Newsletter
 
           $bc[] = l(t('Student Publications'), 'student-publications');
@@ -220,6 +219,7 @@ function theme_bc_islandora_breadcrumb(&$vars) {
         // "Special" student publications: don't provide issue link.
         case '12-09': // The Torch, 1959
         case '12-26': // Why We Strike, 1970
+        case '12-29': // QZine
         case '12-30': // Plimpton Cookbook
           $bc[] = l(t('Student Publications'), 'student-publications');
           if ($cm_results[0]['object']['value'] == 'islandora:pageCModel') {
