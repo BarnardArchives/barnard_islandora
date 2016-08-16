@@ -6,10 +6,6 @@
  */
 
 /**
- * Generates themed newspaper issue navigator output.
- *
- * @see theme_islandora_newspaper_issue_navigator()
- */
 function theme_bc_islandora_newspaper_issue_navigator(&$vars) {
   module_load_include('inc', 'islandora_newspaper', 'includes/utilities');
   $output = '';
@@ -239,12 +235,12 @@ function theme_bc_islandora_breadcrumb(&$vars) {
           break;
 
         // Manuscripts. (Temporary?)
-        case '13-58':
-          $bc[] = l(t('Manuscripts'), 'collections/manuscripts');
-          if ($cm_results[0]['object']['value'] == 'islandora:manuscriptPageCModel') {
-            $bc[] = _bc_islandora_book_link($object, variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection'));
-          }
-          break;
+        // case '13-58':
+        //   $bc[] = l(t('Manuscripts'), 'collections/manuscripts');
+        //   if ($cm_results[0]['object']['value'] == 'islandora:manuscriptPageCModel') {
+        //     $bc[] = _bc_islandora_book_link($object, variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection'));
+        //   }
+        //   break;
 
         default:
           $genre = $mods && isset($mods->genre) ? (string) $mods->genre : NULL;
