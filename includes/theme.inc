@@ -218,9 +218,9 @@ function theme_bc_islandora_breadcrumb(&$vars) {
           break;
 
         // "Special" student publications: don't provide issue link.
-        case '12-09':
-        case '12-26':
-        case '12-30':
+        case '12-09': // The Torch, 1959
+        case '12-26': // Why We Strike, 1970
+        case '12-30': // Plimpton Cookbook
           $bc[] = l(t('Student Publications'), 'student-publications');
           if ($cm_results[0]['object']['value'] == 'islandora:pageCModel') {
             $bc[] = _bc_islandora_book_link($object, variable_get('bc_islandora_pubs_pid', 'islandora:1022'));
@@ -316,7 +316,12 @@ function theme_bc_islandora_breadcrumb(&$vars) {
  */
 function _bc_islandora_book_link($object, $parent_collection) {
   $parent = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
-  $book = islandora_object_load($parent[0]['object']['value']);
+  $parentCollection = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOfCollection');
+
+  $book = !empty($parent) ?
+    islandora_object_load($parent[0]['object']['value']) :
+    islandora_object_load($parentCollection[0]['object']['value']);
+
   // Don't generate a link to islandora:bookCollection or whatever.
   if ($book->id != $parent_collection) {
     return l($book->label, "islandora/object/{$book->id}");
