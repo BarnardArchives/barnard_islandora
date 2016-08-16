@@ -6,6 +6,10 @@
  */
 
 /**
+ * Generates themed newspaper issue navigator output.
+ *
+ * @see theme_islandora_newspaper_issue_navigator()
+ */
 function theme_bc_islandora_newspaper_issue_navigator(&$vars) {
   module_load_include('inc', 'islandora_newspaper', 'includes/utilities');
   $output = '';
