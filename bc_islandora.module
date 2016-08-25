@@ -217,3 +217,20 @@ function bc_islandora_form_islandora_solr_date_filter_form_submit(&$form, &$form
   $_islandora_solr_queryclass->internalSolrParams['date_format'] = bc_islandora_get_date_format($form_date_from, $form_date_to);
   $form_state['values']['date_filter']['date_filter_to'] .= bc_islandora_get_latest_possible_date($form_date_to);
 }
+
+/**
+ * Because we want the list display, but not the word "default" in the name.
+ * Credit: https://github.com/uml-digitalinitiatives/manidora/blob/7.x/manidora.module#L865-L879
+ */
+function bc_islandora_islandora_solr_primary_display() {
+  return array(
+    'bcislandora_list' => array(
+      'name' => t('List'),
+      'module' => 'islandora_solr',
+      'file' => 'includes/results.inc',
+      'class' => "IslandoraSolrResults",
+      'function' => "displayResults",
+      'description' => t("A simple output."),
+    ),
+  );
+}
