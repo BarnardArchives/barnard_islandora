@@ -151,7 +151,12 @@ function _bc_islandora_featured() {
         ->condition('revision_id', $vid, '=')
         ->condition('bundle', 'featured_object', '=');
       if ($pid = $pid_q->execute()->fetchField()) {
-        $output .= l($cap, "islandora/object/{$pid}");
+        if ((bool) parse_url($pid, PHP_URL_SCHEME)) {
+          $output .= l($cap, "{$pid}");
+        }
+        else {
+          $output .= l($cap, "islandora/object/{$pid}");
+        }
       }
       else {
         $output .= $cap;
