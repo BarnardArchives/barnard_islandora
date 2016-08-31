@@ -166,10 +166,6 @@ body .logged-in #navigation {
 	width: 15%;
 }
 
-#block-islandora-solr-display-switch {
-    top: -20px !important;
-}
-
 #block-islandora-solr-display-switch h2 {
 	float: left;
 	font-weight: normal;
