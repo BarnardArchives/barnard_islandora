@@ -265,5 +265,3 @@ function bc_islandora_block_view_alter(&$data, $block) {
     $data['content'] = $xml->asXML();
   }
 }
-
-
