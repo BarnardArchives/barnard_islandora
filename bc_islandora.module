@@ -6,25 +6,6 @@
  */
 
 /**
- * Creates a way to use SimpleXML to preprend children to nodes, not just append.
- * @see: http://stackoverflow.com/questions/2092012/simplexml-how-to-prepend-a-child-in-a-node
- */
-class bc_islandora_xml_extended extends SimpleXMLElement
-{
-    public function prependChild($name, $value)
-    {
-        $dom = dom_import_simplexml($this);
-
-        $new = $dom->insertBefore(
-            $dom->ownerDocument->createElement($name, $value),
-            $dom->firstChild
-        );
-
-        return simplexml_import_dom($new, get_class($this));
-    }
-}
-
-/**
  * Implements hook_init().
  *
  * Disable caching for the front page only.
@@ -252,16 +233,4 @@ function bc_islandora_islandora_solr_primary_display() {
       'description' => t("A simple output."),
     ),
   );
-}
-
-/**
- * Adds Display: to display_switch from islandora_solr.
- */
-function bc_islandora_block_view_alter(&$data, $block) {
-  if ($block->delta === "display_switch") {
-    // This is me being exceptionally lazy, or incredibly magestic, like a unicorn.
-    $xml = simplexml_load_string($data['content'], bc_islandora_xml_extended);
-    $xml->ul->prependChild("li","Display:&nbsp;");
-    $data['content'] = $xml->asXML();
-  }
 }
