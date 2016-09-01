@@ -304,7 +304,7 @@ function theme_bc_islandora_breadcrumb(&$vars) {
     $last_part = array_pop($title_parts);
     // In these special cases, use whatever text occurs after the last comma
     // (e.g. "issue 1") as the title.
-    if (array_shift(explode(' ', preg_replace('/^ /', '', $last_part))) == 'page' || $is_pub) {
+    if (array_shift(explode(' ', preg_replace('/^ /', '', $last_part))) == 'page' || !empty($is_pub) && (bool)$is_pub) {
       $bc[] = $last_part;
     }
     else {
