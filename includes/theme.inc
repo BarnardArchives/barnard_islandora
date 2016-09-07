@@ -257,7 +257,6 @@ function theme_bc_islandora_breadcrumb(&$vars) {
 
         default:
           $genre = $mods && isset($mods->genre) ? (string) $mods->genre : NULL;
-          dpm($genre);
           
           // Handle photographs.
           // Though photographs is typically Barnard's MODS->genre[0], we need to account for other
