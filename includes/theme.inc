@@ -261,9 +261,12 @@ function theme_bc_islandora_breadcrumb(&$vars) {
           // Handle photographs.
           // Though photographs is typically Barnard's MODS->genre[0], we need to account for other
           // possibilities. This array contains those possibilities: add as necessary.
+          // @SEE: http://islandora:8080/solr/barnardCollegeArchives/select?q=RELS_EXT_hasModel_uri_s%3A%22info%3Afedora%2Fislandora%3Asp_large_image_cmodel%22&wt=xml&indent=true&facet=true&facet.field=mods_genre_ms&rows=0
           $photograph_mods_genres = array(
             'photographs',
             'black-and-white photographs',
+            'portraits',
+            'color photographs',
             );
 
           if (in_array($genre, $photograph_mods_genres)) {
