@@ -196,7 +196,8 @@ function theme_bc_islandora_breadcrumb(&$vars) {
           $bc[] = l(t('Yearbook'), 'yearbook');
           // Is it a page (= "member of" a book, not just book collection)?
           // If so, link to the parent book.
-          if ($book_link = _bc_islandora_book_link($object, variable_get('bc_islandora_yearbook_pid', 'islandora:bookCollection'))) {
+          if ($book_link = _bc_islandora_book_link($object,
+            variable_get('bc_islandora_yearbook_pid', 'islandora:bookCollection'))) {
             $bc[] = $book_link;
           }
           break;
@@ -216,7 +217,8 @@ function theme_bc_islandora_breadcrumb(&$vars) {
 
           $bc[] = l(t('Student Publications'), 'student-publications');
           $is_pub = TRUE;
-          if ($pub_link = _bc_islandora_book_link($object, variable_get('bc_islandora_pubs_pid', 'islandora:1022'))) {
+          if ($pub_link = _bc_islandora_book_link($object, variable_get('bc_islandora_pubs_pid',
+            'islandora:1022'))) {
             $bc[] = $pub_link;
           }
           break;
@@ -228,7 +230,8 @@ function theme_bc_islandora_breadcrumb(&$vars) {
         case '12-30': // Plimpton Cookbook
           $bc[] = l(t('Student Publications'), 'student-publications');
           if ($cm_results[0]['object']['value'] == 'islandora:pageCModel') {
-            $bc[] = _bc_islandora_book_link($object, variable_get('bc_islandora_pubs_pid', 'islandora:1022'));
+            $bc[] = _bc_islandora_book_link($object, variable_get('bc_islandora_pubs_pid',
+              'islandora:1022'));
           }
           break;
 
@@ -247,16 +250,27 @@ function theme_bc_islandora_breadcrumb(&$vars) {
         // case '13-58':
         //   $bc[] = l(t('Manuscripts'), 'collections/manuscripts');
         //   if ($cm_results[0]['object']['value'] == 'islandora:manuscriptPageCModel') {
-        //     $bc[] = _bc_islandora_book_link($object, variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection'));
+        //     $bc[] = _bc_islandora_book_link($object, variable_get('bc_islandora_manuscripts_pid',
+        //       'islandora:manuscriptCollection'));
         //   }
         //   break;
 
         default:
           $genre = $mods && isset($mods->genre) ? (string) $mods->genre : NULL;
-          // If a photo, generate search link for genre = photo.
-          if ($genre == 'photographs') {
+          dpm($genre);
+          
+          // Handle photographs.
+          // Though photographs is typically Barnard's MODS->genre[0], we need to account for other
+          // possibilities. This array contains those possibilities: add as necessary.
+          $photograph_mods_genres = array(
+            'photographs',
+            'black-and-white photographs',
+            );
+
+          if (in_array($genre, $photograph_mods_genres)) {
             $bc[] = l(t('Photographs'), 'photographs');
           }
+
           // If not a photo, generate links based on relatedItem metadata.
           else {
             $links = array();
@@ -304,7 +318,8 @@ function theme_bc_islandora_breadcrumb(&$vars) {
     $last_part = array_pop($title_parts);
     // In these special cases, use whatever text occurs after the last comma
     // (e.g. "issue 1") as the title.
-    if (array_shift(explode(' ', preg_replace('/^ /', '', $last_part))) == 'page' || !empty($is_pub) && (bool)$is_pub) {
+    if (array_shift(explode(' ', preg_replace('/^ /', '', $last_part))) == 'page'
+      || !empty($is_pub) && (bool)$is_pub) {
       $bc[] = $last_part;
     }
     else {
@@ -370,7 +385,8 @@ function _bc_islandora_is_manuscript($object) {
       $collection = islandora_object_load($parent_collection);
       // If this object's parent collection's pid is the same as our database
       // variable bc_islandora_manuscripts_pid, the answer is YES.
-      if ($collection->id == variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection')) {
+      if ($collection->id == variable_get('bc_islandora_manuscripts_pid',
+        'islandora:manuscriptCollection')) {
         return TRUE;
       }
     }
