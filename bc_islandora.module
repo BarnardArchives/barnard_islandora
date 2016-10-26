@@ -228,11 +228,6 @@ function bc_islandora_form_islandora_solr_simple_search_form_alter(&$form, &$for
   $form['simple']['islandora_simple_search_query']['#title'] = '<none>';
 }
 
-// function bc_islandora_form_alter(&$form, &$form_state) {
-//   dpm($form);
-//   dpm($form_state);
-// }
-
 /**
  * Because we want the list display, but not the word "default" in the name.
  * Credit: https://github.com/uml-digitalinitiatives/manidora/blob/7.x/manidora.module#L865-L879
@@ -249,4 +244,3 @@ function bc_islandora_islandora_solr_primary_display() {
     ),
   );
 }
-

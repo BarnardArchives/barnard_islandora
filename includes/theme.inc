@@ -185,6 +185,7 @@ function theme_bc_islandora_breadcrumb(&$vars) {
   // Is this an islandora object?
   if (arg(2) && $object = islandora_object_load(arg(2))) {
     $bc[] = l(t('Collections'), 'collections');
+    $bc_manuscript_title = '';
     $collection_results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
     $cm_results = $object->relationships->get(FEDORA_MODEL_URI, 'hasModel');
     $mods = isset($object['MODS']) ? simplexml_load_string($object['MODS']->getContent(NULL)) : NULL;
@@ -247,13 +248,13 @@ function theme_bc_islandora_breadcrumb(&$vars) {
           break;
 
         // Manuscripts. (Temporary?)
-        // case '13-58':
-        //   $bc[] = l(t('Manuscripts'), 'collections/manuscripts');
-        //   if ($cm_results[0]['object']['value'] == 'islandora:manuscriptPageCModel') {
-        //     $bc[] = _bc_islandora_book_link($object, variable_get('bc_islandora_manuscripts_pid',
-        //       'islandora:manuscriptCollection'));
-        //   }
-        //   break;
+        case '13-58':
+          // $bc[] = l(t('Manuscripts'), 'collections/manuscripts');
+          if ($cm_results[0]['object']['value'] == 'islandora:manuscriptPageCModel') {
+            $bc_manuscript_title = _bc_islandora_book_link($object,
+              variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection'));
+          }
+          // break;
 
         default:
           $genre = $mods && isset($mods->genre) ? (string) $mods->genre : NULL;
@@ -313,7 +314,6 @@ function theme_bc_islandora_breadcrumb(&$vars) {
       $bc[] = l(t('Exhibits'), 'exhibits');
     }
   }
-
   // Add the current page's title to the existing breadcrumb.
   if (count($bc) >= 1 && $title = menu_get_active_title()) {
     $title_parts = explode(',', $title);
@@ -322,6 +322,9 @@ function theme_bc_islandora_breadcrumb(&$vars) {
     // (e.g. "issue 1") as the title.
     if (array_shift(explode(' ', preg_replace('/^ /', '', $last_part))) == 'page'
       || !empty($is_pub) && (bool)$is_pub) {
+      if (!empty($bc_manuscript_title)) {
+        $bc[] = $bc_manuscript_title;
+      }
       $bc[] = $last_part;
     }
     else {
