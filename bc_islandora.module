@@ -40,6 +40,15 @@ function bc_islandora_menu() {
     'type' => MENU_NORMAL_ITEM,
     'access arguments' => array('administer bc_islandora'),
   );
+  $items['admin/islandora/bc_metadata'] = array(
+    'title' => 'Update Barnard Metadata',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('bc_islandora_metadata_form'),
+    'file' => 'metadata.inc',
+    'file path' => drupal_get_path('module', 'bc_islandora') . '/includes',
+    'type' => MENU_NORMAL_ITEM,
+    'access arguments' => array('administer bc_islandora'),
+  );
   $items['islandora/object/%islandora_object/download_transcript'] = array(
     'page callback' => 'bc_islandora_download_transcript',
     'page arguments' => array(2),
@@ -243,4 +252,20 @@ function bc_islandora_islandora_solr_primary_display() {
       'description' => t("A simple output."),
     ),
   );
+}
+
+
+/**
+ * Meta-data related modifications.
+ */
+
+/**
+ * Implements hook_islandora_datastream_alter().
+ * @see metadata.inc
+ */
+function bc_islandora_islandora_datastream_alter($object, $datastream, &$context) {
+  if ($object['MODS'] && $datastream->id == 'MODS' && $context['action'] == 'ingest') {
+    module_load_include('inc', 'bc_islandora', 'includes/metadata');
+    _bc_islandora_generate_primary_dislpay_url($object, TRUE);
+  }
 }
