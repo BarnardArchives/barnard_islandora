@@ -1,13 +1,18 @@
 <?php
 
 /**
- * @file metadata.inc
- *
+ * @file
  * Various metadata related code, and the like.
  *
- * The inspiration for this came from M. Jordan's islandora_metadata_extras.
+ * Sometimes we like to play with our metadata using php. Why not?
  *
- * @see: https://github.com/mjordan/
+ * @author Benjamin Rosner https://github.com/br2490
+ *
+ * The inspiration for this came from M. Jordan's islandora_metadata_extras.
+ * He adds a mods:identifier'uuid' to all MODs records in his code.
+ * Thank you @mjordan!
+ *
+ * @author: https://github.com/mjordan/
  * @see: https://github.com/mjordan/islandora_metadata_extras/tree/7.x
  */
 
