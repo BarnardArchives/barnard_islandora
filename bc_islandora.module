@@ -124,6 +124,7 @@ function bc_islandora_config($form, &$form_state) {
 
 /**
  * Makes a "transcript" (concatenated page OCR) available for download.
+ *
  * @see islandora_download_datastream()
  */
 function bc_islandora_download_transcript($islandora_pid) {
@@ -194,7 +195,7 @@ function bc_islandora_form_islandora_solr_date_filter_form_alter(&$form, &$form_
   $form['date_filter']['date_filter_from']['#suffix'] = '<span id="between-dates">to </span>';
   $form['date_filter']['date_filter_to']['#attributes']['placeholder'] = 'End';
 
-  // Change "Filter" to "Apply"
+  // Change "Filter" to "Apply".
   $form['date_filter']['date_filter_submit']['#value'] = 'Apply';
 
   // Add a handler to modify the date_filter_to to the latest date possible
@@ -231,7 +232,8 @@ function bc_islandora_form_islandora_solr_date_filter_form_submit(&$form, &$form
  * Implements hook_form_alter().
  *
  * Removes title from Islandora Solr's "Simple Search Box"
- * Resolves: https://github.com/BarnardArchives/digitalcollections.barnard.edu/issues/15
+ *
+ * @see: https://github.com/BarnardArchives/digitalcollections.barnard.edu/issues/15
  */
 function bc_islandora_form_islandora_solr_simple_search_form_alter(&$form, &$form_state) {
   $form['simple']['islandora_simple_search_query']['#title'] = '<none>';
@@ -239,7 +241,8 @@ function bc_islandora_form_islandora_solr_simple_search_form_alter(&$form, &$for
 
 /**
  * Because we want the list display, but not the word "default" in the name.
- * Credit: https://github.com/uml-digitalinitiatives/manidora/blob/7.x/manidora.module#L865-L879
+ *
+ * Credit: https://github.com/uml-digitalinitiatives/manidora/blob/7.x/manidora.module#L865-L879.
  */
 function bc_islandora_islandora_solr_primary_display() {
   return array(
@@ -254,13 +257,13 @@ function bc_islandora_islandora_solr_primary_display() {
   );
 }
 
-
-/**
+/*
  * Meta-data related modifications.
  */
 
 /**
  * Implements hook_islandora_datastream_alter().
+ *
  * @see metadata.inc
  */
 function bc_islandora_islandora_datastream_alter($object, $datastream, &$context) {
@@ -268,4 +271,14 @@ function bc_islandora_islandora_datastream_alter($object, $datastream, &$context
     module_load_include('inc', 'bc_islandora', 'includes/metadata');
     _bc_islandora_generate_primary_dislpay_url($object, TRUE);
   }
+}
+
+/**
+ * Implements hook_barnard_islandora_metadata_functions().
+ */
+function bc_islandora_barnard_islandora_metadata_functions() {
+  return array(
+    'Default' => '',
+    'MODs Primary Display' => 'function_name',
+  );
 }

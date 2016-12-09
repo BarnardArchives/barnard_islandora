@@ -78,7 +78,7 @@ function _bc_islandora_generate_primary_dislpay_url($object, $commit = FALSE) {
       // Here we modify "top level" mods:location(s).
       if ($parent == "mods") {
         // Create the primary dislpay url @ mods:location/mods:url.
-        $link = $base_url . $base_path . 'islandora/object/' . urlencode($pid);
+        $link = $base_url . $base_path . 'islandora/object/' . $pid;
         $primary_display = $dom->createElementNS('http://www.loc.gov/mods/v3',
           'url', $link);
         $primary_display->setAttribute('usage', 'primary display');
@@ -128,25 +128,21 @@ function _bc_islandora_generate_primary_dislpay_url($object, $commit = FALSE) {
  * Metadata form.
  */
 function bc_islandora_metadata_form() {
+  $operations = module_invoke_all('barnard_islandora_metadata_functions');
+
   $form['#attributes'] = array(
     'enctype' => 'multipart/form-data'
   );
   $form['pid'] = array(
-    '#title' => t('Enter a PID to regenerate'),
+    '#title' => t('Enter a single PID to regenerate or preview.'),
     '#type' => 'textfield',
     '#description' => t('PID to regenerate as namespace:identifier. <br />
       <strong>This field can accept URL encoded PIDs.</strong>'),
   );
-  $form['commit'] = array(
-    '#title' => t('Commit updated records to Fedora?'),
-    '#type' => 'checkbox',
-    '#required' => FALSE,
-    '#description' => t('If checked updated records will be saved to Fedora.'),
-  );
   $form['csvfile'] = array(
     '#title' => t('CSV File'),
     '#type'  => 'file',
-    '#description' => (t('<strong>Batch.</strong><br />
+    '#description' => (t('<strong>Batch Mode: Engage.</strong><br />
       CSV file is simple: <strong>PID</strong>, <strong>OPERATION</strong>,
       [optional]<strong>COMMIT</strong>. <br />
       <strong>PID</strong>: are the objects to be updated;
@@ -157,6 +153,19 @@ function bc_islandora_metadata_form() {
       Must always include headers in the CSV, checked for validity.')
     ),
   );
+  $form['operation'] = array(
+    '#title' => t('Operation to run.'),
+    '#type'  => 'select',
+    '#description' => (t('This is the hookable part.')),
+    '#options' => array_flip($operations),
+  );
+  $form['commit'] = array(
+    '#title' => t('Commit updated records to Fedora?'),
+    '#type' => 'checkbox',
+    '#required' => FALSE,
+    '#default' => FALSE,
+    '#description' => t('If checked updated records will be saved to Fedora.'),
+  );
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit'),
@@ -165,6 +174,7 @@ function bc_islandora_metadata_form() {
     'bc_islandora_metadata_form_validate_fileupload',
     'bc_islandora_metadata_form_validate',
   );
+
   return $form;
 }
 
@@ -319,7 +329,7 @@ function _bc_islandora_metadata_remember_file($filename, &$context) {
 function _bc_islandora_metadata_csv_row_proc($line, &$context) {
   $context['results']['rows_imported']++;
   $line = $cleaned_line = array_map('base64_decode', $line);
-  $pid = $line[0];
+  $pid = ulrdecode($line[0]);
   $task = $line[1];
   $context['message'] = t('Updating PID !pid', array('!pid' => $pid));
 
