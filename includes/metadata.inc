@@ -55,19 +55,27 @@ function _bc_islandora_generate_primary_dislpay_url($object, $commit = FALSE) {
   $dom->loadXML($datastream->content);
   $xpath = new DOMXPath($dom);
   $xpath->registerNamespace('mods', 'http://www.loc.gov/mods/v3');
-  $locations = $xpath->query('//mods:location');
+
+  $mods_locations = $dom->getElementsByTagName("location");
+  if ($mods_locations->length === 0) {
+    $root = $dom->firstChild;
+    $location = $dom->createElementNS('http://www.loc.gov/mods/v3', 'location');
+    $root->appendChild($location);
+  }
+
   $existing_url_displays =
     $xpath->query("//mods:location/mods:url[@usage='primary display']");
-
+  $existing_locations = $xpath->query('//mods:location');
   if ($existing_url_displays->length === 0) {
-    foreach ($locations as $loc) {
+    foreach ($existing_locations as $loc) {
       $parent = $loc->parentNode->nodeName;
 
       // Here we modify "top level" mods:location(s).
       if ($parent == "mods") {
         // Create the primary dislpay url @ mods:location/mods:url.
         $link = $base_url . $base_path . 'islandora/object/' . urlencode($pid);
-        $primary_display = $dom->createElement('url', $link);
+        $primary_display = $dom->createElementNS('http://www.loc.gov/mods/v3',
+          'url', $link);
         $primary_display->setAttribute('usage', 'primary display');
         $loc->appendChild($primary_display);
         // Since we're adding a URL, we're getting rid of the the following:
@@ -75,7 +83,8 @@ function _bc_islandora_generate_primary_dislpay_url($object, $commit = FALSE) {
           $loc->removeAttribute('displayLabel') : NULL;
       }
       // Here we modify other nodes that are not at the root level.
-      /* elseif ($parent == "relatedItem") {
+      /*
+      elseif ($parent == "relatedItem") {
       dpm("trigger for related host items");
       Create the host item primary dislpay @ mods:host/mods:location/mods:url
       $link = $base_url . $base_path . 'islandora/object/' . urlencode($pid);
@@ -84,7 +93,8 @@ function _bc_islandora_generate_primary_dislpay_url($object, $commit = FALSE) {
       $primary_display = $dom->createElement('url', $link);
       $primary_display->setAttribute('usage', 'primary display');
       $loc->appendChild($primary_display);
-      } */
+      }
+       */
     }
 
     $res = $dom->saveXML();
@@ -219,9 +229,9 @@ function bc_islandora_metadata_form_submit(&$form, &$form_state) {
     $csv = $form_state['values']['csvupload'];
 
     $batch = array(
-      'title' => t('Updating records from CSV ...'),
+      'title' => t('Updating multiple records from CSV.'),
       'operations' => array(),
-      'init_message' => t('Commencing'),
+      'init_message' => t('Please wait...'),
       'progress_message' => t('Processed @current out of @total.'),
       'error_message' => t('An error occurred during processing'),
       'finished' => 'bc_islandora_metadata_update_finished',
@@ -230,7 +240,8 @@ function bc_islandora_metadata_form_submit(&$form, &$form_state) {
 
     if ($handle = fopen($form_state['values']['csvupload'], 'r')) {
       $batch['operations'][] = array('_bc_islandora_metadata_remember_file',
-        array($form_state['values']['csvupload']));
+        array($form_state['values']['csvupload'])
+        );
       $line_count = 1;
       $first = TRUE;
       $line = fgetcsv($handle, 4096);
