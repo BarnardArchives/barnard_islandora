@@ -334,7 +334,7 @@ function bc_islandora_metadata_update_finished($success, $results, $operations) 
       );
     }
   }
-  drupal_set_message(t('<strong>The CSV metadate update has completed without error.</strong>'));
+  drupal_set_message(t('<strong>The CSV Metadata batch has completed.</strong>'));
 }
 
 /**

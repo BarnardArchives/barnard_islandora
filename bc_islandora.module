@@ -283,7 +283,7 @@ function bc_islandora_barnard_islandora_metadata_functions() {
       'module' => 'bc_islandora',
       'file' => 'metadata.inc',
       'function' => '_bc_islandora_generate_primary_dislpay_url',
-      'description' => t('Generates mods:location/mods:url[usage=\'primary display\'].'),
+      'description' => t("Generates mods:location/mods:url[usage='primary display']."),
     ),
   );
 }
