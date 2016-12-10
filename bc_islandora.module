@@ -278,7 +278,12 @@ function bc_islandora_islandora_datastream_alter($object, $datastream, &$context
  */
 function bc_islandora_barnard_islandora_metadata_functions() {
   return array(
-    'Default' => '',
-    'MODs Primary Display' => 'function_name',
+    'bc_primary_display_url' => array(
+      'name' => t('ADD: Primary Display URL to MODs'),
+      'module' => 'bc_islandora',
+      'file' => 'metadata.inc',
+      'function' => '_bc_islandora_generate_primary_dislpay_url',
+      'description' => t('Generates mods:location/mods:url[usage=\'primary display\'].'),
+    ),
   );
 }

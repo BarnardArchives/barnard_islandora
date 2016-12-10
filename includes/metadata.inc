@@ -51,8 +51,17 @@ function _bc_islandora_generate_primary_dislpay_url($object, $commit = FALSE) {
   global $base_url;
   global $base_path;
 
-  $datastream = $object['MODS'];
   $pid = $object->id;
+
+  // Grab the datasteam we'll be working with. In this instance, MODS.
+  $datastream = $object['MODS'];
+  // Check to make sure there is actually a DATASTREAM there. If not return
+  // early OR, in other scenarios, create the DS and populate.
+  if (empty($datastream)) {
+    drupal_set_message(t("There is no existing MODS record for !pid. Stopping.",
+        array('!pid' => $pid)), 'warn');
+    return 'NO_EXISTING_MODS_RECORDS';
+  }
 
   $dom = new DOMDocument();
   $dom->preserveWhiteSpace = FALSE;
@@ -103,6 +112,9 @@ function _bc_islandora_generate_primary_dislpay_url($object, $commit = FALSE) {
     }
 
     $res = $dom->saveXML();
+    if (empty($res)) {
+      return 'COULD_NOT_CREATE_MODS';
+    }
 
     if ($commit) {
       $datastream->setContentFromString($res);
@@ -128,10 +140,8 @@ function _bc_islandora_generate_primary_dislpay_url($object, $commit = FALSE) {
  * Metadata form.
  */
 function bc_islandora_metadata_form() {
-  $operations = module_invoke_all('barnard_islandora_metadata_functions');
-
   $form['#attributes'] = array(
-    'enctype' => 'multipart/form-data'
+    'enctype' => 'multipart/form-data',
   );
   $form['pid'] = array(
     '#title' => t('Enter a single PID to regenerate or preview.'),
@@ -153,11 +163,19 @@ function bc_islandora_metadata_form() {
       Must always include headers in the CSV, checked for validity.')
     ),
   );
+
+  $operations = module_invoke_all('barnard_islandora_metadata_functions');
+
+  $operations_list = array();
+  foreach ($operations as $machine_name => $profile) {
+    $operations_list[$machine_name] = $profile['name'];
+  }
+
   $form['operation'] = array(
     '#title' => t('Operation to run.'),
-    '#type'  => 'select',
+    '#type'  => 'radios',
     '#description' => (t('This is the hookable part.')),
-    '#options' => array_flip($operations),
+    '#options' => $operations_list,
   );
   $form['commit'] = array(
     '#title' => t('Commit updated records to Fedora?'),
@@ -215,8 +233,8 @@ function bc_islandora_metadata_form_validate(&$form, &$form_state) {
       if ($line = fgetcsv($handle, 4096)) {
         if (strtoupper($line[0]) != 'PID' ||
          strtoupper($line[1]) != 'OPERATION') {
-          form_set_error('bc_islandora_metadata', t('Sorry, this file
-            does not match the expected format.'));
+          form_set_error('bc_islandora_metadata',
+            t('Sorry, this file does not match the expected format.'));
         }
       }
       fclose($handle);
@@ -248,15 +266,15 @@ function bc_islandora_metadata_form_submit(&$form, &$form_state) {
       'operations' => array(),
       'init_message' => t('Please wait...'),
       'progress_message' => t('Processed @current out of @total.'),
-      'error_message' => t('An error occurred during processing'),
+      'error_message' => t('An error occurred during processing.'),
       'finished' => 'bc_islandora_metadata_update_finished',
       'file' => drupal_get_path('module', 'bc_islandora') . '/includes/metadata.inc',
     );
 
     if ($handle = fopen($form_state['values']['csvupload'], 'r')) {
       $batch['operations'][] = array('_bc_islandora_metadata_remember_file',
-        array($form_state['values']['csvupload'])
-        );
+        array($form_state['values']['csvupload']),
+      );
       $line_count = 1;
       $first = TRUE;
       $line = fgetcsv($handle, 4096);
@@ -267,7 +285,7 @@ function bc_islandora_metadata_form_submit(&$form, &$form_state) {
          */
         $batch['operations'][] = array(
           '_bc_islandora_metadata_csv_row_proc',
-          array(array_map('base64_encode', $line))
+          array(array_map('base64_encode', $line)),
         );
       }
       fclose($handle);
@@ -299,21 +317,24 @@ function bc_islandora_metadata_update_finished($success, $results, $operations) 
           fputcsv($handle, $failed_row);
         }
         fclose($handle);
-        drupal_set_message(t('Some rows failed to update.
-          You may download a CSV of these rows: !csv_url', $targs), 'error');
+        form_set_error('bc_islandora_metadata', t('Some rows failed to update.
+          You may download a CSV of these rows: !csv_url', $targs)
+        );
       }
       else {
-        drupal_set_message(t('Some rows failed to update,
-          but unable to write error CSV to %csv_filepath', $targs), 'error');
+        form_set_error('bc_islandora_metadata', t('Some rows failed to update,
+          but unable to write error CSV to %csv_filepath', $targs)
+        );
       }
     }
     else {
-      drupal_set_message(t('Some rows failed to update,
+      form_set_error('bc_islandora_metadata', t('Some rows failed to update,
         but unable to create directory for error CSV at %csv_directory',
-        $targs), 'error');
+        $targs)
+      );
     }
   }
-  drupal_set_message(t('The CSV metadate update has completed without error.'));
+  drupal_set_message(t('<strong>The CSV metadate update has completed without error.</strong>'));
 }
 
 /**
@@ -329,14 +350,29 @@ function _bc_islandora_metadata_remember_file($filename, &$context) {
 function _bc_islandora_metadata_csv_row_proc($line, &$context) {
   $context['results']['rows_imported']++;
   $line = $cleaned_line = array_map('base64_decode', $line);
-  $pid = ulrdecode($line[0]);
+
+  $pid = $line[0];
   $task = $line[1];
   $context['message'] = t('Updating PID !pid', array('!pid' => $pid));
 
+  // @todo: Finish the hook part.
+  /*
+  $operations = module_invoke_all('barnard_islandora_metadata_functions');
+
+  $operations_list = array();
+  foreach ($operations as $machine_name => $profile) {
+  $operations_list[$machine_name] = $profile['name'];
+  }
+   */
+
   $res = bc_islandora_dsid_update($pid, $task);
 
+  if (empty($res)) {
+    return 'OH JEEZ. ERROR UNDEFINED.';
+  }
+
   foreach ($res as $job => $result) {
-    if ($result != TRUE) {
+    if ($result !== TRUE) {
       $line[] = $job . ' returned: ' . $result;
       $context['results']['failed_rows'][] = $line;
     }
