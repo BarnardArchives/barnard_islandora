@@ -19,7 +19,7 @@
 /**
  * Master function for any specific DSID we want to update.
  */
-function bc_islandora_dsid_update($pid, $task = '') {
+function bc_islandora_dsid_update($pid, $task = '', $commit) {
   module_load_include('inc', 'bc_islandora', 'includes/metadata');
   $job_status = array();
 
@@ -353,6 +353,7 @@ function _bc_islandora_metadata_csv_row_proc($line, &$context) {
 
   $pid = $line[0];
   $task = $line[1];
+  $commit = $line[2];
   $context['message'] = t('Updating PID !pid', array('!pid' => $pid));
 
   // @todo: Finish the hook part.
@@ -365,7 +366,7 @@ function _bc_islandora_metadata_csv_row_proc($line, &$context) {
   }
    */
 
-  $res = bc_islandora_dsid_update($pid, $task);
+  $res = bc_islandora_dsid_update($pid, $task, $commit);
 
   if (empty($res)) {
     return 'OH JEEZ. ERROR UNDEFINED.';
