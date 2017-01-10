@@ -22,7 +22,7 @@
 function bc_islandora_dsid_update($pid, $task = '', $commit) {
   module_load_include('inc', 'bc_islandora', 'includes/metadata');
   $job_status = array();
-
+  
   // If we can get the object from fedora with pid return early.
   if (!$object = islandora_object_load($pid)) {
     drupal_set_message(t("PID doesn't exist at !pid.", array('!pid' => $pid)),
@@ -31,7 +31,7 @@ function bc_islandora_dsid_update($pid, $task = '', $commit) {
   }
   // Put operations that should run always here.
   $job_status['Primary Display URL'] =
-    _bc_islandora_generate_primary_dislpay_url($object);
+    _bc_islandora_generate_primary_dislpay_url($object, $commit);
 
   // If there are no tasks return early.
   if (empty($task)) {
@@ -47,10 +47,9 @@ function bc_islandora_dsid_update($pid, $task = '', $commit) {
  * Barnard calls this function always to update mods on ingest with
  * the primary display URL.
  */
-function _bc_islandora_generate_primary_dislpay_url($object, $commit = FALSE) {
+function _bc_islandora_generate_primary_dislpay_url($object, $commit) {
   global $base_url;
   global $base_path;
-
   $pid = $object->id;
 
   // Grab the datasteam we'll be working with. In this instance, MODS.
@@ -252,11 +251,11 @@ function bc_islandora_metadata_form_validate(&$form, &$form_state) {
 function bc_islandora_metadata_form_submit(&$form, &$form_state) {
   $pid = $form_state['values']['pid'];
   $commit = $form_state['values']['commit'];
-
+  
   // Determine our mode of operation and go.
   if ($pid) {
     drupal_set_message('Updating single record.');
-    bc_islandora_dsid_update($pid, $commit);
+    bc_islandora_dsid_update($pid, '', $commit);
   }
   elseif (isset($form_state['values']['csvupload'])) {
     $csv = $form_state['values']['csvupload'];
