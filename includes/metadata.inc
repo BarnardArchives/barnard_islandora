@@ -157,11 +157,11 @@ function _bc_islandora_remove_HOCR_doctype($object, $commit) {
     return 'NO_EXISTING_HOCR_RECORD';
   }
 
-  module_load_include('inc', 'islandora_ocr', 'includes/hocr');
-
+  // @see https://github.com/Islandora/islandora_ocr/blob/7.x/includes/hocr.inc#L571-L582
   $hocr_string = $datastream->content;
-  dpm($hocr_string);
-  $hocr_res = stripDoctype($hocr_string);
+  // Wipe out the HTML DOCTYPE definition.
+  $doctype_regex = '/<!DOCTYPE\s+html.*?>\s+/si';
+  $hocr_res = preg_replace($doctype_regex, '', $hocr_string);
 
   if ($commit) {
     $datastream->setContentFromString($hocr_res);
