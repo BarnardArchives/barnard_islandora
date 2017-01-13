@@ -18,6 +18,7 @@
 
 /**
  * Master function for any specific DSID we want to update.
+ * @todo: task functionality based on hooks.
  */
 function bc_islandora_dsid_update($pid, $task = '', $commit) {
   module_load_include('inc', 'bc_islandora', 'includes/metadata');
@@ -32,6 +33,8 @@ function bc_islandora_dsid_update($pid, $task = '', $commit) {
   // Put operations that should run always here.
   $job_status['Primary Display URL'] =
     _bc_islandora_generate_primary_dislpay_url($object, $commit);
+
+  $job_status['HOCR Update'] = _bc_islandora_remove_HOCR_doctype($object, $commit);
 
   // If there are no tasks return early.
   if (empty($task)) {
@@ -136,6 +139,46 @@ function _bc_islandora_generate_primary_dislpay_url($object, $commit) {
 }
 
 /**
+ * Function that checks for and adds a primary display url to MODS.
+ *
+ * Barnard calls this function always to update mods on ingest with
+ * the primary display URL.
+ */
+function _bc_islandora_remove_HOCR_doctype($object, $commit) {
+  $pid = $object->id;
+
+  // Grab the datasteam we'll be working with. In this instance, MODS.
+  $datastream = $object['HOCR'];
+  // Check to make sure there is actually a DATASTREAM there. If not return
+  // early OR, in other scenarios, create the DS and populate.
+  if (empty($datastream)) {
+    drupal_set_message(t("There is no existing HOCR record for !pid. Stopping.",
+        array('!pid' => $pid)), 'warn');
+    return 'NO_EXISTING_HOCR_RECORD';
+  }
+
+  module_load_include('inc', 'islandora_ocr', 'includes/hocr');
+
+  $hocr_string = $datastream->content;
+  dpm($hocr_string);
+  $hocr_res = stripDoctype($hocr_string);
+
+  if ($commit) {
+    $datastream->setContentFromString($hocr_res);
+    drupal_set_message(t("Updated metadata record at !pid.",
+      array('!pid' => $pid)));
+    return TRUE;
+  }
+  else {
+    drupal_set_message(t("<strong>Preview</strong> of updated metadata record
+      at !pid. Not pushed to Fedora.", array('!pid' => $pid)));
+    dpm($hocr_res);
+    return TRUE;
+  }
+}
+
+
+/**
  * Metadata form.
  */
 function bc_islandora_metadata_form() {
@@ -170,8 +213,8 @@ function bc_islandora_metadata_form() {
     $operations_list[$machine_name] = $profile['name'];
   }
 
-  $form['operation'] = array(
-    '#title' => t('Operation to run.'),
+  $form['task'] = array(
+    '#title' => t('Task to run.'),
     '#type'  => 'radios',
     '#description' => (t('This is the hookable part.')),
     '#options' => $operations_list,
@@ -251,12 +294,14 @@ function bc_islandora_metadata_form_validate(&$form, &$form_state) {
 function bc_islandora_metadata_form_submit(&$form, &$form_state) {
   $pid = $form_state['values']['pid'];
   $commit = $form_state['values']['commit'];
+  $task = $form_state['values']['task'];
   
   // Determine our mode of operation and go.
   if ($pid) {
     drupal_set_message('Updating single record.');
     bc_islandora_dsid_update($pid, '', $commit);
   }
+
   elseif (isset($form_state['values']['csvupload'])) {
     $csv = $form_state['values']['csvupload'];
 

@@ -279,11 +279,18 @@ function bc_islandora_islandora_datastream_alter($object, $datastream, &$context
 function bc_islandora_barnard_islandora_metadata_functions() {
   return array(
     'bc_primary_display_url' => array(
-      'name' => t('ADD: Primary Display URL to MODs'),
+      'name' => t('Add: Primary Display URL to MODs'),
       'module' => 'bc_islandora',
       'file' => 'metadata.inc',
       'function' => '_bc_islandora_generate_primary_dislpay_url',
       'description' => t("Generates mods:location/mods:url[usage='primary display']."),
+    ),
+    'bc_primary_' => array(
+      'name' => t('Remove: HOCR Doctype.'),
+      'module' => 'bc_islandora',
+      'file' => 'metadata.inc',
+      'function' => '_bc_islandora_remove_HOCR_doctype',
+      'description' => t("Removes the HOCR HTML Doctype delcaration."),
     ),
   );
 }
