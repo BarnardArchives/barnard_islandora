@@ -165,12 +165,12 @@ function _bc_islandora_remove_HOCR_doctype($object, $commit) {
 
   if ($commit) {
     $datastream->setContentFromString($hocr_res);
-    drupal_set_message(t("Updated metadata record at !pid.",
+    drupal_set_message(t("Updated HOCR record at !pid.",
       array('!pid' => $pid)));
     return TRUE;
   }
   else {
-    drupal_set_message(t("<strong>Preview</strong> of updated metadata record
+    drupal_set_message(t("<strong>Preview</strong> of updated HOCR record
       at !pid. Not pushed to Fedora.", array('!pid' => $pid)));
     dpm($hocr_res);
     return TRUE;
@@ -294,7 +294,7 @@ function bc_islandora_metadata_form_validate(&$form, &$form_state) {
 function bc_islandora_metadata_form_submit(&$form, &$form_state) {
   $pid = $form_state['values']['pid'];
   $commit = $form_state['values']['commit'];
-  $task = $form_state['values']['task'];
+  // $task = $form_state['values']['task'];
   
   // Determine our mode of operation and go.
   if ($pid) {
