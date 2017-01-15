@@ -120,19 +120,19 @@ function _bc_islandora_generate_primary_dislpay_url($object, $commit) {
 
     if ($commit) {
       $datastream->setContentFromString($res);
-      drupal_set_message(t("Updated metadata record at !pid.",
+      drupal_set_message(t("Updated MODS primary display record at !pid.",
         array('!pid' => $pid)));
       return TRUE;
     }
     else {
-      drupal_set_message(t("<strong>Preview</strong> of updated metadata record
+      drupal_set_message(t("<strong>Preview</strong> of MODS primary display record
         at !pid. Not pushed to Fedora.", array('!pid' => $pid)));
       dpm($res);
       return TRUE;
     }
   }
   else {
-    drupal_set_message(t("Primary display URL already exists for !pid,
+    drupal_set_message(t("MODS primary display record already exists for !pid,
       skipping.", array('!pid' => $pid)), 'warn');
     return 'ALREADY_SET';
   }
