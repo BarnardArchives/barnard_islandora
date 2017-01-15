@@ -30,16 +30,20 @@ function bc_islandora_dsid_update($pid, $task = '', $commit) {
       'error');
     return;
   }
+
   // Put operations that should run always here.
   $job_status['Primary Display URL'] =
     _bc_islandora_generate_primary_dislpay_url($object, $commit);
 
-  $job_status['HOCR Update'] = _bc_islandora_remove_HOCR_doctype($object, $commit);
+  // $job_status['HOCR Update'] = _bc_islandora_remove_HOCR_doctype($object, $commit);
 
   // If there are no tasks return early.
   if (empty($task)) {
     return $job_status;
   }
+
+  // If there are tasks do things with them that make sense
+  // @TODO - all of $task impl
 
   return $job_status;
 }
@@ -98,19 +102,6 @@ function _bc_islandora_generate_primary_dislpay_url($object, $commit) {
         $loc->getAttribute('displayLabel') == "not a PURL" ?
           $loc->removeAttribute('displayLabel') : NULL;
       }
-      // Here we modify other nodes that are not at the root level.
-      /*
-      elseif ($parent == "relatedItem") {
-      dpm("trigger for related host items");
-      Create the host item primary dislpay @ mods:host/mods:location/mods:url
-      $link = $base_url . $base_path . 'islandora/object/' . urlencode($pid);
-      $loc->hasAttribute('displayLabel') ?
-      $loc->removeAttribute('displayLabel') : NULL;
-      $primary_display = $dom->createElement('url', $link);
-      $primary_display->setAttribute('usage', 'primary display');
-      $loc->appendChild($primary_display);
-      }
-       */
     }
 
     $res = $dom->saveXML();
@@ -120,7 +111,7 @@ function _bc_islandora_generate_primary_dislpay_url($object, $commit) {
 
     if ($commit) {
       $datastream->setContentFromString($res);
-      drupal_set_message(t("Updated MODS primary display record at !pid.",
+      drupal_set_message(t("Updated or Added MODS primary display record at !pid.",
         array('!pid' => $pid)));
       return TRUE;
     }
@@ -159,7 +150,6 @@ function _bc_islandora_remove_HOCR_doctype($object, $commit) {
 
   // @see https://github.com/Islandora/islandora_ocr/blob/7.x/includes/hocr.inc#L571-L582
   $hocr_string = $datastream->content;
-  // Wipe out the HTML DOCTYPE definition.
   $doctype_regex = '/<!DOCTYPE\s+html.*?>\s+/si';
   $hocr_res = preg_replace($doctype_regex, '', $hocr_string);
 
@@ -299,6 +289,7 @@ function bc_islandora_metadata_form_submit(&$form, &$form_state) {
   // Determine our mode of operation and go.
   if ($pid) {
     drupal_set_message('Updating single record.');
+    // @TODO: $task impl.
     bc_islandora_dsid_update($pid, '', $commit);
   }
 
