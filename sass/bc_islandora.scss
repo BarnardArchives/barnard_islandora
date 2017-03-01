@@ -134,6 +134,29 @@ body {
   background: url(/sites/all/modules/bc_islandora/img/scrapbooks.jpg) no-repeat;
 }
 
+.islandora-metadata p {
+  margin: 0;
+}
+
+#block-islandora-solr-display-switch {
+  width: 15%;
+}
+
+#block-islandora-solr-display-switch h2 {
+  float: left;
+  font-weight: normal;
+  font-size: 100%;
+  margin-top: 1.5em;
+  margin-right: 0.25em;
+ line-height: 1.5em;
+}
+
+#block-islandora-solr-display-switch ul {
+  list-style: none outside none;
+  margin-bottom: 0;
+} 
+
+
 // Social media.
 .socialmedia {
   display: block;
