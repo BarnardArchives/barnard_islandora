@@ -247,18 +247,18 @@ function theme_bc_islandora_breadcrumb(&$vars) {
           }
           break;
 
-        // Manuscripts. (Temporary?)
+        // Barnard Center for Research on Women (BC13-58).
         case '13-58':
-          // $bc[] = l(t('Manuscripts'), 'collections/manuscripts');
+          $bc[] = l(t('BCRW'), '/collections/bcrw');
           if ($cm_results[0]['object']['value'] == 'islandora:manuscriptPageCModel') {
             $bc_manuscript_title = _bc_islandora_book_link($object,
               variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection'));
           }
-          // break;
+          break;
 
         default:
           $genre = $mods && isset($mods->genre) ? (string) $mods->genre : NULL;
-          
+
           // Handle photographs.
           // Though photographs is typically Barnard's MODS->genre[0], we need to account for other
           // possibilities. This array contains those possibilities: add as necessary.
