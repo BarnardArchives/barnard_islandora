@@ -265,7 +265,7 @@ function theme_bc_islandora_breadcrumb(&$vars) {
 
         // Barnard Alumn Scrapbook and Diary Collection (BC15).
         case '15-12':
-          drupal_set_message(t("Scrapbook Collection breadcrumbs active on this page.  PID: $object->id"), 'notice', FALSE);
+          // drupal_set_message(t("Scrapbook Collection breadcrumbs active on this page.  PID: $object->id"), 'notice', FALSE);
           $bc[] = l(t('Alum Scrapbooks'), 'collections/scrapbooks');
 
           // This is bad practice, but it is predictable since these collections
