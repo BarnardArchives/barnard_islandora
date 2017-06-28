@@ -23,7 +23,7 @@
 function bc_islandora_dsid_update($pid, $task = '', $commit) {
   module_load_include('inc', 'bc_islandora', 'includes/metadata');
   $job_status = array();
-  
+
   // If we can get the object from fedora with pid return early.
   if (!$object = islandora_object_load($pid)) {
     drupal_set_message(t("PID doesn't exist at !pid.", array('!pid' => $pid)),
@@ -93,7 +93,7 @@ function _bc_islandora_generate_primary_dislpay_url($object, $commit) {
       // Here we modify "top level" mods:location(s).
       if ($parent == "mods") {
         // Create the primary dislpay url @ mods:location/mods:url.
-        $link = $base_url . $base_path . 'islandora/object/' . $pid;
+        $link = 'https://digitalcollections.barnard.edu/islandora/object/' . $pid;
         $primary_display = $dom->createElementNS('http://www.loc.gov/mods/v3',
           'url', $link);
         $primary_display->setAttribute('usage', 'primary display');
@@ -285,7 +285,7 @@ function bc_islandora_metadata_form_submit(&$form, &$form_state) {
   $pid = $form_state['values']['pid'];
   $commit = $form_state['values']['commit'];
   // $task = $form_state['values']['task'];
-  
+
   // Determine our mode of operation and go.
   if ($pid) {
     drupal_set_message('Updating single record.');
