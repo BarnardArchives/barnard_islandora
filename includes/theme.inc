@@ -188,8 +188,11 @@ function theme_bc_islandora_breadcrumb(&$vars) {
     $collection_results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
     $cm_results = $object->relationships->get(FEDORA_MODEL_URI, 'hasModel');
     $mods = isset($object['MODS']) ? simplexml_load_string($object['MODS']->getContent(NULL)) : NULL;
+    drupal_set_message("Object PID: $object->id", '', 0);
     if ($mods) {
-      $identifier = preg_replace('/^BC/', '', array_shift(explode('_', (string) $mods->identifier)));
+      $full_pid = explode('_', (string) $mods->identifier);
+      drupal_set_message("MODs PID: {$mods->identifier}", '', 0);
+      $identifier = preg_replace('/^BC/', '', array_shift($full_pid));
       $identifier_extended = explode(':',$identifier);
 
       switch ($identifier_extended[0]) {
@@ -265,6 +268,7 @@ function theme_bc_islandora_breadcrumb(&$vars) {
 
         // Barnard Alumn Scrapbook and Diary Collection (BC15).
         case '15-12':
+	case '15-14':
           // drupal_set_message(t("Scrapbook Collection breadcrumbs active on this page.  PID: $object->id"), 'notice', FALSE);
           $bc[] = l(t('Alum Scrapbooks'), 'collections/scrapbooks');
 
@@ -346,7 +350,8 @@ function theme_bc_islandora_breadcrumb(&$vars) {
     $last_part = array_pop($title_parts);
     // In these special cases, use whatever text occurs after the last comma
     // (e.g. "issue 1") as the title.
-    if (array_shift(explode(' ', preg_replace('/^ /', '', $last_part))) == 'page'
+    $full_pid = explode(' ', preg_replace('/^ /', '', $last_part));
+    if (array_shift($full_pid) == 'page'
       || !empty($is_pub) && (bool) $is_pub) {
       if (!empty($bc_manuscript_title)) {
         $bc[] = $bc_manuscript_title;

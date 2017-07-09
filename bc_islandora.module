@@ -17,6 +17,35 @@ function bc_islandora_init() {
 }
 
 /**
+ * Implements hook_CMODEL_PID_islandora_view_object().
+ */
+function bc_islandora_islandora_bookcmodel_islandora_view_object($object) {
+  // module_load_include('inc', 'islandora', 'includes/utilities');
+  $pid = $object->id;
+  //$what = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
+  //dpm('' . print_r($what, TRUE) . '', 'RELS');
+
+  $that = $object->relationships;
+  dpm("The pid of this object is: $pid", 'PID');
+  // dpm("My relationships are: ${what}", 'RELS');
+  // print('<pre> '. print_r($object) .'</pre><br \\>');
+
+
+  // $output = theme('islandora_book_book', array('object' => $object));
+  // dpm($output);
+  //  return array('islandora_book' => $output);
+}
+
+/**
+ * Implements hook_CMODEL_PID_islandora_view_object().
+ */
+function bc_islandora_islandora_pagecmodel_islandora_view_object($object, $page_number, $page_size) {
+  dpm('hit');
+  //  $output = theme('islandora_book_page', array('object' => $object));
+  //  return array('islandora_book' => $output);
+}
+
+/**
  * Implements hook_permission().
  */
 function bc_islandora_permission() {
@@ -106,6 +135,11 @@ function bc_islandora_config($form, &$form_state) {
     '#type' => 'textfield',
     '#title' => t('Manuscripts collection pid'),
     '#default_value' => variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection'),
+  );
+  $form['bc_islandora_scrapbook_pid'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Alumnae Scrapbook Collection (RG: BC15.0)'),
+    '#default_value' => variable_get('bc_islandora_scrapbook_pid', 'BC15:0'),
   );
   $form['bc_solr_date_facet_format'] = array(
     '#type' => 'textfield',
