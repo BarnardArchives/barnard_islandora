@@ -5,6 +5,27 @@
  * Theming functions for Barnard Digital Collections.
  */
 
+function bc_islandora_preprocess_islandora_compound_prev_next(array &$variables) {
+  // dpm($variables);
+
+  // If we are on the parent, hide it.
+  if ($variables['sequence'] === 1) {
+    unset($variables['themed_siblings'][0]);
+  }
+
+  foreach ($variables['themed_siblings'] as $key => &$vars) {
+    if (preg_match("/(page.(\d{1,3})).*(inclusion.(\d{1,3}))/i", $vars['label'], $matches)) {
+      $vars['label'] = $matches[0];
+      $vars['inclusion_page'] = $matches[2];
+      isset($matches[4]) ? $vars['inclusion_page_id'] = $matches[4] : NULL;
+    }
+  }
+}
+
+function bc_islandora_process_islandora_compound_prev_next(array &$variables) {
+  // dpm($variables);
+}
+
 /**
  * Generates themed newspaper issue navigator output.
  *
@@ -22,7 +43,7 @@ function theme_bc_islandora_newspaper_issue_navigator(&$vars) {
   }
   $newspaper = islandora_newspaper_get_newspaper($object);
   $newspaper = $newspaper ? islandora_object_load($newspaper) : FALSE;
-  $issues = $newspaper ? islandora_newspaper_get_issues($newspaper) : array();
+  $issues = $newspaper ? islandora_newspaper_get_issues($newspaper) : [];
   ksort($issues);
   $issues = array_keys($issues);
   if (empty($issues)) {
@@ -31,29 +52,30 @@ function theme_bc_islandora_newspaper_issue_navigator(&$vars) {
   $index = array_search($object->id, $issues);
   $previous_issue = isset($issues[$index - 1]) ? $issues[$index - 1] : NULL;
   $next_issue = isset($issues[$index + 1]) ? $issues[$index + 1] : NULL;
-  $links = array();
+  $links = [];
   if (isset($issues[$index - 1])) {
     $previous_issue = $issues[$index - 1];
-    $links[] = array(
+    $links[] = [
       'title' => t('Previous issue'),
-      'href' => url("islandora/object/{$previous_issue}", array('absolute' => TRUE)),
-    );
+      'href' => url("islandora/object/{$previous_issue}", ['absolute' => TRUE]),
+    ];
   }
   if (isset($issues[$index + 1])) {
     $next_issue = $issues[$index + 1];
-    $links[] = array(
+    $links[] = [
       'title' => t('Next issue'),
-      'href' => url("islandora/object/{$next_issue}", array('absolute' => TRUE)),
-    );
+      'href' => url("islandora/object/{$next_issue}", ['absolute' => TRUE]),
+    ];
   }
   if ($newspaper) {
-    $links[] = array(
+    $links[] = [
       'title' => t('All issues'),
-      'href' => url('bulletin', array('absolute' => TRUE)),
-    );
+      'href' => url('bulletin', ['absolute' => TRUE]),
+    ];
   }
-  $attributes = array('class' => array('links', 'inline'));
-  $output .= theme('links', array('links' => $links, 'attributes' => $attributes));
+  $attributes = ['class' => ['links', 'inline']];
+  $output .= theme('links', ['links' => $links, 'attributes' => $attributes]);
+
   return $output;
 }
 
@@ -78,6 +100,7 @@ function theme_bc_islandora_newspaper_page_controls(&$vars) {
   if ($dl_links = _bc_islandora_dl_links($object)) {
     $output .= '<p><strong>Download: </strong>' . $dl_links . '</p>';
   }
+
   return $output;
 }
 
@@ -91,7 +114,7 @@ function _bc_islandora_np_page_pager($object) {
   $result = reset($results);
   $is_parent = $result ? FALSE : TRUE;
   $parent = $result ? islandora_object_load($result['object']['value']) : islandora_object_load($object);
-  $pages = $parent ? islandora_paged_content_get_pages($parent) : array();
+  $pages = $parent ? islandora_paged_content_get_pages($parent) : [];
   $pages = array_keys($pages);
 
   if (empty($pages)) {
@@ -100,7 +123,7 @@ function _bc_islandora_np_page_pager($object) {
   }
   // The index of the current page in the issue.
   $index = array_search($object->id, $pages);
-  $page_links = array();
+  $page_links = [];
   foreach ($pages as $i => $pid) {
     $title = $i + 1;
     // Output just a title if we're at the current page.
@@ -113,6 +136,7 @@ function _bc_islandora_np_page_pager($object) {
     }
   }
   $page_links[] = $is_parent ? 'View All' : l('View All', "islandora/object/{$parent->id}");
+
   return implode($page_links, '&nbsp;');
 }
 
@@ -125,7 +149,7 @@ function _bc_islandora_featured() {
   $output = '';
   // Get a random Featured Object node.
   $node_q = db_select('node', 'n')
-    ->fields('n', array('vid'))
+    ->fields('n', ['vid'])
     ->condition('type', 'featured_object')
     ->condition('status', 1)
     ->range(0, 1)
@@ -133,21 +157,21 @@ function _bc_islandora_featured() {
   if ($vid = $node_q->execute()->fetchField()) {
     // Get featured object image.
     $img_q = db_select('file_managed', 'fm')
-      ->fields('fm', array('uri'));
+      ->fields('fm', ['uri']);
     $img_q->join('field_data_field_object_image', 'foi', 'fm.fid = foi.field_object_image_fid');
     $img_q->condition('foi.revision_id', $vid, '=');
     if ($img_uri = $img_q->execute()->fetchField()) {
-      drupal_add_js(array('featured_img_path' => file_create_url($img_uri)), 'setting');
+      drupal_add_js(['featured_img_path' => file_create_url($img_uri)], 'setting');
     }
     // Get caption.
     $cap_q = db_select('field_data_field_caption', 'c')
-      ->fields('c', array('field_caption_value'))
+      ->fields('c', ['field_caption_value'])
       ->condition('revision_id', $vid, '=')
       ->condition('bundle', 'featured_object', '=');
     if ($cap = $cap_q->execute()->fetchField()) {
       // Get pid. !
       $pid_q = db_select('field_data_field_fedora_pid', 'fp')
-        ->fields('fp', array('field_fedora_pid_value'))
+        ->fields('fp', ['field_fedora_pid_value'])
         ->condition('revision_id', $vid, '=')
         ->condition('bundle', 'featured_object', '=');
       if ($pid = $pid_q->execute()->fetchField()) {
@@ -176,7 +200,7 @@ function theme_bc_islandora_breadcrumb(&$vars) {
 
   // All breadcrumbs begin with a link to go "Home".
   if (!in_array($home_link, $vars['breadcrumb'])) {
-    $bc = array($home_link);
+    $bc = [$home_link];
   }
   else {
     $bc = $vars['breadcrumb'];
@@ -188,12 +212,10 @@ function theme_bc_islandora_breadcrumb(&$vars) {
     $collection_results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
     $cm_results = $object->relationships->get(FEDORA_MODEL_URI, 'hasModel');
     $mods = isset($object['MODS']) ? simplexml_load_string($object['MODS']->getContent(NULL)) : NULL;
-    drupal_set_message("Object PID: $object->id", '', 0);
     if ($mods) {
       $full_pid = explode('_', (string) $mods->identifier);
-      drupal_set_message("MODs PID: {$mods->identifier}", '', 0);
       $identifier = preg_replace('/^BC/', '', array_shift($full_pid));
-      $identifier_extended = explode(':',$identifier);
+      $identifier_extended = explode(':', $identifier);
 
       switch ($identifier_extended[0]) {
         // Mortarboard.
@@ -202,7 +224,8 @@ function theme_bc_islandora_breadcrumb(&$vars) {
           // Is it a page (= "member of" a book, not just book collection)?
           // If so, link to the parent book.
           if ($book_link = _bc_islandora_book_link($object,
-            variable_get('bc_islandora_yearbook_pid', 'islandora:bookCollection'))) {
+            variable_get('bc_islandora_yearbook_pid', 'islandora:bookCollection'))
+          ) {
             $bc[] = $book_link;
           }
           break;
@@ -225,7 +248,8 @@ function theme_bc_islandora_breadcrumb(&$vars) {
           $bc[] = l(t('Student Publications'), 'student-publications');
           $is_pub = TRUE;
           if ($pub_link = _bc_islandora_book_link($object, variable_get('bc_islandora_pubs_pid',
-            'islandora:1022'))) {
+            'islandora:1022'))
+          ) {
             $bc[] = $pub_link;
           }
           break;
@@ -268,7 +292,7 @@ function theme_bc_islandora_breadcrumb(&$vars) {
 
         // Barnard Alumn Scrapbook and Diary Collection (BC15).
         case '15-12':
-	case '15-14':
+        case '15-14':
           // drupal_set_message(t("Scrapbook Collection breadcrumbs active on this page.  PID: $object->id"), 'notice', FALSE);
           $bc[] = l(t('Alum Scrapbooks'), 'collections/scrapbooks');
 
@@ -290,15 +314,16 @@ function theme_bc_islandora_breadcrumb(&$vars) {
           $genre = $mods && isset($mods->genre) ? (string) $mods->genre : NULL;
 
           // Handle photographs.
-          // Though photographs is typically Barnard's MODS->genre[0], we need to account for other
-          // possibilities. This array contains those possibilities: add as necessary.
-          // @SEE: http://islandora:8080/solr/barnardCollegeArchives/select?q=RELS_EXT_hasModel_uri_s%3A%22info%3Afedora%2Fislandora%3Asp_large_image_cmodel%22&wt=xml&indent=true&facet=true&facet.field=mods_genre_ms&rows=0
-          $photograph_mods_genres = array(
+          // Though photographs is typically Barnard's MODS->genre[0], we
+          // need to account for other possibilities.
+          // This array contains those possibilities: add as necessary.
+          // @SEE: http://islandora:8080/solr/<core>/select?q=RELS_EXT_hasModel_uri_s%3A%22info%3Afedora%2Fislandora%3Asp_large_image_cmodel%22&wt=xml&indent=true&facet=true&facet.field=mods_genre_ms&rows=0
+          $photograph_mods_genres = [
             'photographs',
             'black-and-white photographs',
             'portraits',
             'color photographs',
-          );
+          ];
 
           if (in_array($genre, $photograph_mods_genres)) {
             $bc[] = l(t('Photographs'), 'photographs');
@@ -306,15 +331,15 @@ function theme_bc_islandora_breadcrumb(&$vars) {
 
           // If not a photo, generate links based on relatedItem metadata.
           else {
-            $links = array();
+            $links = [];
             foreach ($mods->relatedItem as $ri) {
               if ($host_title = (string) $ri->titleInfo->title) {
-                $bc_link = l($host_title, 'islandora/search', array(
-                  'query' => array(
+                $bc_link = l($host_title, 'islandora/search', [
+                  'query' => [
                     'type' => 'dismax',
                     'f[0]' => 'mods_relatedItem_host_titleInfo_title_ms' . ':"' . $host_title . '"',
-                  ),
-                ));
+                  ],
+                ]);
               }
               // Record group.
               if (isset($ri['displayLabel']) && $ri['displayLabel'] == 'Record Group') {
@@ -352,7 +377,8 @@ function theme_bc_islandora_breadcrumb(&$vars) {
     // (e.g. "issue 1") as the title.
     $full_pid = explode(' ', preg_replace('/^ /', '', $last_part));
     if (array_shift($full_pid) == 'page'
-      || !empty($is_pub) && (bool) $is_pub) {
+      || !empty($is_pub) && (bool) $is_pub
+    ) {
       if (!empty($bc_manuscript_title)) {
         $bc[] = $bc_manuscript_title;
       }
@@ -364,6 +390,7 @@ function theme_bc_islandora_breadcrumb(&$vars) {
   }
 
   $output .= '<div class="breadcrumb">' . implode(' » ', $bc) . '</div>';
+
   return $output;
 }
 
@@ -382,15 +409,16 @@ function _bc_islandora_book_link($object, $parent_collection) {
   if ($book->id != $parent_collection) {
     return l($book->label, "islandora/object/{$book->id}");
   }
+
   return NULL;
 }
 
 /**
  * Helper function to generate download links for given datastreams.
  */
-function _bc_islandora_dl_links($obj, $datastreams = array('PDF', 'JPG')) {
+function _bc_islandora_dl_links($obj, $datastreams = ['PDF', 'JPG']) {
   module_load_include('inc', 'islandora', 'includes/datastream');
-  $urls = array();
+  $urls = [];
   foreach ($datastreams as $ds) {
     if (isset($obj[$ds])) {
       $ds_label = $obj[$ds]->label;
@@ -401,9 +429,10 @@ function _bc_islandora_dl_links($obj, $datastreams = array('PDF', 'JPG')) {
       $ts_path = "islandora/object/{$obj->id}/download_transcript";
       // We set alias = TRUE here to avoid generating an aliased URL.
       // @see https://api.drupal.org/api/drupal/includes%21common.inc/function/url/7.x
-      $urls[] = l(t('Transcript'), $ts_path, array('alias' => TRUE));
+      $urls[] = l(t('Transcript'), $ts_path, ['alias' => TRUE]);
     }
   }
+
   return implode('<span class="separator">&nbsp;|&nbsp;</span>', $urls);
 }
 
@@ -422,11 +451,13 @@ function _bc_islandora_is_manuscript($object) {
       // If this object's parent collection's pid is the same as our database
       // variable bc_islandora_manuscripts_pid, the answer is YES.
       if ($collection->id == variable_get('bc_islandora_manuscripts_pid',
-        'islandora:manuscriptCollection')) {
+          'islandora:manuscriptCollection')
+      ) {
         return TRUE;
       }
     }
   }
+
   return FALSE;
 }
 
@@ -440,5 +471,6 @@ function _bc_islandora_get_sequence($object) {
   if (!empty($seq_results)) {
     return $seq_results[0]['object']['value'];
   }
+
   return NULL;
 }

@@ -18,24 +18,34 @@
 
 /**
  * Master function for any specific DSID we want to update.
+ *
  * @todo: task functionality based on hooks.
+ *
+ * @param        $pid
+ * @param string $task
+ * @param bool   $commit
+ *
+ * @return array
  */
-function bc_islandora_dsid_update($pid, $task = '', $commit) {
+function bc_islandora_dsid_update($pid, $task = '', $commit = FALSE) {
   module_load_include('inc', 'bc_islandora', 'includes/metadata');
-  $job_status = array();
-  
+  $job_status = [];
+
   // If we can get the object from fedora with pid return early.
   if (!$object = islandora_object_load($pid)) {
-    drupal_set_message(t("PID doesn't exist at !pid.", array('!pid' => $pid)),
+    drupal_set_message(t("PID doesn't exist at !pid.", ['!pid' => $pid]),
       'error');
-    return;
+
+    return $job_status;
   }
 
-  // Put operations that should run always here.
+  // Operations that should always run.
   $job_status['Primary Display URL'] =
-    _bc_islandora_generate_primary_dislpay_url($object, $commit);
-
-  // $job_status['HOCR Update'] = _bc_islandora_remove_HOCR_doctype($object, $commit);
+    _bc_islandora_generate_primary_dislpay_url($object, TRUE);
+  /*
+   * $job_status['HOCR Update'] =
+   *   _bc_islandora_remove_HOCR_doctype($object, TRUE);
+   */
 
   // If there are no tasks return early.
   if (empty($task)) {
@@ -43,8 +53,7 @@ function bc_islandora_dsid_update($pid, $task = '', $commit) {
   }
 
   // If there are tasks do things with them that make sense
-  // @TODO - all of $task impl
-
+  // hook invoke all to get other tasks :)
   return $job_status;
 }
 
@@ -65,7 +74,8 @@ function _bc_islandora_generate_primary_dislpay_url($object, $commit) {
   // early OR, in other scenarios, create the DS and populate.
   if (empty($datastream)) {
     drupal_set_message(t("There is no existing MODS record for !pid. Stopping.",
-        array('!pid' => $pid)), 'warn');
+      ['!pid' => $pid]), 'warn');
+
     return 'NO_EXISTING_MODS_RECORDS';
   }
 
@@ -111,20 +121,23 @@ function _bc_islandora_generate_primary_dislpay_url($object, $commit) {
 
     if ($commit) {
       $datastream->setContentFromString($res);
-      drupal_set_message(t("Updated or Added MODS primary display record at !pid.",
-        array('!pid' => $pid)));
+      drupal_set_message(t('Updated or Added MODS primary display record at !pid.',
+        ['!pid' => $pid]));
+
       return TRUE;
     }
     else {
-      drupal_set_message(t("<strong>Preview</strong> of MODS primary display record
-        at !pid. Not pushed to Fedora.", array('!pid' => $pid)));
-      dpm($res);
+      drupal_set_message(t('<strong>Preview</strong> of MODS primary display record
+        at !pid. Not pushed to Fedora.', ['!pid' => $pid]));
+      drupal_set_message($res, 'notice', 0);
+
       return TRUE;
     }
   }
   else {
-    drupal_set_message(t("MODS primary display record already exists for !pid,
-      skipping.", array('!pid' => $pid)), 'warn');
+    drupal_set_message(t('MODS primary display record already exists for !pid,
+      skipping.', ['!pid' => $pid]), 'warn');
+
     return 'ALREADY_SET';
   }
 }
@@ -143,8 +156,9 @@ function _bc_islandora_remove_HOCR_doctype($object, $commit) {
   // Check to make sure there is actually a DATASTREAM there. If not return
   // early OR, in other scenarios, create the DS and populate.
   if (empty($datastream)) {
-    drupal_set_message(t("There is no existing HOCR record for !pid. Stopping.",
-        array('!pid' => $pid)), 'warn');
+    drupal_set_message(t('There is no existing HOCR record for !pid. Stopping.',
+      ['!pid' => $pid]), 'warn');
+
     return 'NO_EXISTING_HOCR_RECORD';
   }
 
@@ -156,13 +170,15 @@ function _bc_islandora_remove_HOCR_doctype($object, $commit) {
   if ($commit) {
     $datastream->setContentFromString($hocr_res);
     drupal_set_message(t("Updated HOCR record at !pid.",
-      array('!pid' => $pid)));
+      ['!pid' => $pid]));
+
     return TRUE;
   }
   else {
     drupal_set_message(t("<strong>Preview</strong> of updated HOCR record
-      at !pid. Not pushed to Fedora.", array('!pid' => $pid)));
-    dpm($hocr_res);
+      at !pid. Not pushed to Fedora.", ['!pid' => $pid]));
+    drupal_set_message($hocr_res, 'notice', 0);
+
     return TRUE;
   }
 }
@@ -172,18 +188,18 @@ function _bc_islandora_remove_HOCR_doctype($object, $commit) {
  * Metadata form.
  */
 function bc_islandora_metadata_form() {
-  $form['#attributes'] = array(
+  $form['#attributes'] = [
     'enctype' => 'multipart/form-data',
-  );
-  $form['pid'] = array(
+  ];
+  $form['pid'] = [
     '#title' => t('Enter a single PID to regenerate or preview.'),
     '#type' => 'textfield',
     '#description' => t('PID to regenerate as namespace:identifier. <br />
       <strong>This field can accept URL encoded PIDs.</strong>'),
-  );
-  $form['csvfile'] = array(
+  ];
+  $form['csvfile'] = [
     '#title' => t('CSV File'),
-    '#type'  => 'file',
+    '#type' => 'file',
     '#description' => (t('<strong>Batch Mode: Engage.</strong><br />
       CSV file is simple: <strong>PID</strong>, <strong>OPERATION</strong>,
       [optional]<strong>COMMIT</strong>. <br />
@@ -194,36 +210,36 @@ function bc_islandora_metadata_form() {
       <br />
       Must always include headers in the CSV, checked for validity.')
     ),
-  );
+  ];
 
   $operations = module_invoke_all('barnard_islandora_metadata_functions');
 
-  $operations_list = array();
+  $operations_list = [];
   foreach ($operations as $machine_name => $profile) {
     $operations_list[$machine_name] = $profile['name'];
   }
 
-  $form['task'] = array(
+  $form['task'] = [
     '#title' => t('Task to run.'),
-    '#type'  => 'radios',
+    '#type' => 'radios',
     '#description' => (t('This is the hookable part.')),
     '#options' => $operations_list,
-  );
-  $form['commit'] = array(
+  ];
+  $form['commit'] = [
     '#title' => t('Commit updated records to Fedora?'),
     '#type' => 'checkbox',
     '#required' => FALSE,
     '#default' => FALSE,
     '#description' => t('If checked updated records will be saved to Fedora.'),
-  );
-  $form['submit'] = array(
+  ];
+  $form['submit'] = [
     '#type' => 'submit',
     '#value' => t('Submit'),
-  );
-  $form['#validate'] = array(
+  ];
+  $form['#validate'] = [
     'bc_islandora_metadata_form_validate_fileupload',
     'bc_islandora_metadata_form_validate',
-  );
+  ];
 
   return $form;
 }
@@ -232,9 +248,9 @@ function bc_islandora_metadata_form() {
  * Validate the file upload.
  */
 function bc_islandora_metadata_form_validate_fileupload(&$form, &$form_state) {
-  $validators = array(
-    'file_validate_extensions' => array('csv CSV'),
-  );
+  $validators = [
+    'file_validate_extensions' => ['csv CSV'],
+  ];
   if ($file = file_save_upload('csvfile', $validators, 'temporary://')) {
     // The file was saved using file_save_upload() and was added to
     // the files table as a temporary file. We'll make a copy and let
@@ -248,7 +264,7 @@ function bc_islandora_metadata_form_validate_fileupload(&$form, &$form_state) {
       }
       else {
         form_set_error('bc_islandora_metadata', t('Unable to copy upload file
-          to !dest', array('!dest' => $destination)));
+          to !dest', ['!dest' => $destination]));
       }
     }
   }
@@ -264,7 +280,8 @@ function bc_islandora_metadata_form_validate(&$form, &$form_state) {
       $first = TRUE;
       if ($line = fgetcsv($handle, 4096)) {
         if (strtoupper($line[0]) != 'PID' ||
-         strtoupper($line[1]) != 'OPERATION') {
+          strtoupper($line[1]) != 'OPERATION'
+        ) {
           form_set_error('bc_islandora_metadata',
             t('Sorry, this file does not match the expected format.'));
         }
@@ -273,7 +290,7 @@ function bc_islandora_metadata_form_validate(&$form, &$form_state) {
     }
     else {
       form_set_error('bc_islandora_metadata', t('Unable to read uploaded file
-        !filepath', array('!filepath' => $form_state['values']['csvupload'])));
+        !filepath', ['!filepath' => $form_state['values']['csvupload']]));
     }
   }
 }
@@ -284,8 +301,10 @@ function bc_islandora_metadata_form_validate(&$form, &$form_state) {
 function bc_islandora_metadata_form_submit(&$form, &$form_state) {
   $pid = $form_state['values']['pid'];
   $commit = $form_state['values']['commit'];
-  // $task = $form_state['values']['task'];
-  
+  /*
+   * $task = $form_state['values']['task'];
+   */
+
   // Determine our mode of operation and go.
   if ($pid) {
     drupal_set_message('Updating single record.');
@@ -296,20 +315,21 @@ function bc_islandora_metadata_form_submit(&$form, &$form_state) {
   elseif (isset($form_state['values']['csvupload'])) {
     $csv = $form_state['values']['csvupload'];
 
-    $batch = array(
+    $batch = [
       'title' => t('Updating multiple records from CSV.'),
-      'operations' => array(),
+      'operations' => [],
       'init_message' => t('Please wait...'),
       'progress_message' => t('Processed @current out of @total.'),
       'error_message' => t('An error occurred during processing.'),
       'finished' => 'bc_islandora_metadata_update_finished',
       'file' => drupal_get_path('module', 'bc_islandora') . '/includes/metadata.inc',
-    );
+    ];
 
     if ($handle = fopen($form_state['values']['csvupload'], 'r')) {
-      $batch['operations'][] = array('_bc_islandora_metadata_remember_file',
-        array($form_state['values']['csvupload']),
-      );
+      $batch['operations'][] = [
+        '_bc_islandora_metadata_remember_file',
+        [$form_state['values']['csvupload']],
+      ];
       $line_count = 1;
       $first = TRUE;
       $line = fgetcsv($handle, 4096);
@@ -318,10 +338,10 @@ function bc_islandora_metadata_form_submit(&$form, &$form_state) {
          * we use base64_encode to ensure we don't overload the batch
          * processor by stuffing complex objects into it
          */
-        $batch['operations'][] = array(
+        $batch['operations'][] = [
           '_bc_islandora_metadata_csv_row_proc',
-          array(array_map('base64_encode', $line)),
-        );
+          [array_map('base64_encode', $line)],
+        ];
       }
       fclose($handle);
     }
@@ -341,12 +361,12 @@ function bc_islandora_metadata_update_finished($success, $results, $operations) 
     if (file_prepare_directory($dir, FILE_CREATE_DIRECTORY)) {
       $csv_filename = 'failed_rows-' . basename($results['uploaded_filename']);
       $csv_filepath = $dir . '/' . $csv_filename;
-      $targs = array(
+      $targs = [
         '!csv_url' => l(check_plain($csv_filename),
           file_create_url($csv_filepath)),
         '%csv_filename' => $csv_filename,
         '%csv_filepath' => $csv_filepath,
-      );
+      ];
       if ($handle = fopen($csv_filepath, 'w+')) {
         foreach ($results['failed_rows'] as $failed_row) {
           fputcsv($handle, $failed_row);
@@ -365,7 +385,7 @@ function bc_islandora_metadata_update_finished($success, $results, $operations) 
     else {
       form_set_error('bc_islandora_metadata', t('Some rows failed to update,
         but unable to create directory for error CSV at %csv_directory',
-        $targs)
+          $targs)
       );
     }
   }
@@ -389,7 +409,7 @@ function _bc_islandora_metadata_csv_row_proc($line, &$context) {
   $pid = $line[0];
   $task = $line[1];
   $commit = $line[2];
-  $context['message'] = t('Updating PID !pid', array('!pid' => $pid));
+  $context['message'] = t('Updating PID !pid', ['!pid' => $pid]);
 
   // @todo: Finish the hook part.
   /*
