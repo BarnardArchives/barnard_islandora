@@ -4,6 +4,14 @@
 
 (function ($) {
     Drupal.behaviors.bc_islandora = {
+        bookreader_config: {
+            run: function () {
+                // No info icon in IABookReader.
+                $('#BRtoolbar').find('.info').hide();
+                // No share icon in IABookReader.
+                $('#BRtoolbar').find('.share').hide();
+            }
+        },
         collections_lp: {
             listeners: function () {
                 $('.landingpage-icon').click(function () {
@@ -26,6 +34,7 @@
             }
         },
         attach: function (context, settings) {
+            this.bookreader_config.run();
             this.collections_lp.run();
             this.front_featured.run(settings);
         }

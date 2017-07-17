@@ -179,8 +179,8 @@ function bc_islandora_islandora_view_object_alter(&$object, &$rendered) {
   switch ($namespace_exploded[0]) {
     // Barnard Alumnae Scrapbook Collection.
     case('BC15'):
-      dpm('Currently forcing 1up on all objects in this RG: this is not default behavior. 1up force applies only to compound objects.', 'FORCED 1UP', 'error');
       // Default to 1up, regardless of IAB settings.
+      // This should only be true if the object is a Compound Object.
       $data_array = [
         'islandoraInternetArchiveBookReader' => [
           'mode' => 1,

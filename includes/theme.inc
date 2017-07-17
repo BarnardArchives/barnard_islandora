@@ -5,25 +5,40 @@
  * Theming functions for Barnard Digital Collections.
  */
 
+/**
+ * Implements hook_preprocess_HOOK().
+ */
 function bc_islandora_preprocess_islandora_compound_prev_next(array &$variables) {
-  // dpm($variables);
+  // Barnard knows that the 'first child' (of a cmpd) is always the parent.
+  $variables['themed_siblings'][0]['class'][] = 'parent';
 
   // If we are on the parent, hide it.
+  // @todo change this to actually hide it... js might be the right way...
   if ($variables['sequence'] === 1) {
     unset($variables['themed_siblings'][0]);
   }
 
   foreach ($variables['themed_siblings'] as $key => &$vars) {
     if (preg_match("/(page.(\d{1,3})).*(inclusion.(\d{1,3}))/i", $vars['label'], $matches)) {
-      $vars['label'] = $matches[0];
+      $vars['label'] = ucfirst($matches[0]);
       $vars['inclusion_page'] = $matches[2];
-      isset($matches[4]) ? $vars['inclusion_page_id'] = $matches[4] : NULL;
+      $vars['class'][] = "inclusion_object inclusion_object_page_{$matches[2]}";
+      isset($matches[4]) ? $vars['inclusion_part_id'] = $matches[4] : NULL;
     }
   }
 }
 
-function bc_islandora_process_islandora_compound_prev_next(array &$variables) {
-  // dpm($variables);
+/**
+ * Implements hook_preprocess_HOOK().
+ */
+function bc_islandora_preprocess_islandora_internet_archive_bookreader(array &$variables) {
+  $module_path = drupal_get_path('module', 'bc_islandora');
+  drupal_add_js("$module_path/js/inclusion_book_reader.js",
+    array(
+      'group' => JS_LIBRARY,
+      'weight' => -5,
+    )
+  );
 }
 
 /**
