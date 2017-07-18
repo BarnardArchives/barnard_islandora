@@ -19,46 +19,72 @@ function bc_islandora_init() {
 }
 
 /**
+ * Implements hook_js_alter().
+ *
+ * This task modifies IAB to meet Barnard's need, and also adds additional
+ * code to handle inclusion objects - or compound object handling - so that
+ * only inclusions for .currentIndex() (i.e., the current page, kinda).
+ *
+ * @todo check if I should be using this.getPageNum(this.currentIndex()).
+ */
+function bc_islandora_js_alter(&$javascript) {
+  $book_reader_path = drupal_get_path('module', 'islandora_internet_archive_bookreader') . '/js/islandora_internet_archive_bookreader.js';
+  $barnard_book_reader_path = drupal_get_path('module', 'bc_islandora') . '/js/barnard_islandora_internet_archive_bookreader.js';
+  if (isset($javascript[$book_reader_path]) && $javascript[$book_reader_path]['data'] !== $barnard_book_reader_path) {
+    $javascript[$book_reader_path]['data'] = $barnard_book_reader_path;
+    drupal_set_message(t("Book Reader override."), 'notice', 0);
+    $module_path = drupal_get_path('module', 'bc_islandora');
+    drupal_add_js("$module_path/js/inclusion_book_reader.js",
+      [
+        'group' => JS_LIBRARY,
+        'weight' => -5,
+      ]
+    );
+    drupal_set_message(t("Loaded inclusion handler beta"), 'notice', 0);
+  }
+}
+
+/**
  * Implements hook_permission().
  */
 function bc_islandora_permission() {
-  return array(
-    'administer bc_islandora' => array(
+  return [
+    'administer bc_islandora' => [
       'title' => t('Administer Barnard Islandora'),
       'description' => t('Perform administrative tasks for Barnard Islandora.'),
-    ),
-  );
+    ],
+  ];
 }
 
 /**
  * Implements hook_menu().
  */
 function bc_islandora_menu() {
-  $items = array();
-  $items['admin/islandora/bc_config'] = array(
+  $items = [];
+  $items['admin/islandora/bc_config'] = [
     'title' => 'Configure Barnard Islandora',
     'description' => "<strong>Customize Barnard's Islandora Instance</strong>",
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('bc_islandora_config'),
+    'page arguments' => ['bc_islandora_config'],
     'type' => MENU_NORMAL_ITEM,
-    'access arguments' => array('administer bc_islandora'),
-  );
-  $items['admin/islandora/bc_metadata'] = array(
+    'access arguments' => ['administer bc_islandora'],
+  ];
+  $items['admin/islandora/bc_metadata'] = [
     'title' => 'Update Barnard Metadata',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('bc_islandora_metadata_form'),
+    'page arguments' => ['bc_islandora_metadata_form'],
     'file' => 'metadata.inc',
     'file path' => drupal_get_path('module', 'bc_islandora') . '/includes',
     'type' => MENU_NORMAL_ITEM,
-    'access arguments' => array('administer bc_islandora'),
-  );
-  $items['islandora/object/%islandora_object/download_transcript'] = array(
+    'access arguments' => ['administer bc_islandora'],
+  ];
+  $items['islandora/object/%islandora_object/download_transcript'] = [
     'page callback' => 'bc_islandora_download_transcript',
-    'page arguments' => array(2),
+    'page arguments' => [2],
     'type' => MENU_CALLBACK,
     'access callback' => 'islandora_object_access',
-    'access arguments' => array(ISLANDORA_VIEW_OBJECTS, 2),
-  );
+    'access arguments' => [ISLANDORA_VIEW_OBJECTS, 2],
+  ];
 
   return $items;
 }
@@ -67,27 +93,27 @@ function bc_islandora_menu() {
  * Implements hook_theme().
  */
 function bc_islandora_theme($existing, $type, $theme, $path) {
-  return array(
-    'bc_islandora_newspaper_issue_navigator' => array(
-      'variables' => array(
+  return [
+    'bc_islandora_newspaper_issue_navigator' => [
+      'variables' => [
         'object' => NULL,
         'start_page' => 1,
-      ),
+      ],
       'file' => 'includes/theme.inc',
-    ),
-    'bc_islandora_newspaper_page_controls' => array(
-      'variables' => array(
+    ],
+    'bc_islandora_newspaper_page_controls' => [
+      'variables' => [
         'object' => NULL,
-      ),
+      ],
       'file' => 'includes/theme.inc',
-    ),
-    'bc_islandora_breadcrumb' => array(
-      'variables' => array(
-        'breadcrumb' => array(),
-      ),
+    ],
+    'bc_islandora_breadcrumb' => [
+      'variables' => [
+        'breadcrumb' => [],
+      ],
       'file' => 'includes/theme.inc',
-    ),
-  );
+    ],
+  ];
 }
 
 /**
@@ -96,48 +122,48 @@ function bc_islandora_theme($existing, $type, $theme, $path) {
  * Admin Settings and Configuration.
  */
 function bc_islandora_config($form, &$form_state) {
-  $form['bc_islandora_newspaper_pid'] = array(
+  $form['bc_islandora_newspaper_pid'] = [
     '#type' => 'textfield',
     '#title' => t('Barnard Newspaper Collection PID'),
     '#default_value' => variable_get('bc_islandora_newspaper_pid', ''),
     '#description' => t('Barnard College Newspaper Collection PID.'),
-  );
-  $form['bc_islandora_pubs_pid'] = array(
+  ];
+  $form['bc_islandora_pubs_pid'] = [
     '#type' => 'textfield',
     '#title' => t('Student Publications Collection PID'),
     '#default_value' => variable_get('bc_islandora_pubs_pid', 'islandora:1022'),
     '#description' => t('Barnard College Student Publications Collection PID.'),
-  );
-  $form['bc_islandora_manuscripts_pid'] = array(
+  ];
+  $form['bc_islandora_manuscripts_pid'] = [
     '#type' => 'textfield',
     '#title' => t('Manuscripts Collection PID'),
     '#default_value' => variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection'),
     '#description' => t('Barnard College Manuscript Collection PID. Based on ?? (Oral histories?).'),
-  );
-  $form['bc_islandora_scrapbook_pid'] = array(
+  ];
+  $form['bc_islandora_scrapbook_pid'] = [
     '#type' => 'textfield',
     '#title' => t('Alumnae Scrapbook Collection PID (BC15)'),
     '#default_value' => variable_get('bc_islandora_scrapbook_pid', 'BC15:0'),
     '#description' => t('Barnard College Alumnae Scrapbook Collection PID. Barnard Record Group BC15.'),
-  );
-  $form['bc_solr_date_facet_format'] = array(
+  ];
+  $form['bc_solr_date_facet_format'] = [
     '#type' => 'textfield',
     '#title' => t('PHP date format that Solr should use for the date facet.'),
     '#default_value' => variable_get('bc_solr_date_facet_format', 'Y/m/d'),
-    '#description' => t('<strong>Only accepts: day, month, and year format characters of d/j m/n Y/y.</strong> <br /><a target=_new href="http://php.net/manual/en/function.date.php#refsect1-function.date-parameters">PHP Date Format documentation.</a> <br />Format preview: @format', array('@format' => date(variable_get('bc_solr_date_facet_format', 'Y/m/d')))),
-  );
-  $form['bc_islandora_date_help_text'] = array(
+    '#description' => t('<strong>Only accepts: day, month, and year format characters of d/j m/n Y/y.</strong> <br /><a target=_new href="http://php.net/manual/en/function.date.php#refsect1-function.date-parameters">PHP Date Format documentation.</a> <br />Format preview: @format', ['@format' => date(variable_get('bc_solr_date_facet_format', 'Y/m/d'))]),
+  ];
+  $form['bc_islandora_date_help_text'] = [
     '#type' => 'textfield',
     '#title' => t('Human readable help text for SOLR date input.'),
     '#default_value' => variable_get('bc_islandora_date_help_text', BC_ISLANDORA_SOLR_DATE_HELP_TEXT_DEFAULT),
     '#description' => t('Help text for the date format specified.'),
-  );
-  $form['bc_islandora_hide_datepicker'] = array(
+  ];
+  $form['bc_islandora_hide_datepicker'] = [
     '#type' => 'checkbox',
     '#title' => t('Hide date picker?'),
     '#default_value' => variable_get('bc_islandora_hide_datepicker', TRUE),
     '#description' => t('Whether to hide the date picker when faceting search results by date range.'),
-  );
+  ];
   return system_settings_form($form);
 }
 
@@ -338,19 +364,20 @@ function bc_islandora_form_islandora_solr_simple_search_form_alter(&$form, &$for
 /**
  * Solr list display, but without the word "default" in the rendered name.
  *
- * Credit: https://github.com/uml-digitalinitiatives/manidora/blob/7.x/manidora.module#L865-L879.
+ * Credit:
+ * https://github.com/uml-digitalinitiatives/manidora/blob/7.x/manidora.module#L865-L879.
  */
 function bc_islandora_islandora_solr_primary_display() {
-  return array(
-    'bcislandora_list' => array(
+  return [
+    'bcislandora_list' => [
       'name' => t('List'),
       'module' => 'islandora_solr',
       'file' => 'includes/results.inc',
       'class' => "IslandoraSolrResults",
       'function' => "displayResults",
       'description' => t("A simple output."),
-    ),
-  );
+    ],
+  ];
 }
 
 /**
@@ -362,22 +389,22 @@ function bc_islandora_islandora_solr_primary_display() {
  * don't ask.
  */
 function bc_islandora_barnard_islandora_metadata_functions() {
-  return array(
-    'bc_primary_display_url' => array(
+  return [
+    'bc_primary_display_url' => [
       'name' => t('Add: Primary Display URL to MODs'),
       'module' => 'bc_islandora',
       'file' => 'metadata.inc',
       'function' => '_bc_islandora_generate_primary_dislpay_url',
       'description' => t("Generates mods:location/mods:url[usage='primary display']."),
-    ),
-    'bc_primary_' => array(
+    ],
+    'bc_primary_' => [
       'name' => t('Remove: HOCR Doctype.'),
       'module' => 'bc_islandora',
       'file' => 'metadata.inc',
       'function' => '_bc_islandora_remove_HOCR_doctype',
       'description' => t("Removes the HOCR HTML Doctype delcaration."),
-    ),
-  );
+    ],
+  ];
 }
 
 /**

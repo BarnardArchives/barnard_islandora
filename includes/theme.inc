@@ -29,19 +29,6 @@ function bc_islandora_preprocess_islandora_compound_prev_next(array &$variables)
 }
 
 /**
- * Implements hook_preprocess_HOOK().
- */
-function bc_islandora_preprocess_islandora_internet_archive_bookreader(array &$variables) {
-  $module_path = drupal_get_path('module', 'bc_islandora');
-  drupal_add_js("$module_path/js/inclusion_book_reader.js",
-    array(
-      'group' => JS_LIBRARY,
-      'weight' => -5,
-    )
-  );
-}
-
-/**
  * Generates themed newspaper issue navigator output.
  *
  * @see theme_islandora_newspaper_issue_navigator()
