@@ -9,21 +9,29 @@
  * Implements hook_preprocess_HOOK().
  */
 function bc_islandora_preprocess_islandora_compound_prev_next(array &$variables) {
-  // Barnard knows that the 'first child' (of a cmpd) is always the parent.
+  // I'm not 100% sure, but since "we" always create a compound obj and add the
+  // first object as the "parent".
   $variables['themed_siblings'][0]['class'][] = 'parent';
 
-  // If we are on the parent, hide it.
-  // @todo change this to actually hide it... js might be the right way...
-  if ($variables['sequence'] === 1) {
-    unset($variables['themed_siblings'][0]);
-  }
-
+  // This next block of code simply parses the label of the object
+  // (e.g.
   foreach ($variables['themed_siblings'] as $key => &$vars) {
     if (preg_match("/(page.(\d{1,3})).*(inclusion.(\d{1,3}))/i", $vars['label'], $matches)) {
       $vars['label'] = ucfirst($matches[0]);
+      // Do I ever use this?
+      $vars['inclusion'] = TRUE;
       $vars['inclusion_page'] = $matches[2];
-      $vars['class'][] = "inclusion_object inclusion_object_page_{$matches[2]}";
-      isset($matches[4]) ? $vars['inclusion_part_id'] = $matches[4] : NULL;
+      $classes = [
+        'inclusion-object',
+        "inclusion-page-{$matches[2]}",
+        "inclusion_page-{$matches[2]}-sequence-{$matches[4]}",
+      ];
+      $vars['class'] = array_merge($vars['class'], $classes);
+    }
+
+    if ($variables['sequence'] > 1 && isset($vars['class'][0]) && $vars['class'][0] === 'active') {
+      $variables['current_inclusion'] = $vars['inclusion_page'];
+      $variables['themed_siblings'][0]['return_page'] = $vars['inclusion_page'];
     }
   }
 }

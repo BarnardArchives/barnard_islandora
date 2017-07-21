@@ -16,11 +16,43 @@
             this.inclusionHandler(index, inclusionObjects);
         }
     }
+
     // Handle inclusions for compound objects. Pass in the current index and jQuery obj containing matches.
     BookReader.prototype.inclusionHandler = function (index, inclusionObjects) {
-        // Hide all but the active and parent objects.
-        inclusionObjects.not(".parent").not(".active").hide();
-        // Show inclusions for this page only. All others remain hidden.
-        inclusionObjects.has(".inclusion_object_page_" + (parseInt(index) + 1)).fadeIn();
+
+        // Hide all.
+        inclusionObjects.has(".parent .active").hide();
+        inclusionObjects.has(".inclusion-object").hide();
+
+        var isInclusion = inclusionObjects.has('.active .inclusion-object');
+
+        // Page Number - DIV
+        if (isInclusion.length > 0) {
+            var pageNumber = isInclusion["0"].classList[3];
+        } else {
+            var pageNumber = "inclusion-page-" + this.getPageNum(index);
+        }
+
+        // jQuery Object containing all inclusions from the current pageNumber.
+        var pageInclusions = inclusionObjects.has("." + pageNumber);
+
+        // Set a heading.
+        if (isInclusion.length > 0) {
+            $(".islandora-compound-details").text(Drupal.t("Viewing an Inclusion of"));
+        } else {
+            if (pageInclusions.length > 0) {
+                $(".islandora-compound-details").text(Drupal.t("@Inclusion for page @page", {
+                    '@Inclusion': Drupal.formatPlural(pageInclusions.length, 'Inclusion', 'Inclusions'),
+                    '@page': this.getPageNum(index)
+                }));
+            } else {
+                $(".islandora-compound-details").text(Drupal.t("No inclusions for page @page", {
+                    '@page': this.getPageNum(index)
+                }));
+            }
+        }
+
+        // Show ALL inclusions for the current page only. All other inclusions remain hidden awaiting their turn.
+        pageInclusions.fadeIn();
     }
 })(jQuery);

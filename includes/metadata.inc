@@ -301,13 +301,8 @@ function bc_islandora_metadata_form_validate(&$form, &$form_state) {
 function bc_islandora_metadata_form_submit(&$form, &$form_state) {
   $pid = $form_state['values']['pid'];
   $commit = $form_state['values']['commit'];
-<<<<<<< HEAD
-  /*
-   * $task = $form_state['values']['task'];
-   */
-=======
+
   // $task = $form_state['values']['task'];
->>>>>>> c2663f55638cce6887953a4c8a6a8a1f35b96064
 
   // Determine our mode of operation and go.
   if ($pid) {
