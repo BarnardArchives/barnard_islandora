@@ -14,22 +14,19 @@ Drupal.settings.islandoraInternetArchiveBookReader_jQuery = jQuery.noConflict(tr
         attach: function (context, settings) {
             $('.islandora-internet-archive-bookreader', context).once('islandora-bookreader', function () {
                 var bookReader = new IslandoraBookReader(settings.islandoraInternetArchiveBookReader);
+                bookReader.onCompoundObject();
+
                 // Initialize and Render the BookReader.
                 bookReader.init();
+
                 // Handle page resize, required for full screen.
                 $(window).resize(function () {
                     bookReader.windowResize();
                 });
 
+                // Hide unused or unwanted toolbar buttons from view.
                 var toolbar = $('#BRtoolbar');
-
-                // We currently don't support read-aloud.
-                toolbar.find('.read').hide();
-                // Fit Barnard's need. @todo find and remove relevant hooks from ever being called.
-                toolbar.find('.info').hide();
-                toolbar.find('.share').hide();
-                toolbar.find('.play').hide();
-                toolbar.find('.pause').hide();
+                toolbar.find('.read, .info, .share, .play, .pause').hide();
 
                 if (!bookReader.searchEnabled()) {
                     $('#textSrch').hide();

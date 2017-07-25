@@ -3,42 +3,77 @@
  */
 
 (function ($) {
-//	REPLACE, not modify, the existing 'willChangeToIndex' to silence the console output and then extend it further.
+    //	REPLACE, not modify, the existing 'willChangeToIndex' to silence the console output and then extend it further.
     BookReader.prototype.willChangeToIndex = function (index) {
-        // Update navbar position icon - leads page change animation
-        // console.log(update nav index: " + index);
-        this.updateNavIndex(index);
-        // This is actually really poor code. I should be determining if this is a compound object when during
-        // bookreader init, storing the inclusions and creating a mapping function called here, not checking at every
-        // willChangeToIndex if this is a compound object. Probably? I don't know. -Ben Rosner, 2017.
-        if ((inclusionObjects = $("div.islandora-compound-thumb")).length > 0) {
-            console.log("Inclusion handler.");
-            this.inclusionHandler(index, inclusionObjects);
-        }
-    }
 
-    // Handle inclusions for compound objects. Pass in the current index and jQuery obj containing matches.
-    BookReader.prototype.inclusionHandler = function (index, inclusionObjects) {
+        // "I don't know." - Ben Rosner, 2017.
+        if (this.isCompound || this.onInclusion) {
+            if (this.mode !== this.constMode1up) {
+                console.log("These are best viewed in 1up mode. Switching your viewing mode now!");
+                this.switchToolbarMode(1);
+                this.switchMode(1);
+            }
+            this.inclusionHandler(index);
+        }
+
+        // Update navbar position icon - leads page change animation
+        this.updateNavIndex(index);
+    };
+
+    // Does our bookreader window have the necessary elements to be a compound object?
+    BookReader.prototype.onCompoundObject = function () {
+        // Hang on to this, we'll need it.
+        this.inclusionObjects = $("div.islandora-compound-thumb");
+        this.onInclusionObjects = this.inclusionObjects.has(".active .inclusion-object");
+        this.isCompound = this.inclusionObjects.length > 0;
+        this.onInclusion = this.onInclusionObjects.length > 0;
+        if (this.onInclusion) this.inclusionPageNumber = this.onInclusionObjects["0"].classList[3].match(/inclusion-page-(.*)/i)[1];
+    };
+
+    // canSwitchToMode overwrite.
+    //________
+    // Returns true if we can switch to the requested mode
+
+    BookReader.prototype.canSwitchToMode = function (mode) {
+        // compound objects are not allowed outside of 1up.
+        if (this.isCompound || this.onInclusion) {
+            return (mode === this.constMode1up);
+        }
+
+        if (mode == this.constMode2up || mode == this.constModeThumb) {
+            // check there are enough pages to display
+            // $$$ this is a workaround for the mis-feature that we can't display
+            //     short books in 2up mode
+            if (this.numLeafs < 2) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    // Handle inclusions for compound objects.
+    BookReader.prototype.inclusionHandler = function (index) {
+        var pageNumber, pageInclusions, returnUrl;
+
+        if (this.onInclusion) {
+            pageNumber = this.onInclusionObjects["0"].classList[3];
+        } else {
+            pageNumber = "inclusion-page-" + this.getPageNum(index);
+        }
+
+        pageInclusions = this.inclusionObjects.has("." + pageNumber);
 
         // Hide all.
-        inclusionObjects.has(".parent .active").hide();
-        inclusionObjects.has(".inclusion-object").hide();
-
-        var isInclusion = inclusionObjects.has('.active .inclusion-object');
-
-        // Page Number - DIV
-        if (isInclusion.length > 0) {
-            var pageNumber = isInclusion["0"].classList[3];
-        } else {
-            var pageNumber = "inclusion-page-" + this.getPageNum(index);
-        }
-
-        // jQuery Object containing all inclusions from the current pageNumber.
-        var pageInclusions = inclusionObjects.has("." + pageNumber);
+        this.inclusionObjects.has(".parent .active").hide();
+        this.inclusionObjects.has(".inclusion-object").hide();
+        // Fade in.
+        pageInclusions.fadeIn();
 
         // Set a heading.
-        if (isInclusion.length > 0) {
-            $(".islandora-compound-details").text(Drupal.t("Viewing an Inclusion of"));
+        if (this.onInclusion) {
+            $(".islandora-compound-details").text(Drupal.t("Viewing an Inclusion of page " + this.inclusionPageNumber));
+            returnUrl = this.inclusionObjects.has(".parent").find("a").attr("href");
+            $("#return-to-page").html("<a name='return-to-page' href='" + returnUrl + "'>Back to Scrapbook page " + this.inclusionPageNumber + "</a>");
         } else {
             if (pageInclusions.length > 0) {
                 $(".islandora-compound-details").text(Drupal.t("@Inclusion for page @page", {
@@ -53,6 +88,5 @@
         }
 
         // Show ALL inclusions for the current page only. All other inclusions remain hidden awaiting their turn.
-        pageInclusions.fadeIn();
-    }
+    };
 })(jQuery);

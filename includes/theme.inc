@@ -17,16 +17,14 @@ function bc_islandora_preprocess_islandora_compound_prev_next(array &$variables)
   // (e.g.
   foreach ($variables['themed_siblings'] as $key => &$vars) {
     if (preg_match("/(page.(\d{1,3})).*(inclusion.(\d{1,3}))/i", $vars['label'], $matches)) {
-      $vars['label'] = ucfirst($matches[0]);
-      // Do I ever use this?
-      $vars['inclusion'] = TRUE;
-      $vars['inclusion_page'] = $matches[2];
       $classes = [
         'inclusion-object',
         "inclusion-page-{$matches[2]}",
         "inclusion_page-{$matches[2]}-sequence-{$matches[4]}",
       ];
       $vars['class'] = array_merge($vars['class'], $classes);
+      $vars['label'] = ucfirst($matches[0]);
+      $vars['inclusion_page'] = $matches[2];
     }
 
     if ($variables['sequence'] > 1 && isset($vars['class'][0]) && $vars['class'][0] === 'active') {
@@ -215,19 +213,23 @@ function theme_bc_islandora_breadcrumb(&$vars) {
   else {
     $bc = $vars['breadcrumb'];
   }
+
   // Is this an islandora object?
   if (arg(2) && $object = islandora_object_load(arg(2))) {
-    $bc[] = l(t('Collections'), 'collections');
+    // Scrapbook Record Group is BC15.0.
+    $object_is_scrapbook = FALSE;
+
     $bc_manuscript_title = '';
+    $bc[] = l(t('Collections'), 'collections');
     $collection_results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
     $cm_results = $object->relationships->get(FEDORA_MODEL_URI, 'hasModel');
     $mods = isset($object['MODS']) ? simplexml_load_string($object['MODS']->getContent(NULL)) : NULL;
-    if ($mods) {
-      $full_pid = explode('_', (string) $mods->identifier);
-      $identifier = preg_replace('/^BC/', '', array_shift($full_pid));
-      $identifier_extended = explode(':', $identifier);
 
-      switch ($identifier_extended[0]) {
+    if ($mods) {
+      $mods_local_identifier = explode('_', (string) $mods->identifier);
+      $local_record_group_id = preg_replace('/^BC/', '', array_shift($mods_local_identifier));
+      switch ($local_record_group_id) {
+
         // Mortarboard.
         case '12-01':
           $bc[] = l(t('Yearbook'), 'yearbook');
@@ -241,20 +243,19 @@ function theme_bc_islandora_breadcrumb(&$vars) {
           break;
 
         // Student Publications.
+        // 12-17, Emanon.
+        // 12-31, Well-Woman Newsletter.
         case '12-04':
         case '12-05':
         case '12-06':
         case '12-11':
         case '12-14':
-          // Emanon:
         case '12-17':
         case '12-18':
         case '12-22':
         case '12-23':
         case '12-24':
-          // Well-Woman Newsletter:
         case '12-31':
-
           $bc[] = l(t('Student Publications'), 'student-publications');
           $is_pub = TRUE;
           if ($pub_link = _bc_islandora_book_link($object, variable_get('bc_islandora_pubs_pid',
@@ -265,14 +266,15 @@ function theme_bc_islandora_breadcrumb(&$vars) {
           break;
 
         // "Special" student publications: don't provide issue link.
+        // 12-09, The Torch, 1959.
+        // 12-16, Why We Strike, 1970.
+        // 12-29, QZine.
+        // 12-29, QZine.
+        // 12-30, Plimpton Cookbook.
         case '12-09':
-          // 12-09, The Torch, 1959.
         case '12-26':
-          // 12-16, Why We Strike, 1970.
         case '12-29':
-          // 12-29, QZine.
         case '12-30':
-          // 12-30, Plimpton Cookbook.
           $bc[] = l(t('Student Publications'), 'student-publications');
           if ($cm_results[0]['object']['value'] == 'islandora:pageCModel') {
             $bc[] = _bc_islandora_book_link($object, variable_get('bc_islandora_pubs_pid',
@@ -280,7 +282,7 @@ function theme_bc_islandora_breadcrumb(&$vars) {
           }
           break;
 
-        // Bulletin (BC12-03).
+        // 12-03, Bulletin.
         case '12-03':
           module_load_include('inc', 'islandora_newspaper', 'includes/utilities');
           $bc[] = l(t('Newspaper'), 'bulletin');
@@ -303,21 +305,26 @@ function theme_bc_islandora_breadcrumb(&$vars) {
         // Barnard Alumn Scrapbook and Diary Collection (BC15).
         case '15-12':
         case '15-14':
-          // drupal_set_message(t("Scrapbook Collection breadcrumbs active on this page.  PID: $object->id"), 'notice', FALSE);
-          $bc[] = l(t('Alum Scrapbooks'), 'collections/scrapbooks');
-
-          // This is bad practice, but it is predictable since these collections
-          // are well organized. Parent collections always start at {NS}:0.
-          if (!isset($identifier_extended[1])) {
-            $alumn_parent_collection = 'BC' . $identifier . ':0';
-            $parent = islandora_object_load($alumn_parent_collection);
-            $bc[] = l(t($parent->label), "islandora/object/$alumn_parent_collection");
+          $object_is_scrapbook = TRUE;
+          //          $title = menu_get_active_title();
+          //          if (preg_match_all("/(page.\d{1,3}) | (inclusion.\d{1,3})/ix", $title, $matches)) {
+          //            dpm($matches[0]);
+          //          }
+          $bc[] = l(t('Alumn Scrapbooks'), 'collections/scrapbooks');
+          // Always provide a link to the parent collection if we aren't on it.
+          if ($cm_results[0]['object']['value'] !== 'islandora:collectionCModel') {
+            $alumn_parent_collection = 'BC' . $local_record_group_id . ':0';
+            if ($parent = islandora_object_load($alumn_parent_collection)) {
+              $bc[] = l(t($parent->label), "islandora/object/$alumn_parent_collection");
+            }
           }
-
-          if ($cm_results[0]['object']['value'] == 'islandora:pageCModel') {
+          if ($cm_results[0]['object']['value'] === 'islandora:pageCModel') {
             $bc[] = _bc_islandora_book_link($object, variable_get('bc_islandora_scrapbooks_pid',
               'BC15:0'));
           }
+          //          else {
+          //            $bc[] = l(t("Update the title."), "islandora/object/$alumn_parent_collection");
+          //          }
           break;
 
         default:
@@ -372,6 +379,7 @@ function theme_bc_islandora_breadcrumb(&$vars) {
       }
     }
   }
+
   // Is this an exhibition node?
   elseif (arg(0) == 'node' && is_numeric(arg(1))) {
     $node = menu_get_object();
@@ -379,14 +387,15 @@ function theme_bc_islandora_breadcrumb(&$vars) {
       $bc[] = l(t('Exhibits'), 'exhibits');
     }
   }
+
   // Add the current page's title to the existing breadcrumb.
   if (count($bc) >= 1 && $title = menu_get_active_title()) {
     $title_parts = explode(',', $title);
     $last_part = array_pop($title_parts);
     // In these special cases, use whatever text occurs after the last comma
     // (e.g. "issue 1") as the title.
-    $full_pid = explode(' ', preg_replace('/^ /', '', $last_part));
-    if (array_shift($full_pid) == 'page'
+    $mods_local_identifier = explode(' ', preg_replace('/^ /', '', $last_part));
+    if (array_shift($mods_local_identifier) == 'page'
       || !empty($is_pub) && (bool) $is_pub
     ) {
       if (!empty($bc_manuscript_title)) {
@@ -395,7 +404,7 @@ function theme_bc_islandora_breadcrumb(&$vars) {
       $bc[] = $last_part;
     }
     else {
-      $bc[] = $title;
+      $bc[] = $title . '!';
     }
   }
 

@@ -96,8 +96,6 @@ function bc_islandora_theme($existing, $type, $theme, $path) {
  * This task modifies IAB to meet Barnard's needs and also adds additional
  * code to handle inclusion objects - or compound object handling - so that
  * only inclusions for .currentIndex() + 1 are shown.
- *
- * @todo check if I should be using this.getPageNum(this.currentIndex()).
  */
 function bc_islandora_js_alter(&$javascript) {
   // Thank you Islandora Internet Archive BookReader (IIAB)! We are going to
@@ -171,71 +169,10 @@ function bc_islandora_config($form, &$form_state) {
   return system_settings_form($form);
 }
 
-/* ****
- * SECTION: Islandora Object View 'intercept' based on Barnard Record Group.
- *
- * Starting in 2017 Barnard College began using Barnard Collection's record
- * groups for PID namespacing. In other words, BC15.12 would have a namespace,
- * and collection like so: BC15-12, BC15-12:0 (respectively).
- * Objects are created as incremental PIDs in that namespace.
- *
- * The namespace of an Islandora Object tells us a LOT about how we handle it
- * and we can hook and alter views here.
- ***** */
-
-/**
- * Implements hook_islandora_view_object().
- */
-/**
- * UNUSED.
- * function bc_islandora_islandora_view_object($object, $user,
- * $page_number = '', $page_size = '') {
- * $ns = islandora_get_namespace($object->id);
- * $namespace_exploded = explode('-', $ns);
- * switch ($namespace_exploded[0]) {
- *   // Barnard Alumnae Scrapbook Collection.
- *   case('BC15'):
- *     break;
- * }
- * }.
- */
-
-/**
- * Implements hook_islandora_view_object_alter().
- */
-function bc_islandora_islandora_view_object_alter(&$object, &$rendered) {
-  drupal_set_message('view object alter called, keeping track of how many hits this gets.', '', 1);
-  $ns = islandora_get_namespace($object->id);
-  $namespace_exploded = explode('-', $ns);
-  switch ($namespace_exploded[0]) {
-    // Barnard Alumnae Scrapbook Collection.
-    case('BC15'):
-      //      if (in_array(ISLANDORA_COMPOUND_OBJECT_CMODEL, $object->models)) { //
-      // Default to 1up, regardless of IAB settings.
-      $data_array = [
-        'islandoraInternetArchiveBookReader' => [
-          'mode' => 1,
-          'info' => '',
-        ],
-      ];
-      drupal_add_js($data_array, 'setting');
-      break;
-  }
-}
-
 /**
  * Implements hook_cmodel_pid_islandora_view_object().
  */
 function bc_islandora_islandora_compoundCModel_islandora_view_object($object) {
-}
-
-/**
- * Implements hook_block_view_MODULE_DELTA_alter().
- */
-function bc_islandora_block_view_islandora_compound_object_compound_navigation_alter(&$data, $block) {
-  if (!empty($data['content'])) {
-
-  }
 }
 
 /*****
