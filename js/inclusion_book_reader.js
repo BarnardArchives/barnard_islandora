@@ -56,18 +56,21 @@
         var pageNumber, pageInclusions, returnUrl;
 
         if (this.onInclusion) {
-            pageNumber = this.onInclusionObjects["0"].classList[3];
+            pageNumber = "inclusion-page-" + this.inclusionPageNumber;
         } else {
             pageNumber = "inclusion-page-" + this.getPageNum(index);
         }
 
         pageInclusions = this.inclusionObjects.has("." + pageNumber);
 
-        // Hide all.
+        // If we are on an inclusion, the parent no longer has the class .active. In this way when we are on an
+        // inclusion we DO display the parent to return "home".
         this.inclusionObjects.has(".parent .active").hide();
-        this.inclusionObjects.has(".inclusion-object").hide();
-        // Fade in.
-        pageInclusions.fadeIn();
+        // Hide all but those that belong to this page, or this inclusion object.
+        this.inclusionObjects.has(".inclusion-object").not(pageInclusions).hide();
+        // Fade in if they're hidden.
+        pageInclusions.has(":hidden").fadeIn();
+
 
         // Set a heading.
         if (this.onInclusion) {
@@ -86,7 +89,5 @@
                 }));
             }
         }
-
-        // Show ALL inclusions for the current page only. All other inclusions remain hidden awaiting their turn.
     };
 })(jQuery);
