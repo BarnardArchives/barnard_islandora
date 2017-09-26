@@ -31,6 +31,57 @@ function bc_islandora_permission() {
 }
 
 /**
+ * Implements hook_form().
+ *
+ * Admin Settings and Configuration.
+ */
+function bc_islandora_config($form, &$form_state) {
+  $form['bc_islandora_newspaper_pid'] = [
+    '#type' => 'textfield',
+    '#title' => t('Barnard Newspaper Collection PID'),
+    '#default_value' => variable_get('bc_islandora_newspaper_pid', ''),
+    '#description' => t('Barnard College Newspaper Collection PID.'),
+  ];
+  $form['bc_islandora_pubs_pid'] = [
+    '#type' => 'textfield',
+    '#title' => t('Student Publications Collection PID'),
+    '#default_value' => variable_get('bc_islandora_pubs_pid', 'islandora:1022'),
+    '#description' => t('Barnard College Student Publications Collection PID.'),
+  ];
+  $form['bc_islandora_manuscripts_pid'] = [
+    '#type' => 'textfield',
+    '#title' => t('Manuscripts Collection PID'),
+    '#default_value' => variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection'),
+    '#description' => t('Barnard College Manuscript Collection PID. Based on ?? (Oral histories?).'),
+  ];
+  $form['bc_islandora_scrapbook_pid'] = [
+    '#type' => 'textfield',
+    '#title' => t('Alumnae Scrapbook Collection PID (BC15)'),
+    '#default_value' => variable_get('bc_islandora_scrapbook_pid', 'BC15:0'),
+    '#description' => t('Barnard College Alumnae Scrapbook Collection PID. Barnard Record Group BC15.'),
+  ];
+  $form['bc_solr_date_facet_format'] = [
+    '#type' => 'textfield',
+    '#title' => t('PHP date format that Solr should use for the date facet.'),
+    '#default_value' => variable_get('bc_solr_date_facet_format', 'Y/m/d'),
+    '#description' => t('<strong>Only accepts: day, month, and year format characters of d/j m/n Y/y.</strong> <br /><a target=_new href="http://php.net/manual/en/function.date.php#refsect1-function.date-parameters">PHP Date Format documentation.</a> <br />Format preview: @format', ['@format' => date(variable_get('bc_solr_date_facet_format', 'Y/m/d'))]),
+  ];
+  $form['bc_islandora_date_help_text'] = [
+    '#type' => 'textfield',
+    '#title' => t('Human readable help text for SOLR date input.'),
+    '#default_value' => variable_get('bc_islandora_date_help_text', BC_ISLANDORA_SOLR_DATE_HELP_TEXT_DEFAULT),
+    '#description' => t('Help text for the date format specified.'),
+  ];
+  $form['bc_islandora_hide_datepicker'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Hide date picker?'),
+    '#default_value' => variable_get('bc_islandora_hide_datepicker', TRUE),
+    '#description' => t('Whether to hide the date picker when faceting search results by date range.'),
+  ];
+  return system_settings_form($form);
+}
+
+/**
  * Implements hook_menu().
  */
 function bc_islandora_menu() {
@@ -88,91 +139,6 @@ function bc_islandora_theme($existing, $type, $theme, $path) {
       'file' => 'includes/theme.inc',
     ],
   ];
-}
-
-/**
- * Implements hook_js_alter().
- *
- * This task modifies IAB to meet Barnard's needs and also adds additional
- * code to handle inclusion objects - or compound object handling - so that
- * only inclusions for .currentIndex() + 1 are shown.
- */
-function bc_islandora_js_alter(&$javascript) {
-  // Thank you Islandora Internet Archive BookReader (IIAB)! We are going to
-  // replace the default IIAB initializer and customize it. I'm certain there
-  // are better ways. -brosner July 2017.
-  $book_reader_path = drupal_get_path('module', 'islandora_internet_archive_bookreader') . '/js/islandora_internet_archive_bookreader.js';
-  $banrard_islandora_path = drupal_get_path('module', 'bc_islandora');
-  $barnard_book_reader_path = $banrard_islandora_path . '/js/barnard_islandora_internet_archive_bookreader.js';
-  if (isset($javascript[$book_reader_path]) && $javascript[$book_reader_path]['data'] !== $barnard_book_reader_path) {
-    $javascript[$book_reader_path]['data'] = $barnard_book_reader_path;
-    // Additionally, if this is the first time we've hit the page, add this lib
-    // extension. result: calls this functions again. Regardless this needs to
-    // be added so take advantage of the fact we're here.
-    drupal_add_js("$banrard_islandora_path/js/inclusion_book_reader.js",
-      [
-        'group' => JS_LIBRARY,
-        'weight' => -5,
-      ]
-    );
-  }
-}
-
-/**
- * Implements hook_form().
- *
- * Admin Settings and Configuration.
- */
-function bc_islandora_config($form, &$form_state) {
-  $form['bc_islandora_newspaper_pid'] = [
-    '#type' => 'textfield',
-    '#title' => t('Barnard Newspaper Collection PID'),
-    '#default_value' => variable_get('bc_islandora_newspaper_pid', ''),
-    '#description' => t('Barnard College Newspaper Collection PID.'),
-  ];
-  $form['bc_islandora_pubs_pid'] = [
-    '#type' => 'textfield',
-    '#title' => t('Student Publications Collection PID'),
-    '#default_value' => variable_get('bc_islandora_pubs_pid', 'islandora:1022'),
-    '#description' => t('Barnard College Student Publications Collection PID.'),
-  ];
-  $form['bc_islandora_manuscripts_pid'] = [
-    '#type' => 'textfield',
-    '#title' => t('Manuscripts Collection PID'),
-    '#default_value' => variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection'),
-    '#description' => t('Barnard College Manuscript Collection PID. Based on ?? (Oral histories?).'),
-  ];
-  $form['bc_islandora_scrapbook_pid'] = [
-    '#type' => 'textfield',
-    '#title' => t('Alumnae Scrapbook Collection PID (BC15)'),
-    '#default_value' => variable_get('bc_islandora_scrapbook_pid', 'BC15:0'),
-    '#description' => t('Barnard College Alumnae Scrapbook Collection PID. Barnard Record Group BC15.'),
-  ];
-  $form['bc_solr_date_facet_format'] = [
-    '#type' => 'textfield',
-    '#title' => t('PHP date format that Solr should use for the date facet.'),
-    '#default_value' => variable_get('bc_solr_date_facet_format', 'Y/m/d'),
-    '#description' => t('<strong>Only accepts: day, month, and year format characters of d/j m/n Y/y.</strong> <br /><a target=_new href="http://php.net/manual/en/function.date.php#refsect1-function.date-parameters">PHP Date Format documentation.</a> <br />Format preview: @format', ['@format' => date(variable_get('bc_solr_date_facet_format', 'Y/m/d'))]),
-  ];
-  $form['bc_islandora_date_help_text'] = [
-    '#type' => 'textfield',
-    '#title' => t('Human readable help text for SOLR date input.'),
-    '#default_value' => variable_get('bc_islandora_date_help_text', BC_ISLANDORA_SOLR_DATE_HELP_TEXT_DEFAULT),
-    '#description' => t('Help text for the date format specified.'),
-  ];
-  $form['bc_islandora_hide_datepicker'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Hide date picker?'),
-    '#default_value' => variable_get('bc_islandora_hide_datepicker', TRUE),
-    '#description' => t('Whether to hide the date picker when faceting search results by date range.'),
-  ];
-  return system_settings_form($form);
-}
-
-/**
- * Implements hook_cmodel_pid_islandora_view_object().
- */
-function bc_islandora_islandora_compoundCModel_islandora_view_object($object) {
 }
 
 /*****

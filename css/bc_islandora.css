@@ -6,9 +6,18 @@ body {
 .breadcrumb {
   margin-bottom: 15px; }
 
+#dl-links {
+  margin-bottom: 10px; }
+
+.islandora-compound-title {
+  font-size: 100% !important; }
+
 #block-bc-islandora-bc-islandora-newspaper {
   width: 100%;
   margin: 0 auto; }
+
+#return-to-page {
+  margin-bottom: 5px; }
 
 .bulletin-calendar .inactive, .bulletin-calendar.inactive {
   display: none; }
@@ -33,9 +42,6 @@ body {
 .yearbook-calendar li {
   display: inline-block;
   margin: 0 10px 10px 0; }
-
-#dl-links {
-  margin-bottom: 10px; }
 
 #book-page-viewer {
   margin-top: 10px; }

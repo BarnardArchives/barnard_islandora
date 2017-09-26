@@ -4,34 +4,38 @@
  * defined element.
  */
 
-// noConflict is here to allow for compatibility between jQuery 1.5 and jquery 1.7.
-// JS loaded prior to this point in the bookreader requires jQuery 1.5, and further
-// execution requires jQuery 1.7 or higher. 
-// TODO: Figure out what library is the culprit.
-Drupal.settings.islandoraInternetArchiveBookReader_jQuery = jQuery.noConflict(true);
 (function ($) {
     Drupal.behaviors.islandoraInternetArchiveBookReader = {
         attach: function (context, settings) {
-            $('.islandora-internet-archive-bookreader', context).once('islandora-bookreader', function () {
+            $('.barnard--islandora-internet-archive-bookreader', context).once('islandora-bookreader', function () {
                 var bookReader = new IslandoraBookReader(settings.islandoraInternetArchiveBookReader);
-                bookReader.onCompoundObject();
-
+                // Sanity operations for compound objects.
+                bookReader.compoundInit();
                 // Initialize and Render the BookReader.
                 bookReader.init();
+
+                if (bookReader.isOnCompound()) {
+                    bookReader.switchToCompoundObjectDisplay();
+                }
+
+                // Hide unused or unwanted toolbar buttons from view.
+                $('#BRtoolbar').find('.read, .info, .share, .play, .pause').hide();
+
+                // fixes odd zooming issues on large resolution inclusions.
+                // if (bookReader.isOnInclusion) {
+                //     // bookReader.zoom(-1);
+                // }
+
+                if (!bookReader.searchEnabled()) {
+                    $('#textSrch').hide();
+                    $('#btnSrch').hide();
+                }
 
                 // Handle page resize, required for full screen.
                 $(window).resize(function () {
                     bookReader.windowResize();
                 });
 
-                // Hide unused or unwanted toolbar buttons from view.
-                var toolbar = $('#BRtoolbar');
-                toolbar.find('.read, .info, .share, .play, .pause').hide();
-
-                if (!bookReader.searchEnabled()) {
-                    $('#textSrch').hide();
-                    $('#btnSrch').hide();
-                }
                 if ($.browser.mobile && settings.islandoraInternetArchiveBookReader.mobilize) {
                     bookReader.goFullScreen();
                 }

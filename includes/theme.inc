@@ -6,33 +6,61 @@
  */
 
 /**
- * Implements hook_preprocess_HOOK().
+ * Theme function for the compound navigation block parts.
  */
-function bc_islandora_preprocess_islandora_compound_prev_next(array &$variables) {
-  // I'm not 100% sure, but since "we" always create a compound obj and add the
-  // first object as the "parent".
-  $variables['themed_siblings'][0]['class'][] = 'parent';
-
-  // This next block of code simply parses the label of the object
-  // (e.g.
-  foreach ($variables['themed_siblings'] as $key => &$vars) {
-    if (preg_match("/(page.(\d{1,3})).*(inclusion.(\d{1,3}))/i", $vars['label'], $matches)) {
-      $classes = [
-        'inclusion-object',
-        "inclusion-page-{$matches[2]}",
-        "inclusion_page-{$matches[2]}-sequence-{$matches[4]}",
-      ];
-      $vars['class'] = array_merge($vars['class'], $classes);
-      $vars['label'] = ucfirst($matches[0]);
-      $vars['inclusion_page'] = $matches[2];
-    }
-
-    if ($variables['sequence'] > 1 && isset($vars['class'][0]) && $vars['class'][0] === 'active') {
-      $variables['current_inclusion'] = $vars['inclusion_page'];
-      $variables['themed_siblings'][0]['return_page'] = $vars['inclusion_page'];
-    }
-  }
-}
+//function template_bc_islandora_compound_prev_next(array &$variables) {
+//  dpm('hit!');
+//  drupal_add_js(drupal_get_path('module', 'islandora_compound_object') . '/js/caption_width.js');
+//
+//  $themed_siblings = array();
+//  $image_path = drupal_get_path('module', 'islandora');
+//  $folder_image_path = "$image_path/images/folder.png";
+//
+//  // If the parent hasModel islandora:compoundCModel,
+//  // the first child is typically identical to the parent;
+//  // do not show the parent TN.
+//
+//  // If the parent does not have hasModel islandora:compoundCModel,
+//  // the first child and parent are different;
+//  // show the parent TN.
+//
+//  $variables['parent_tn'] = NULL;
+//  $parent_object = islandora_object_load($variables['parent_pid']);
+//  if ($parent_object && !in_array(ISLANDORA_COMPOUND_OBJECT_CMODEL, $parent_object->models)) {
+//    if (isset($parent_object['TN']) && islandora_datastream_access(ISLANDORA_VIEW_OBJECTS, $parent_object['TN'])) {
+//      $variables['parent_tn'] = 'islandora/object/' . $parent_object->id . '/datastream/TN/view';
+//    }
+//    else {
+//      $variables['parent_tn'] = $folder_image_path;
+//    }
+//  }
+//
+//  // If the parent TN is not set, only show children if there's more than one.
+//  // If the parent TN is set, show all children even if there's only one.
+//
+//  if (($variables['child_count'] > 1 && !$variables['parent_tn']) || ($variables['child_count'] > 0 && $variables['parent_tn'])) {
+//    for ($i = 0; $i < count($variables['siblings']); $i += 1) {
+//      $sibling = array();
+//      $sibling['pid'] = $variables['siblings'][$i];
+//      $sibling['class'] = array();
+//      if ($sibling['pid'] === $variables['pid']) {
+//        $sibling['class'][] = 'active';
+//      }
+//      $sibling_object = islandora_object_load($sibling['pid']);
+//      if (isset($sibling_object['TN']) && islandora_datastream_access(ISLANDORA_VIEW_OBJECTS, $sibling_object['TN'])) {
+//        $sibling['TN'] = 'islandora/object/' . $sibling['pid'] . '/datastream/TN/view';
+//      }
+//      else {
+//        // Object either does not have a thumbnail or it's restricted show a
+//        // default in its place.
+//        $sibling['TN'] = $folder_image_path;
+//      }
+//      $sibling['label'] = $sibling_object->label;
+//      $themed_siblings[] = $sibling;
+//    }
+//  }
+//  $variables['themed_siblings'] = $themed_siblings;
+//}
 
 /**
  * Generates themed newspaper issue navigator output.
@@ -110,6 +138,380 @@ function theme_bc_islandora_newspaper_page_controls(&$vars) {
   }
 
   return $output;
+}
+
+/**
+ * Generates themed breadcrumb output.
+ *
+ * @param array $vars
+ *   Drupal page array.
+ *
+ * @return string
+ *   Themed breadcrumbs.
+ */
+function theme_bc_islandora_breadcrumb(array &$vars) {
+  $ret = '';
+  $home_link = l(t('Home'), '/');
+
+  // All breadcrumbs begin with a link to go "Home".
+  if (!in_array($home_link, $vars['breadcrumb'])) {
+    $bc = [$home_link];
+  }
+  else {
+    $bc = $vars['breadcrumb'];
+  }
+
+  // Barnard Islandora Object Breadcrumb Handler.
+  if (arg(2) && $object = islandora_object_load(arg(2))) {
+    $menu_active_title = menu_get_active_title();
+    $parent_islandora_collection = islandora_get_parents_from_rels_ext($object);
+    $parent_islandora_collection = isset($parent_islandora_collection[0]) ? $parent_islandora_collection[0] : 'NORELSPARENT';
+    drupal_set_message($parent_islandora_collection, 'notice', TRUE);
+
+    // The first* breadcrumb for any Islandora Object is "Collection".
+    // (*not including 'home' or any predicate breadcrumbs.)
+    $bc[] = l(t('Collections'), 'collections');
+
+    // We rely on the local identifier from MODS to map our (Barnard's) Record
+    // Groups to objects, and therefore the collections they belong to.
+    // @see: https://archives.barnard.edu/finding-materials/collections-list
+    //
+    // Note we later switch to a PID structure that follows our collection list
+    // but continue to rely on the MOD's local identifier for backwards compat.
+    $mods = isset($object['MODS']) ? simplexml_load_string($object['MODS']->getContent(NULL)) : NULL;
+    if ($mods) {
+      $mods_local_identifier = explode('_', (string) $mods->identifier);
+      $local_record_group_id = preg_replace('/^BC/', '', array_shift($mods_local_identifier));
+      switch ($local_record_group_id) {
+
+        // Mortarboard.
+        case '12-01':
+          $bc[] = l(t('Yearbook'), 'yearbook');
+          $target = variable_get('bc_islandora_yearbook_pid', 'islandora:bookCollection');
+          $crumb_link = _bc_islandora_crumb_from_object($parent_islandora_collection, $target);
+          if ($crumb_link) {
+            $bc[] = $crumb_link;
+            $bc[] = _bc_islandora_crumb_trunc($menu_active_title);
+          }
+          break;
+
+        // Student Publications.
+        case '12-04':
+        case '12-05':
+        case '12-06':
+        case '12-11':
+        case '12-14':
+        case '12-17':
+        case '12-18':
+        case '12-22':
+        case '12-23':
+        case '12-24':
+        case '12-31':
+          $bc[] = l(t('Student Publications'), 'student-publications');
+          $target = variable_get('bc_islandora_pubs_pid', 'islandora:1022');
+          $crumb_link = _bc_islandora_crumb_from_object($parent_islandora_collection, $target);
+          if ($crumb_link) {
+            $bc[] = $crumb_link;
+            $bc[] = _bc_islandora_crumb_trunc($menu_active_title);
+          }
+          else {
+            $bc[] = $menu_active_title;
+          }
+          break;
+
+        // "Special" student publications: don't provide issue link.
+        // 12-09, The Torch, 1959.
+        // 12-16, Why We Strike, 1970.
+        // 12-29, QZine.
+        // 12-29, QZine.
+        // 12-30, Plimpton Cookbook.
+        case '12-09':
+        case '12-26':
+        case '12-29':
+        case '12-30':
+          $target = variable_get('bc_islandora_pubs_pid', 'islandora:1022');
+          $bc[] = l(t('Student Publications'), 'student-publications');
+          $crumb_link = _bc_islandora_crumb_from_object($parent_islandora_collection, $target);
+          if ($crumb_link) {
+            $bc[] = $crumb_link;
+            $bc[] = _bc_islandora_crumb_trunc($menu_active_title);
+          }
+          else {
+            $bc[] = $menu_active_title;
+          }
+          break;
+
+        // 12-03, Bulletin.
+        // @todo: bring this inline with the rest.
+        case '12-03':
+          module_load_include('inc', 'islandora_newspaper', 'includes/utilities');
+          $bc[] = l(t('Newspaper'), 'bulletin');
+          // Is it a page? If so, link to parent issue.
+          $issue_pid = islandora_newspaper_get_issue($object);
+          if ($issue = islandora_object_load($issue_pid)) {
+            $bc[] = l($issue->label, "islandora/object/{$issue->id}");
+          }
+          break;
+
+        // Barnard Center for Research on Women (BC13-58).
+        case '13-58':
+          $target = variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection');
+          $bc[] = l(t('BCRW'), 'bcrw');
+          $crumb_link = _bc_islandora_crumb_from_object($parent_islandora_collection, $target);
+          if ($crumb_link) {
+            $bc[] = $crumb_link;
+            $bc[] = _bc_islandora_crumb_trunc($menu_active_title);
+          }
+          else {
+            $bc[] = $menu_active_title;
+          }
+          break;
+
+        // Barnard Alum Scrapbook and Diary Collection (BC15).
+        case '15-02':
+        case '15-04':
+        case '15-05':
+        case '15-06':
+        case '15-07':
+        case '15-08':
+        case '15-09':
+        case '15-11':
+        case '15-12':
+        case '15-18':
+        case '15-20':
+        case '15-28':
+          $bc[] = l(t('Alum Scrapbooks'), 'scrapbooks');
+
+          $target = "BC$local_record_group_id:0";
+          $alumna_collection = islandora_object_load($target);
+          $alumna_collection_crumb = _bc_islandora_crumb_from_object($alumna_collection, $object->id);
+
+          if (empty($alumna_collection_crumb)) {
+            $bc[] = $alumna_collection->label;
+            break;
+          }
+          else {
+            $bc[] = $alumna_collection_crumb;
+          }
+
+          $parent = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isConstituentOf');
+          if ($parent) {
+            $parent = islandora_object_load($parent[0]['object']['value']);
+            $parent = _bc_islandora_crumb_from_object($parent, $target, TRUE, 2);
+            $bc[] = $parent;
+          }
+          $bc[] = _bc_islandora_crumb_trunc($menu_active_title, 2);
+          break;
+
+        default:
+          $genre = $mods && isset($mods->genre) ? (string) $mods->genre : NULL;
+
+          // Handle photographs.
+          // Though photographs is typically Barnard's MODS->genre[0], we
+          // need to account for other possibilities.
+          // This array contains those possibilities: add as necessary.
+          // @SEE: http://islandora:8080/solr/<core>/select?q=RELS_EXT_hasModel_uri_s%3A%22info%3Afedora%2Fislandora%3Asp_large_image_cmodel%22&wt=xml&indent=true&facet=true&facet.field=mods_genre_ms&rows=0
+          $photograph_mods_genres = [
+            'photographs',
+            'black-and-white photographs',
+            'portraits',
+            'color photographs',
+          ];
+
+          if (in_array($genre, $photograph_mods_genres)) {
+            $bc[] = l(t('Photographs'), 'photographs');
+          }
+
+          // If not a photo, generate links based on relatedItem metadata.
+          else {
+            $links = [];
+            foreach ($mods->relatedItem as $ri) {
+              if ($host_title = (string) $ri->titleInfo->title) {
+                $bc_link = l($host_title, 'islandora/search', [
+                  'query' => [
+                    'type' => 'dismax',
+                    'f[0]' => 'mods_relatedItem_host_titleInfo_title_ms' . ':"' . $host_title . '"',
+                  ],
+                ]);
+              }
+              // Record group.
+              if (isset($ri['displayLabel']) && $ri['displayLabel'] == 'Record Group') {
+                $links['rg'] = $bc_link;
+              }
+              // Collection.
+              elseif (isset($bc_link)) {
+                $links['c'] = $bc_link;
+              }
+            }
+            // Record group precedes collection in breadcrumb sequence.
+            if (isset($links['rg'])) {
+              $bc[] = $links['rg'];
+            }
+            if (isset($links['c'])) {
+              $bc[] = $links['c'];
+            }
+          }
+          break;
+      }
+    }
+  }
+  // Barnard Islandora Exhibit Module Breadcrumb Handler.
+  elseif (arg(0) == 'node' && is_numeric(arg(1))) {
+    $node = menu_get_object();
+    if ($node->type == 'exhibition') {
+      $bc[] = l(t('Exhibits'), 'exhibits');
+    }
+  }
+
+  $ret .= "<div class='breadcrumb'>" . implode(' » ', $bc) . "</div>";
+
+  return $ret;
+}
+
+/**
+ * Provides a link to an object but never a link to a "top level collection".
+ *
+ * @param \AbstractObject $object
+ *   The object to create a link for. This ID is compared against $target.
+ * @param string $target
+ *   The ID of the parent collection or compound object.
+ * @param bool $truncate
+ *   Should the returned link be truncated for space saving?
+ * @param int $trun_len
+ *   Length of the truncation to perform on the link before returning it.
+ *
+ * @return null|string
+ *   NULL if the object's ID is a match for the target, meaning it would be a
+ *   replication of a previous breadcrumb (e.g., a collection breadcrumb).
+ *   Themed link otherwise.
+ *
+ * @logical_errors_have_been_made
+ * Not going to lie that the logic behind this piece of code is rather backward.
+ * I think this is a realization of some backward capability I'm attempting to
+ * avoid, but what it is, exactly, I'm not sure.
+ */
+function _bc_islandora_crumb_from_object(AbstractObject $object, $target, $truncate = FALSE, $trun_len = 1) {
+  // To provide assurances we don't carp the floor.
+  $parent_label = '';
+  if (is_object($object)) {
+    $parent_label = $object->id;
+  }
+  if ($parent_label !== $target) {
+    $label = $truncate ? _bc_islandora_crumb_trunc($object->label, $trun_len) : $object->label;
+    $link = "islandora/object/{$object->id}";
+    return l(t($label), $link);
+  }
+  return NULL;
+}
+
+/**
+ * Provides a link to an object but never a link to a "top level collection".
+ *
+ * @param string $object
+ *   The object to create a link for. This ID is compared against $target.
+ * @param string $target
+ *   The ID of the parent collection or compound object.
+ * @param bool $truncate
+ *   Should the returned link be truncated for space saving?
+ * @param int $trun_len
+ *   Length of the truncation to perform on the link before returning it.
+ *
+ * @return null|string
+ *   NULL if the object's ID is a match for the target, meaning it would be a
+ *   replication of a previous breadcrumb (e.g., a collection breadcrumb).
+ *   Themed link otherwise.
+ *
+ * @logical_errors_have_been_made
+ * Not going to lie that the logic behind this piece of code is rather backward.
+ * I think this is a realization of some backward capability I'm attempting to
+ * avoid, but what it is, exactly, I'm not sure.
+ */
+function _bc_islandora_crumb_from_string($object, $target, $truncate = FALSE, $trun_len = 1) {
+  if ($object !== $target) {
+    $label = $truncate ? _bc_islandora_crumb_trunc($object, $trun_len) : $object;
+    $link = "islandora/object/{$object}";
+    return l(t($label), $link);
+  }
+  return NULL;
+}
+
+/**
+ * Helper function returning truncated portions off the end of strings.
+ *
+ * @param string $string
+ *   Incoming string to be truncated from the end.
+ * @param int $range
+ *   Truncation length from the end of the string in words.
+ *
+ * @return string
+ *   Truncated string of $range, with first letter capitalized.
+ */
+function _bc_islandora_crumb_trunc($string, $range = 1) {
+  $title_parts = explode(',', $string);
+  $ret = array_slice($title_parts, -$range, $range);
+  return ucfirst(trim(implode($ret)));
+}
+
+/**
+ * Helper function to generate download links for given datastreams.
+ */
+function _bc_islandora_dl_links($obj, $datastreams = ['PDF', 'JPG']) {
+  module_load_include('inc', 'islandora', 'includes/datastream');
+  $urls = [];
+  foreach ($datastreams as $ds) {
+    if (isset($obj[$ds])) {
+      $ds_label = $obj[$ds]->label;
+      $dl_url = islandora_datastream_get_url($obj[$ds], 'download');
+      $urls[] = l($ds_label, $dl_url);
+    }
+    elseif ($ds == 'TRANSCRIPT') {
+      $ts_path = "islandora/object/{$obj->id}/download_transcript";
+      // We set alias = TRUE here to avoid generating an aliased URL.
+      // @see https://api.drupal.org/api/drupal/includes%21common.inc/function/url/7.x
+      $urls[] = l(t('Transcript'), $ts_path, ['alias' => TRUE]);
+    }
+  }
+
+  return implode('<span class="separator">&nbsp;|&nbsp;</span>', $urls);
+}
+
+/**
+ * Helper function to determine whether $object is a textual document.
+ *
+ * Called by barnard_theme's template.php.
+ */
+function _bc_islandora_is_manuscript($object) {
+  module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
+  $output = '';
+  if (is_object($object->relationships)) {
+    $results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOfCollection');
+    if (!empty($results) && $parent_collection = $results[0]['object']['value']) {
+      $collection = islandora_object_load($parent_collection);
+      // If this object's parent collection's pid is the same as our database
+      // variable bc_islandora_manuscripts_pid, the answer is YES.
+      if ($collection->id == variable_get('bc_islandora_manuscripts_pid',
+          'islandora:manuscriptCollection')
+      ) {
+        return TRUE;
+      }
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Helper function to get the sequential position of an object.
+ *
+ * Called by barnard_theme's template.php.
+ */
+function _bc_islandora_get_sequence($object) {
+  $seq_results = $object->relationships->get(ISLANDORA_RELS_EXT_URI, 'isSequenceNumber');
+  if (!empty($seq_results)) {
+    return $seq_results[0]['object']['value'];
+  }
+
+  return NULL;
 }
 
 /**
@@ -197,299 +599,4 @@ function _bc_islandora_featured() {
   }
 
   return $output;
-}
-
-/**
- * Generates themed breadcrumb output.
- */
-function theme_bc_islandora_breadcrumb(&$vars) {
-  $output = '';
-  $home_link = l(t('Home'), '/');
-
-  // All breadcrumbs begin with a link to go "Home".
-  if (!in_array($home_link, $vars['breadcrumb'])) {
-    $bc = [$home_link];
-  }
-  else {
-    $bc = $vars['breadcrumb'];
-  }
-
-  // Is this an islandora object?
-  if (arg(2) && $object = islandora_object_load(arg(2))) {
-    // Scrapbook Record Group is BC15.0.
-    $object_is_scrapbook = FALSE;
-
-    $bc_manuscript_title = '';
-    $bc[] = l(t('Collections'), 'collections');
-    $collection_results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
-    $cm_results = $object->relationships->get(FEDORA_MODEL_URI, 'hasModel');
-    $mods = isset($object['MODS']) ? simplexml_load_string($object['MODS']->getContent(NULL)) : NULL;
-
-    if ($mods) {
-      $mods_local_identifier = explode('_', (string) $mods->identifier);
-      $local_record_group_id = preg_replace('/^BC/', '', array_shift($mods_local_identifier));
-      switch ($local_record_group_id) {
-
-        // Mortarboard.
-        case '12-01':
-          $bc[] = l(t('Yearbook'), 'yearbook');
-          // Is it a page (= "member of" a book, not just book collection)?
-          // If so, link to the parent book.
-          if ($book_link = _bc_islandora_book_link($object,
-            variable_get('bc_islandora_yearbook_pid', 'islandora:bookCollection'))
-          ) {
-            $bc[] = $book_link;
-          }
-          break;
-
-        // Student Publications.
-        // 12-17, Emanon.
-        // 12-31, Well-Woman Newsletter.
-        case '12-04':
-        case '12-05':
-        case '12-06':
-        case '12-11':
-        case '12-14':
-        case '12-17':
-        case '12-18':
-        case '12-22':
-        case '12-23':
-        case '12-24':
-        case '12-31':
-          $bc[] = l(t('Student Publications'), 'student-publications');
-          $is_pub = TRUE;
-          if ($pub_link = _bc_islandora_book_link($object, variable_get('bc_islandora_pubs_pid',
-            'islandora:1022'))
-          ) {
-            $bc[] = $pub_link;
-          }
-          break;
-
-        // "Special" student publications: don't provide issue link.
-        // 12-09, The Torch, 1959.
-        // 12-16, Why We Strike, 1970.
-        // 12-29, QZine.
-        // 12-29, QZine.
-        // 12-30, Plimpton Cookbook.
-        case '12-09':
-        case '12-26':
-        case '12-29':
-        case '12-30':
-          $bc[] = l(t('Student Publications'), 'student-publications');
-          if ($cm_results[0]['object']['value'] == 'islandora:pageCModel') {
-            $bc[] = _bc_islandora_book_link($object, variable_get('bc_islandora_pubs_pid',
-              'islandora:1022'));
-          }
-          break;
-
-        // 12-03, Bulletin.
-        case '12-03':
-          module_load_include('inc', 'islandora_newspaper', 'includes/utilities');
-          $bc[] = l(t('Newspaper'), 'bulletin');
-          // Is it a page? If so, link to parent issue.
-          $issue_pid = islandora_newspaper_get_issue($object);
-          if ($issue = islandora_object_load($issue_pid)) {
-            $bc[] = l($issue->label, "islandora/object/{$issue->id}");
-          }
-          break;
-
-        // Barnard Center for Research on Women (BC13-58).
-        case '13-58':
-          $bc[] = l(t('BCRW'), '/collections/bcrw');
-          if ($cm_results[0]['object']['value'] == 'islandora:manuscriptPageCModel') {
-            $bc_manuscript_title = _bc_islandora_book_link($object,
-              variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection'));
-          }
-          break;
-
-        // Barnard Alumn Scrapbook and Diary Collection (BC15).
-        case '15-12':
-        case '15-14':
-          $object_is_scrapbook = TRUE;
-          //          $title = menu_get_active_title();
-          //          if (preg_match_all("/(page.\d{1,3}) | (inclusion.\d{1,3})/ix", $title, $matches)) {
-          //            dpm($matches[0]);
-          //          }
-          $bc[] = l(t('Alumn Scrapbooks'), 'collections/scrapbooks');
-          // Always provide a link to the parent collection if we aren't on it.
-          if ($cm_results[0]['object']['value'] !== 'islandora:collectionCModel') {
-            $alumn_parent_collection = 'BC' . $local_record_group_id . ':0';
-            if ($parent = islandora_object_load($alumn_parent_collection)) {
-              $bc[] = l(t($parent->label), "islandora/object/$alumn_parent_collection");
-            }
-          }
-          if ($cm_results[0]['object']['value'] === 'islandora:pageCModel') {
-            $bc[] = _bc_islandora_book_link($object, variable_get('bc_islandora_scrapbooks_pid',
-              'BC15:0'));
-          }
-          //          else {
-          //            $bc[] = l(t("Update the title."), "islandora/object/$alumn_parent_collection");
-          //          }
-          break;
-
-        default:
-          $genre = $mods && isset($mods->genre) ? (string) $mods->genre : NULL;
-
-          // Handle photographs.
-          // Though photographs is typically Barnard's MODS->genre[0], we
-          // need to account for other possibilities.
-          // This array contains those possibilities: add as necessary.
-          // @SEE: http://islandora:8080/solr/<core>/select?q=RELS_EXT_hasModel_uri_s%3A%22info%3Afedora%2Fislandora%3Asp_large_image_cmodel%22&wt=xml&indent=true&facet=true&facet.field=mods_genre_ms&rows=0
-          $photograph_mods_genres = [
-            'photographs',
-            'black-and-white photographs',
-            'portraits',
-            'color photographs',
-          ];
-
-          if (in_array($genre, $photograph_mods_genres)) {
-            $bc[] = l(t('Photographs'), 'photographs');
-          }
-
-          // If not a photo, generate links based on relatedItem metadata.
-          else {
-            $links = [];
-            foreach ($mods->relatedItem as $ri) {
-              if ($host_title = (string) $ri->titleInfo->title) {
-                $bc_link = l($host_title, 'islandora/search', [
-                  'query' => [
-                    'type' => 'dismax',
-                    'f[0]' => 'mods_relatedItem_host_titleInfo_title_ms' . ':"' . $host_title . '"',
-                  ],
-                ]);
-              }
-              // Record group.
-              if (isset($ri['displayLabel']) && $ri['displayLabel'] == 'Record Group') {
-                $links['rg'] = $bc_link;
-              }
-              // Collection.
-              elseif (isset($bc_link)) {
-                $links['c'] = $bc_link;
-              }
-            }
-            // Record group precedes collection in breadcrumb sequence.
-            if (isset($links['rg'])) {
-              $bc[] = $links['rg'];
-            }
-            if (isset($links['c'])) {
-              $bc[] = $links['c'];
-            }
-          }
-          break;
-      }
-    }
-  }
-
-  // Is this an exhibition node?
-  elseif (arg(0) == 'node' && is_numeric(arg(1))) {
-    $node = menu_get_object();
-    if ($node->type == 'exhibition') {
-      $bc[] = l(t('Exhibits'), 'exhibits');
-    }
-  }
-
-  // Add the current page's title to the existing breadcrumb.
-  if (count($bc) >= 1 && $title = menu_get_active_title()) {
-    $title_parts = explode(',', $title);
-    $last_part = array_pop($title_parts);
-    // In these special cases, use whatever text occurs after the last comma
-    // (e.g. "issue 1") as the title.
-    $mods_local_identifier = explode(' ', preg_replace('/^ /', '', $last_part));
-    if (array_shift($mods_local_identifier) == 'page'
-      || !empty($is_pub) && (bool) $is_pub
-    ) {
-      if (!empty($bc_manuscript_title)) {
-        $bc[] = $bc_manuscript_title;
-      }
-      $bc[] = $last_part;
-    }
-    else {
-      $bc[] = $title . '!';
-    }
-  }
-
-  $output .= '<div class="breadcrumb">' . implode(' » ', $bc) . '</div>';
-
-  return $output;
-}
-
-/**
- * Provides a link to a parent book object.
- */
-function _bc_islandora_book_link($object, $parent_collection) {
-  $parent = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf');
-  $parentCollection = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOfCollection');
-
-  $book = !empty($parent) ?
-    islandora_object_load($parent[0]['object']['value']) :
-    islandora_object_load($parentCollection[0]['object']['value']);
-
-  // Don't generate a link to islandora:bookCollection or whatever.
-  if ($book->id != $parent_collection) {
-    return l($book->label, "islandora/object/{$book->id}");
-  }
-
-  return NULL;
-}
-
-/**
- * Helper function to generate download links for given datastreams.
- */
-function _bc_islandora_dl_links($obj, $datastreams = ['PDF', 'JPG']) {
-  module_load_include('inc', 'islandora', 'includes/datastream');
-  $urls = [];
-  foreach ($datastreams as $ds) {
-    if (isset($obj[$ds])) {
-      $ds_label = $obj[$ds]->label;
-      $dl_url = islandora_datastream_get_url($obj[$ds], 'download');
-      $urls[] = l($ds_label, $dl_url);
-    }
-    elseif ($ds == 'TRANSCRIPT') {
-      $ts_path = "islandora/object/{$obj->id}/download_transcript";
-      // We set alias = TRUE here to avoid generating an aliased URL.
-      // @see https://api.drupal.org/api/drupal/includes%21common.inc/function/url/7.x
-      $urls[] = l(t('Transcript'), $ts_path, ['alias' => TRUE]);
-    }
-  }
-
-  return implode('<span class="separator">&nbsp;|&nbsp;</span>', $urls);
-}
-
-/**
- * Helper function to determine whether $object is a textual document.
- *
- * Called by barnard_theme's template.php.
- */
-function _bc_islandora_is_manuscript($object) {
-  module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
-  $output = '';
-  if (is_object($object->relationships)) {
-    $results = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOfCollection');
-    if (!empty($results) && $parent_collection = $results[0]['object']['value']) {
-      $collection = islandora_object_load($parent_collection);
-      // If this object's parent collection's pid is the same as our database
-      // variable bc_islandora_manuscripts_pid, the answer is YES.
-      if ($collection->id == variable_get('bc_islandora_manuscripts_pid',
-          'islandora:manuscriptCollection')
-      ) {
-        return TRUE;
-      }
-    }
-  }
-
-  return FALSE;
-}
-
-/**
- * Helper function to get the sequential position of an object.
- *
- * Called by barnard_theme's template.php.
- */
-function _bc_islandora_get_sequence($object) {
-  $seq_results = $object->relationships->get(ISLANDORA_RELS_EXT_URI, 'isSequenceNumber');
-  if (!empty($seq_results)) {
-    return $seq_results[0]['object']['value'];
-  }
-
-  return NULL;
 }

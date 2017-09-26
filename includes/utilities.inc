@@ -70,6 +70,7 @@ function bc_islandora_get_latest_possible_date($date_to) {
       return '/' . $dto->format('d');
 
     case 3:
-      return;
+      return NULL;
   }
+  return NULL;
 }
