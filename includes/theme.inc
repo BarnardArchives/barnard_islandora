@@ -107,9 +107,9 @@ function theme_bc_islandora_breadcrumb(array &$vars) {
   // Barnard Islandora Object Breadcrumb Handler.
   if (arg(2) && $object = islandora_object_load(arg(2))) {
     $menu_active_title = menu_get_active_title();
+    // @TODO investigate further, please. why might this be in err? what is wrong?
     $parent_islandora_collection = islandora_get_parents_from_rels_ext($object);
     $parent_islandora_collection = isset($parent_islandora_collection[0]) ? $parent_islandora_collection[0] : 'NORELSPARENT';
-//    drupal_set_message($parent_islandora_collection, 'notice', TRUE);
 
     // The first* breadcrumb for any Islandora Object is "Collection".
     // (*not including 'home' or any predicate breadcrumbs.)
@@ -333,46 +333,15 @@ function theme_bc_islandora_breadcrumb(array &$vars) {
  * I think this is a realization of some backward capability I'm attempting to
  * avoid, but what it is, exactly, I'm not sure.
  */
-function _bc_islandora_crumb_from_object(AbstractObject $object, $target, $truncate = FALSE, $trun_len = 1) {
-  // To provide assurances we don't carp the floor.
-  $parent_label = '';
-  if (is_object($object)) {
-    $parent_label = $object->id;
+function _bc_islandora_crumb_from_object($object, $target, $truncate = FALSE, $trun_len = 1) {
+  // To provide assurances we don't C&B.  There is no type hint.
+  if (!is_object($object)) {
+    return NULL;
   }
-  if ($parent_label !== $target) {
-    $label = $truncate ? _bc_islandora_crumb_trunc($object->label, $trun_len) : $object->label;
+  if ($object->id !== $target) {
+    $parent_label = $object->label;
+    $label = $truncate ? _bc_islandora_crumb_trunc($parent_label, $trun_len) : $parent_label;
     $link = "islandora/object/{$object->id}";
-    return l(t($label), $link);
-  }
-  return NULL;
-}
-
-/**
- * Provides a link to an object but never a link to itself.
- *
- * @param string $object
- *   The object to create a link for. This ID is compared against $target.
- * @param string $target
- *   The ID of the parent collection or compound object.
- * @param bool $truncate
- *   Should the returned link be truncated for space saving?
- * @param int $trun_len
- *   Length of the truncation to perform on the link before returning it.
- *
- * @return null|string
- *   NULL if the object's ID is a match for the target, meaning it would be a
- *   replication of a previous breadcrumb (e.g., a collection breadcrumb).
- *   Themed link otherwise.
- *
- * @logical_errors_have_been_made
- * Not going to lie that the logic behind this piece of code is rather backward.
- * I think this is a realization of some backward capability I'm attempting to
- * avoid, but what it is, exactly, I'm not sure.
- */
-function _bc_islandora_crumb_from_string($object, $target, $truncate = FALSE, $trun_len = 1) {
-  if ($object !== $target) {
-    $label = $truncate ? _bc_islandora_crumb_trunc($object, $trun_len) : $object;
-    $link = "islandora/object/{$object}";
     return l(t($label), $link);
   }
   return NULL;
