@@ -194,15 +194,14 @@ function bc_islandora_download_transcript($islandora_pid) {
   return drupal_not_found();
 }
 
-
 /**
  * SECTION: Solr Modifications.
  */
+
 /**
  * Implements hook_form_alter().
  */
 function bc_islandora_form_islandora_solr_date_filter_form_alter(&$form, &$form_state) {
-
   // Remove the attached datepicker.js.
   if (variable_get('bc_islandora_hide_datepicker', FALSE)) {
     unset($form['#attached']);
