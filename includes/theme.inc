@@ -134,14 +134,23 @@ function theme_bc_islandora_breadcrumb(array &$vars) {
           $crumb_link = _bc_islandora_crumb_from_object($parent_islandora_collection, $target);
           if ($crumb_link) {
             $bc[] = $crumb_link;
-            $bc[] = _bc_islandora_crumb_trunc($menu_active_title);
           }
+          $bc[] = _bc_islandora_crumb_trunc($menu_active_title);
           break;
 
         // Student Publications.
+        // Breadcrumbs are slightly different here than from Yearbooks.
+        // @DEPRECATED, rationale: one generator breadcrumb to rule them all.
+        // "Special" student publications: don't provide issue link.
+        // 12-09, The Torch, 1959.
+        // 12-16, Why We Strike, 1970.
+        // 12-29, QZine.
+        // 12-29, QZine.
+        // 12-30, Plimpton Cookbook.
         case '12-04':
         case '12-05':
         case '12-06':
+        case '12-09':
         case '12-11':
         case '12-14':
         case '12-17':
@@ -149,34 +158,17 @@ function theme_bc_islandora_breadcrumb(array &$vars) {
         case '12-22':
         case '12-23':
         case '12-24':
+        case '12-26':
+        case '12-29':
+        case '12-30':
         case '12-31':
           $bc[] = l(t('Student Publications'), 'student-publications');
           $target = variable_get('bc_islandora_pubs_pid', 'islandora:1022');
           $crumb_link = _bc_islandora_crumb_from_object($parent_islandora_collection, $target);
           if ($crumb_link) {
             $bc[] = $crumb_link;
-            $bc[] = _bc_islandora_crumb_trunc($menu_active_title);
-          }
-          else {
-            $bc[] = $menu_active_title;
-          }
-          break;
-
-        // "Special" student publications: don't provide issue link.
-        // 12-09, The Torch, 1959.
-        // 12-16, Why We Strike, 1970.
-        // 12-29, QZine.
-        // 12-29, QZine.
-        // 12-30, Plimpton Cookbook.
-        case '12-09':
-        case '12-26':
-        case '12-29':
-        case '12-30':
-          $target = variable_get('bc_islandora_pubs_pid', 'islandora:1022');
-          $bc[] = l(t('Student Publications'), 'student-publications');
-          $crumb_link = _bc_islandora_crumb_from_object($parent_islandora_collection, $target);
-          if ($crumb_link) {
-            $bc[] = $crumb_link;
+            // What does crumb trunc do? by default it explodes on commas and
+            // will return that last part. e.g., "Page 3".
             $bc[] = _bc_islandora_crumb_trunc($menu_active_title);
           }
           else {
