@@ -7,7 +7,7 @@
         this.inclusionObjects = $("div.islandora-compound-thumb");
         this.isOnCompound = function() { return this.inclusionObjects.length > 0; };
 
-        if (!this.isOnCompound) {
+        if (!this.isOnCompound()) {
             return;
         }
 
@@ -25,7 +25,7 @@
             var parentAlumBreadcrumb = $("div.breadcrumb a:last");
             this.returnUrl = parentAlumBreadcrumb.attr('href') + '#page/' + this.inclusionPageNumber + '/mode/1up';
             parentAlumBreadcrumb.attr('href', this.returnUrl);
-            $('.islandora-compound-thumb a.active').attr('href', this.returnUrl);
+            $(".islandora-compound-thumb a.active").attr('href', this.returnUrl);
         }
     };
 
@@ -35,14 +35,20 @@
         // more appropriately, but keeping in the spirit.
         $("#BRnavpos").css({'margin-right': 160});
         $("#BRpage").css({'width': 160});
+        this.updateCompoundBlockLocation();
+    };
 
+    BookReader.prototype.updateCompoundBlockLocation = function () {
+        if (!this.isOnCompound()) {
+            return;
+        }
         // Block reposition
         var reader = $("#BookReader");
         var block = $("#block-islandora-compound-object-compound-navigation");
         block.offset({'top': reader.offset().top, 'left': block.offset().left});
     };
 
-    // Handle inclusions for compound objects.
+        // Handle inclusions for compound objects.
     BookReader.prototype.inclusionDisplayHandler = function (index) {
         var inclusionPageDiv, pageInclusions;
 
@@ -81,7 +87,7 @@
      * Put handlers here for when we will navigate to a new page
      */
     BookReader.prototype.willChangeToIndex = function (index) {
-        if (this.isOnCompound) this.inclusionDisplayHandler(index);
+        if (this.isOnCompound()) this.inclusionDisplayHandler(index);
 
         // Update navbar position icon - leads page change animation
         this.updateNavIndex(index);
@@ -89,7 +95,7 @@
 
     // Returns true if we can switch to the requested mode
     BookReader.prototype.canSwitchToMode = function (mode) {
-        if (this.isOnCompound) {
+        if (this.isOnCompound()) {
             // Compound objects are not allowed outside of 1up view.
             if (this.mode !== this.constMode1up) this.mode = this.constMode1up;
             return (mode === this.constMode1up);

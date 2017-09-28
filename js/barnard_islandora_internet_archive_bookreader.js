@@ -34,6 +34,7 @@
                 // Handle page resize, required for full screen.
                 $(window).resize(function () {
                     bookReader.windowResize();
+                    bookReader.updateCompoundBlockLocation();
                 });
 
                 if ($.browser.mobile && settings.islandoraInternetArchiveBookReader.mobilize) {
