@@ -12,6 +12,9 @@ body {
 .islandora-compound-title {
   font-size: 100% !important; }
 
+.islandora-compound-title > a {
+  font-size: 85% !important; }
+
 #block-bc-islandora-bc-islandora-newspaper {
   width: 100%;
   margin: 0 auto; }

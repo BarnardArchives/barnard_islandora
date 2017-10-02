@@ -39,7 +39,7 @@ function bc_islandora_config($form, &$form_state) {
   $form['bc_islandora_newspaper_pid'] = [
     '#type' => 'textfield',
     '#title' => t('Barnard Newspaper Collection PID'),
-    '#default_value' => variable_get('bc_islandora_newspaper_pid', ''),
+    '#default_value' => variable_get('bc_islandora_newspaper_pid', 'islandora:74'),
     '#description' => t('Barnard College Newspaper Collection PID.'),
   ];
   $form['bc_islandora_pubs_pid'] = [
@@ -271,8 +271,7 @@ function bc_islandora_form_islandora_solr_simple_search_form_alter(&$form, &$for
 /**
  * Solr list display, but without the word "default" in the rendered name.
  *
- * Credit:
- * https://github.com/uml-digitalinitiatives/manidora/blob/7.x/manidora.module#L865-L879.
+ * @SEE https://github.com/uml-digitalinitiatives/manidora/blob/82561d4cb1f552d71c97e871c54fffb63c55a8fb/manidora.module#L903-L917
  */
 function bc_islandora_islandora_solr_primary_display() {
   return [
@@ -308,7 +307,7 @@ function bc_islandora_barnard_islandora_metadata_functions() {
       'module' => 'bc_islandora',
       'file' => 'metadata.inc',
       'function' => '_bc_islandora_remove_HOCR_doctype',
-      'description' => t("Removes the HOCR HTML Doctype delcaration."),
+      'description' => t("Removes the HOCR HTML Doctype declaration."),
     ],
   ];
 }
@@ -328,4 +327,6 @@ function bc_islandora_islandora_datastream_alter($object, $datastream, &$context
     _bc_islandora_generate_primary_dislpay_url($object, TRUE);
   }
 }
+
+
 
