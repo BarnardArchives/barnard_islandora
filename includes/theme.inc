@@ -93,17 +93,11 @@ function theme_bc_islandora_newspaper_page_controls(&$vars) {
  *   Themed breadcrumbs.
  */
 function theme_bc_islandora_breadcrumb(array &$vars) {
-  $home_link = l(t('Home'), '/');
-
   // All breadcrumbs begin with a link to go "Home".
-  if (!in_array($home_link, $vars['breadcrumb'])) {
-    $bc = [$home_link];
-  }
-  else {
-    $bc = $vars['breadcrumb'];
-  }
+  $home_link = l(t('Home'), '/');
+  $bc = !in_array($home_link, $vars['breadcrumb']) ? [$home_link] : $vars['breadcrumb'];
 
-  // Deal with node types other than Islandora.
+  // Dealing with node types other than Islandora.
   if (arg(0) == 'node' && is_numeric(arg(1))) {
     $node = menu_get_object();
     // Barnard Islandora Exhibit Module Breadcrumb Handler.
@@ -150,12 +144,12 @@ function theme_bc_islandora_breadcrumb(array &$vars) {
       case '12-01':
         $bc[] = l(t('Yearbook'), 'yearbook');
         $target_collection = variable_get('bc_islandora_yearbook_pid', 'islandora:bookCollection');
-        $crumb_for_collection = _barnard_islandora_preceding_crumb_from_object($current_parent_collection, $target_collection);
-        if (empty($crumb_for_collection)) {
+        $crumb_for_obj_collection = _barnard_islandora_preceding_crumb_from_object($current_parent_collection, $target_collection);
+        if (empty($crumb_for_obj_collection)) {
           $bc[] = $menu_active_title;
           break;
         }
-        $bc[] = $crumb_for_collection;
+        $bc[] = $crumb_for_obj_collection;
         $bc[] = _barnard_islandora_crumb_trunc($menu_active_title);
         break;
 
@@ -178,12 +172,12 @@ function theme_bc_islandora_breadcrumb(array &$vars) {
       case '12-31':
         $bc[] = l(t('Student Publications'), 'student-publications');
         $target_collection = variable_get('bc_islandora_pubs_pid', 'islandora:1022');
-        $crumb_for_collection = _barnard_islandora_preceding_crumb_from_object($current_parent_collection, $target_collection);
-        if (empty($crumb_for_collection)) {
+        $crumb_for_obj_collection = _barnard_islandora_preceding_crumb_from_object($current_parent_collection, $target_collection);
+        if (empty($crumb_for_obj_collection)) {
           $bc[] = $menu_active_title;
           break;
         }
-        $bc[] = $crumb_for_collection;
+        $bc[] = $crumb_for_obj_collection;
         $bc[] = _barnard_islandora_crumb_trunc($menu_active_title);
         break;
 
@@ -191,12 +185,12 @@ function theme_bc_islandora_breadcrumb(array &$vars) {
       case '12-03':
         $bc[] = l(t('Newspaper'), 'bulletin');
         $target_collection = variable_get('bc_islandora_newspaper_pid', 'islandora:74');
-        $crumb_for_collection = _barnard_islandora_preceding_crumb_from_object($current_parent_collection, $target_collection);
-        if (empty($crumb_for_collection)) {
+        $crumb_for_obj_collection = _barnard_islandora_preceding_crumb_from_object($current_parent_collection, $target_collection);
+        if (empty($crumb_for_obj_collection)) {
           $bc[] = $menu_active_title;
           break;
         }
-        $bc[] = $crumb_for_collection;
+        $bc[] = $crumb_for_obj_collection;
         $bc[] = _barnard_islandora_crumb_trunc($menu_active_title);
         break;
 
@@ -204,12 +198,12 @@ function theme_bc_islandora_breadcrumb(array &$vars) {
       case '13-58':
         $bc[] = l(t('BCRW'), 'bcrw');
         $target_collection = variable_get('bc_islandora_manuscripts_pid', 'islandora:manuscriptCollection');
-        $crumb_for_collection = _barnard_islandora_preceding_crumb_from_object($current_parent_collection, $target_collection);
-        if (empty($crumb_for_collection)) {
+        $crumb_for_obj_collection = _barnard_islandora_preceding_crumb_from_object($current_parent_collection, $target_collection);
+        if (empty($crumb_for_obj_collection)) {
           $bc[] = $menu_active_title;
           break;
         }
-        $bc[] = $crumb_for_collection;
+        $bc[] = $crumb_for_obj_collection;
         $bc[] = _barnard_islandora_crumb_trunc($menu_active_title);
         break;
 
@@ -228,24 +222,22 @@ function theme_bc_islandora_breadcrumb(array &$vars) {
       case '15-20':
       case '15-28':
         $bc[] = l(t('Alum Scrapbooks'), 'scrapbooks');
-        // The target is the alumna's parent collection.
-        $target_collection = "BC$barnard_collection_group:0";
-        $alumna_collection = islandora_object_load($target_collection);
-        $crumb_for_collection = _barnard_islandora_preceding_crumb_from_object($alumna_collection, $object->id);
-
-        if (empty($crumb_for_collection)) {
-          $bc[] = $alumna_collection->label;
+        $target_collection = variable_get('bc_islandora_scrapbook_pid', 'BC15:0');
+        $crumb_for_obj_collection = _barnard_islandora_preceding_crumb_from_object($current_parent_collection, $target_collection);
+        if (empty($crumb_for_obj_collection)) {
+          $bc[] = $menu_active_title;
           break;
         }
-        $bc[] = $crumb_for_collection;
-
-        // Inclusion breadcrumb handler.
+        $bc[] = $crumb_for_obj_collection;
+        // Inclusions of a feather get breadcrumbs together. I was close.
         $compound_parent = $object->relationships->get(FEDORA_RELS_EXT_URI, 'isConstituentOf');
-        if (!empty($compound_parent[0]['object']['value'])
-          && $parent = islandora_object_load($compound_parent[0]['object']['value'])) {
-          $bc[] = _barnard_islandora_preceding_crumb_from_object($parent, $target_collection, TRUE, 2);
+        if (!empty($compound_parent[0]['object']['value']) &&
+          $parent = islandora_object_load($compound_parent[0]['object']['value'])) {
+          $crumb_for_compound_obj_collection = _barnard_islandora_preceding_crumb_from_object($parent, $target_collection, TRUE, 2);
         }
-
+        if (!empty($crumb_for_compound_obj_collection)) {
+          $bc[] = $crumb_for_compound_obj_collection;
+        }
         $bc[] = _barnard_islandora_crumb_trunc($menu_active_title, 2);
         break;
 
@@ -256,7 +248,7 @@ function theme_bc_islandora_breadcrumb(array &$vars) {
         // Though photographs is typically Barnard's MODS->genre[0], we
         // need to account for other possibilities.
         // This array contains those possibilities: add as necessary.
-        // @SEE: http://islandora:8080/solr/<core>/select?q=RELS_EXT_hasModel_uri_s%3A%22info%3Afedora%2Fislandora%3Asp_large_image_cmodel%22&wt=xml&indent=true&facet=true&facet.field=mods_genre_ms&rows=0
+        // @SEE: http://islandora:8080/solr/collection1/select?q=RELS_EXT_hasModel_uri_s%3A%22info%3Afedora%2Fislandora%3Asp_large_image_cmodel%22&wt=xml&indent=true&facet=true&facet.field=mods_genre_ms&rows=0
         $photograph_mods_genres = [
           'photographs',
           'black-and-white photographs',
