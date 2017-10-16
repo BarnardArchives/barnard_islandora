@@ -9,7 +9,6 @@
  * @author Benjamin Rosner https://github.com/br2490
  */
 
-
 /**
  * Hook to configure multiple metadata transformations for use.
  *

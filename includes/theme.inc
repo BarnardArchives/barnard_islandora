@@ -150,7 +150,7 @@ function theme_bc_islandora_breadcrumb(array &$vars) {
           break;
         }
         $bc[] = $crumb_for_obj_collection;
-        $bc[] = _barnard_islandora_crumb_trunc($menu_active_title);
+        $bc[] = _barnard_islandora_crumb_truncate($menu_active_title);
         break;
 
       // Student Publications.
@@ -178,7 +178,7 @@ function theme_bc_islandora_breadcrumb(array &$vars) {
           break;
         }
         $bc[] = $crumb_for_obj_collection;
-        $bc[] = _barnard_islandora_crumb_trunc($menu_active_title);
+        $bc[] = _barnard_islandora_crumb_truncate($menu_active_title);
         break;
 
       // 12-03, Bulletin.
@@ -191,7 +191,7 @@ function theme_bc_islandora_breadcrumb(array &$vars) {
           break;
         }
         $bc[] = $crumb_for_obj_collection;
-        $bc[] = _barnard_islandora_crumb_trunc($menu_active_title);
+        $bc[] = _barnard_islandora_crumb_truncate($menu_active_title);
         break;
 
       // Barnard Center for Research on Women (BC13-58).
@@ -204,7 +204,7 @@ function theme_bc_islandora_breadcrumb(array &$vars) {
           break;
         }
         $bc[] = $crumb_for_obj_collection;
-        $bc[] = _barnard_islandora_crumb_trunc($menu_active_title);
+        $bc[] = _barnard_islandora_crumb_truncate($menu_active_title);
         break;
 
       // Barnard Alum Scrapbook and Diary Collection (BC15).
@@ -238,7 +238,7 @@ function theme_bc_islandora_breadcrumb(array &$vars) {
         if (!empty($crumb_for_compound_obj_collection)) {
           $bc[] = $crumb_for_compound_obj_collection;
         }
-        $bc[] = _barnard_islandora_crumb_trunc($menu_active_title, 2);
+        $bc[] = _barnard_islandora_crumb_truncate($menu_active_title, 2);
         break;
 
       default:
@@ -301,7 +301,7 @@ function theme_bc_islandora_breadcrumb(array &$vars) {
  *   The ID of the current object. Derp-a-doo!
  * @param bool $truncate
  *   Should the returned link be truncated for space saving?
- * @param int $trun_len
+ * @param int $trunc_len
  *   Length of the truncation to perform on the link before returning it.
  *
  * @return null|string
@@ -315,14 +315,14 @@ function theme_bc_islandora_breadcrumb(array &$vars) {
  * avoid, but what it is, exactly, I'm not sure.
  * @TODO have a drink, return here.
  */
-function _barnard_islandora_preceding_crumb_from_object($object, $current_object, $truncate = FALSE, $trun_len = 1) {
+function _barnard_islandora_preceding_crumb_from_object($object, $current_object, $truncate = FALSE, $trunc_len = 1) {
   // To provide assurances we don't C&B.  There is no type hint.
   if (!is_object($object)) {
     return NULL;
   }
   if ($object->id !== $current_object) {
     $parent_label = $object->label;
-    $label = $truncate ? _barnard_islandora_crumb_trunc($parent_label, $trun_len) : $parent_label;
+    $label = $truncate ? _barnard_islandora_crumb_truncate($parent_label, $trunc_len) : $parent_label;
     $link = "islandora/object/{$object->id}";
     return l(t($label), $link);
   }
@@ -340,7 +340,7 @@ function _barnard_islandora_preceding_crumb_from_object($object, $current_object
  * @return string
  *   Truncated string of $range, with first letter capitalized.
  */
-function _barnard_islandora_crumb_trunc($string, $range = 1) {
+function _barnard_islandora_crumb_truncate($string, $range = 1) {
   $title_parts = explode(',', $string);
   $ret = array_slice($title_parts, -$range, $range);
   return ucfirst(trim(implode($ret)));

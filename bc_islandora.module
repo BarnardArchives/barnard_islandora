@@ -60,11 +60,23 @@ function bc_islandora_config($form, &$form_state) {
     '#default_value' => variable_get('bc_islandora_scrapbook_pid', 'BC15:0'),
     '#description' => t('Barnard College Alumnae Scrapbook Collection PID. Barnard Record Group BC15.'),
   ];
+  $form['bc_islandora_bookreader_initial_thumbs'] = [
+    '#type' => 'textfield',
+    '#title' => t('IIAB: PIDs to initially display as "thumbs".'),
+    '#default_value' => variable_get('bc_islandora_bookreader_initial_thumbs', 'BC15-02:01, BC15-04:36, BC15-04:1'),
+    '#description' => t('Coma separated list of PIDs to force to thumbs display in Islandora Internet Archive BookReader.'),
+  ];
+  $form['bc_islandora_bookreader_initial_1up'] = [
+    '#type' => 'textfield',
+    '#title' => t('IIAB: PIDs to initially display as "1up".'),
+    '#default_value' => variable_get('bc_islandora_bookreader_initial_1up', ''),
+    '#description' => t('Coma separated list of PIDs to force to 1up display in Islandora Internet Archive BookReader.<br /><strong>Scrapbooks (rg BC15.x) need not apply!</strong>'),
+  ];
   $form['bc_solr_date_facet_format'] = [
     '#type' => 'textfield',
     '#title' => t('PHP date format that Solr should use for the date facet.'),
     '#default_value' => variable_get('bc_solr_date_facet_format', 'Y/m/d'),
-    '#description' => t('<strong>Only accepts: day, month, and year format characters of d/j m/n Y/y.</strong> <br /><a target=_new href="http://php.net/manual/en/function.date.php#refsect1-function.date-parameters">PHP Date Format documentation.</a> <br />Format preview: @format', ['@format' => date(variable_get('bc_solr_date_facet_format', 'Y/m/d'))]),
+    '#description' => t('<strong>Only accepts: day, month, and year format characters of d/j m/n Y/y.</strong><br /><a target=_new href="http://php.net/manual/en/function.date.php#refsect1-function.date-parameters">PHP Date Format documentation.</a> <br />Format preview: @format', ['@format' => date(variable_get('bc_solr_date_facet_format', 'Y/m/d'))]),
   ];
   $form['bc_islandora_date_help_text'] = [
     '#type' => 'textfield',
@@ -141,6 +153,43 @@ function bc_islandora_theme($existing, $type, $theme, $path) {
   ];
 }
 
+/**
+ * Implements hook_preprocess_HOOK().
+ */
+function bc_islandora_preprocess_islandora_internet_archive_bookreader(array &$variables) {
+  $object = $variables['object'];
+  $pid = $object->id;
+
+  $thumbs = explode(', ', variable_get('bc_islandora_bookreader_initial_thumbs'));
+  $one_ups = explode(', ', variable_get('bc_islandora_bookreader_initial_1up'));
+
+  if (in_array($pid, $thumbs)) {
+    drupal_add_js([
+      'islandoraInternetArchiveBookReader' =>
+        ['bookReaderInitialMode' => 3],
+    ], 'setting');
+  }
+  elseif (in_array($pid, $one_ups)) {
+    drupal_add_js([
+      'islandoraInternetArchiveBookReader' =>
+        ['bookReaderInitialMode' => 1],
+    ], 'setting');
+  }
+
+  $barnard_islandora_path = drupal_get_path('module', 'bc_islandora');
+
+  // This is the extended BookReader that is to be called BEFORE IIAB.
+  drupal_add_js("$barnard_islandora_path/js/compound_book_reader.js",
+    [
+      'group' => JS_LIBRARY,
+      'weight' => -5,
+    ]
+  );
+  // This just replaces the default with ours: it hides additional items, and
+  // is not required for functionality.
+  drupal_add_js("$barnard_islandora_path/js/barnard_islandora_internet_archive_bookreader.js");
+}
+
 /*****
  * SECTION: OCR and Transcript Handling.
  *****/
@@ -158,8 +207,8 @@ function bc_islandora_form_islandora_paged_content_manage_page_edit_ocr_form_alt
 function _bc_islandora_update_transcript_cache($form, &$form_state) {
   module_load_include('inc', 'bc_islandora', 'includes/utilities');
   $object = $form_state['object'];
-  $object_cid = _bc_islandora_get_transcript_cid($object);
-  cache_set($object_cid, _bc_islandora_generate_transcript($object));
+  $object_cid = _barnard_islandora_get_transcript_cid($object);
+  cache_set($object_cid, _barnard_islandora_generate_transcript($object));
 }
 
 /**
@@ -172,7 +221,7 @@ function bc_islandora_download_transcript($islandora_pid) {
   module_load_include('inc', 'bc_islandora', 'includes/utilities');
 
   if ($object = islandora_object_load($islandora_pid)) {
-    $object_cid = _bc_islandora_get_transcript_cid($object);
+    $object_cid = _barnard_islandora_get_transcript_cid($object);
 
     // If this object's transcript has been cached, use the cached version.
     if ($cached_ocr = cache_get($object_cid)) {
@@ -180,7 +229,7 @@ function bc_islandora_download_transcript($islandora_pid) {
     }
     // Otherwise, generate a new transcript and cache it.
     else {
-      $object_ocr = _bc_islandora_generate_transcript($object);
+      $object_ocr = _barnard_islandora_generate_transcript($object);
       cache_set($object_cid, $object_ocr);
     }
 
@@ -253,8 +302,8 @@ function bc_islandora_form_islandora_solr_date_filter_form_submit(&$form, &$form
   $form_date_from = $form_state['values']['date_filter']['date_filter_from'];
   $form_date_to = $form_state['values']['date_filter']['date_filter_to'];
 
-  $_islandora_solr_queryclass->internalSolrParams['date_format'] = bc_islandora_get_date_format($form_date_from, $form_date_to);
-  $form_state['values']['date_filter']['date_filter_to'] .= bc_islandora_get_latest_possible_date($form_date_to);
+  $_islandora_solr_queryclass->internalSolrParams['date_format'] = _barnard_islandora_get_date_format($form_date_from, $form_date_to);
+  $form_state['values']['date_filter']['date_filter_to'] .= _barnard_islandora_get_latest_possible_date($form_date_to);
 }
 
 /**
@@ -319,7 +368,7 @@ function bc_islandora_barnard_islandora_metadata_functions() {
  */
 function bc_islandora_islandora_datastream_alter($object, $datastream, &$context) {
   // Target only ingest.
-  if ($context['action'] != 'ingest') {
+  if ($context['action'] !== 'ingest') {
     return;
   }
   if ($object['MODS'] && $datastream->id == 'MODS') {

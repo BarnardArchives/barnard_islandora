@@ -23,7 +23,7 @@
  *
  * @param        $pid
  * @param string $task
- * @param bool   $commit
+ * @param bool $commit
  *
  * @return array
  */
@@ -129,7 +129,7 @@ function _bc_islandora_generate_primary_dislpay_url($object, $commit) {
     else {
       drupal_set_message(t('<strong>Preview</strong> of MODS primary display record
         at !pid. Not pushed to Fedora.', ['!pid' => $pid]));
-      drupal_set_message($res, 'notice', 0);
+      drupal_set_message($res, 'notice', FALSE);
 
       return TRUE;
     }
@@ -177,7 +177,7 @@ function _bc_islandora_remove_HOCR_doctype($object, $commit) {
   else {
     drupal_set_message(t("<strong>Preview</strong> of updated HOCR record
       at !pid. Not pushed to Fedora.", ['!pid' => $pid]));
-    drupal_set_message($hocr_res, 'notice', 0);
+    drupal_set_message($hocr_res, 'notice', FALSE);
 
     return TRUE;
   }
