@@ -64,8 +64,6 @@ function bc_islandora_dsid_update($pid, $task = '', $commit = FALSE) {
  * the primary display URL.
  */
 function _bc_islandora_generate_primary_dislpay_url($object, $commit) {
-  global $base_url;
-  global $base_path;
   $pid = $object->id;
 
   // Grab the datasteam we'll be working with. In this instance, MODS.
