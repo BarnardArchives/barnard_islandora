@@ -140,6 +140,20 @@ function theme_bc_islandora_breadcrumb(array &$vars) {
 
     switch ($barnard_collection_group) {
 
+      // Barnard Magazine (Administrative Publications - RG BC11-08)
+      case '11-08':
+        $bc[] = l(t('Barnard Magazine'), 'barnard-magazine');
+        $target_collection = 'BC11-08:0';
+        $crumb_for_obj_collection = _barnard_islandora_preceding_crumb_from_object($current_parent_collection, $target_collection);
+        if (empty($crumb_for_obj_collection)) {
+          $bc[] = $menu_active_title;
+          break;
+        }
+        $bc[] = $crumb_for_obj_collection;
+        $bc[] = _barnard_islandora_crumb_truncate($menu_active_title);
+        break;
+
+
       // Mortarboard.
       case '12-01':
         $bc[] = l(t('Yearbook'), 'yearbook');

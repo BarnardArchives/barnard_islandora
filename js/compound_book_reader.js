@@ -31,6 +31,7 @@
     this.bookReaderInitialMode = this.settings.bookReaderInitialMode || 0;
     if (this.bookReaderInitialMode) {
       this.settings.mode = this.bookReaderInitialMode;
+//    console.log(this);
       this.initialDisplayOverride();
     }
 
