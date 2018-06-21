@@ -121,7 +121,7 @@ body {
 .landingpage-icon {
   display: inline-block;
   width: 220px;
-  height: 225px;
+  background-size: 225px 225px !important;
   margin-right: 50px;
   margin-bottom: 50px;
   text-align: center;
@@ -134,6 +134,9 @@ body {
   margin-top: 8.9em;
   margin-bottom: 0;
 }
+
+.landingpage-icon#scrapbooks h1 {
+  margin-top: 8em !important; }
 
 .landingpage-icon a {
   text-decoration: none;
@@ -150,8 +153,6 @@ body {
 
 .landingpage-icon#photos {
   background: url(/sites/all/modules/bc_islandora/img/photographsicon.jpg) no-repeat top left;
-  height: 225px;
-  width: 225px;
 }
 
 .landingpage-icon#bulletin {
@@ -170,9 +171,48 @@ body {
   background: url(/sites/all/modules/bc_islandora/img/bcrw.jpg) no-repeat;
 }
 
-.landingpage-icon#alumnscapbooks {
+.landingpage-icon#scrapbooks {
   background: url(/sites/all/modules/bc_islandora/img/scrapbooks.jpg) no-repeat;
 }
+
+.landingpage-icon#barnard-magazine {
+  background: url(/sites/all/modules/bc_islandora/img/barnardmagazine.jpg) no-repeat;
+}
+
+/*New Icons 2018-06-21*/
+.collection-description {
+  background-color: rgb(153, 204, 255); 
+}
+
+.landingpage-icon#photograph-collection {
+  background: url(/sites/all/modules/bc_islandora/img/photographs.jpg) no-repeat top left; }
+
+.landingpage-icon#newspaper-collection {
+  background: url(/sites/all/modules/bc_islandora/img/bulletin.jpg) no-repeat; 
+}
+
+.landingpage-icon#yearbook-collection {
+  background: url(/sites/all/modules/bc_islandora/img/mortarboard.jpg) no-repeat; 
+}
+
+.landingpage-icon#student-publication-collection {
+  background: url(/sites/all/modules/bc_islandora/img/studentpublications.jpg) no-repeat; 
+}
+
+.landingpage-icon#barnard-center-for-research-on-women-collection {
+  background: url(/sites/all/modules/bc_islandora/img/bcrw.jpg) no-repeat; 
+}
+
+.landingpage-icon#scrapbook-collection {
+  background: url(/sites/all/modules/bc_islandora/img/scrapbooks.jpg) no-repeat; 
+}
+
+.landingpage-icon#barnard-magazine-collection {
+  background: url(/sites/all/modules/bc_islandora/img/barnardmagazine.jpg) no-repeat; 
+}
+
+/*End New*/
+
 
 .islandora-metadata p {
   margin: 0;
