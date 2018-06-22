@@ -101,9 +101,6 @@ body .logged-in #navigation {
   margin-top: 8.9em;
   margin-bottom: 0; }
 
-.landingpage-icon#scrapbooks h1 {
-  margin-top: 8em !important; }
-
 .landingpage-icon a {
   text-decoration: none; }
 
@@ -114,33 +111,12 @@ body .logged-in #navigation {
 .landingpage-link {
   width: 200px; }
 
-.landingpage-icon#photos {
-  background: url(/sites/all/modules/bc_islandora/img/photographsicon.jpg) no-repeat top left; }
-
-.landingpage-icon#bulletin {
-  background: url(/sites/all/modules/bc_islandora/img/bulletinicon.jpg) no-repeat; }
-
-.landingpage-icon#yearbook {
-  background: url(/sites/all/modules/bc_islandora/img/yearbookicon.jpg) no-repeat; }
-
-.landingpage-icon#student-pubs {
-  background: url(/sites/all/modules/bc_islandora/img/studentpubicon.jpg) no-repeat; }
-
-.landingpage-icon#bcrw {
-  background: url(/sites/all/modules/bc_islandora/img/bcrw.jpg) no-repeat; }
-
-.landingpage-icon#scrapbooks {
-  background: url(/sites/all/modules/bc_islandora/img/scrapbooks.jpg) no-repeat; }
-
-.landingpage-icon#barnard-magazine {
-  background: url(/sites/all/modules/bc_islandora/img/barnardmagazine.jpg) no-repeat; }
-
 /*New Section*/
 .collection-description {
     background-color: rgb(153, 204, 255); }
 
 .landingpage-icon#photograph-collection {
-  background: url(/sites/all/modules/bc_islandora/img/icons/photographs.jpg) no-repeat top left; }
+  background: url(/sites/all/modules/bc_islandora/img/icons/photographs.jpg) no-repeat; }
 
 .landingpage-icon#newspaper-collection {
   background: url(/sites/all/modules/bc_islandora/img/icons/bulletin.jpg) no-repeat; }
