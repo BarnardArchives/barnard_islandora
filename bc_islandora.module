@@ -60,18 +60,6 @@ function bc_islandora_config($form, &$form_state) {
     '#default_value' => variable_get('bc_islandora_scrapbook_pid', 'BC15:0'),
     '#description' => t('Barnard College Alumnae Scrapbook Collection PID. Barnard Record Group BC15.'),
   ];
-  $form['bc_islandora_bookreader_initial_thumbs'] = [
-    '#type' => 'textfield',
-    '#title' => t('IIAB: PIDs to initially display as "thumbs".'),
-    '#default_value' => variable_get('bc_islandora_bookreader_initial_thumbs', 'BC15-02:01, BC15-04:36, BC15-04:1'),
-    '#description' => t('Coma separated list of namespaces or PIDs to force to thumbs display in Islandora Internet Archive BookReader.'),
-  ];
-  $form['bc_islandora_bookreader_initial_1up'] = [
-    '#type' => 'textfield',
-    '#title' => t('IIAB: PIDs to initially display as "1up".'),
-    '#default_value' => variable_get('bc_islandora_bookreader_initial_1up', ''),
-    '#description' => t('Coma separated list of namespaces or PIDs to force to 1up display in Islandora Internet Archive BookReader.<br /><strong>Scrapbooks (rg BC15.x) need not apply!</strong>'),
-  ];
   $form['bc_solr_date_facet_format'] = [
     '#type' => 'textfield',
     '#title' => t('PHP date format that Solr should use for the date facet.'),
@@ -151,44 +139,6 @@ function bc_islandora_theme($existing, $type, $theme, $path) {
       'file' => 'includes/theme.inc',
     ],
   ];
-}
-
-/**
- * Implements hook_preprocess_HOOK().
- */
-function bc_islandora_preprocess_islandora_internet_archive_bookreader(array &$variables) {
-  $object = $variables['object'];
-  $pid = $object->id;
-  $ns = islandora_get_namespace($pid);
-
-  $thumbs = explode(', ', variable_get('bc_islandora_bookreader_initial_thumbs'));
-  $one_ups = explode(', ', variable_get('bc_islandora_bookreader_initial_1up'));
-
-  if (in_array($pid, $thumbs) || in_array($ns, $thumbs)) {
-    drupal_add_js([
-      'islandoraInternetArchiveBookReader' =>
-        ['bookReaderInitialMode' => 3],
-    ], 'setting');
-  }
-  elseif (in_array($pid, $one_ups) || in_array($ns, $one_ups)) {
-    drupal_add_js([
-      'islandoraInternetArchiveBookReader' =>
-        ['bookReaderInitialMode' => 1],
-    ], 'setting');
-  }
-
-  $barnard_islandora_path = drupal_get_path('module', 'bc_islandora');
-
-  // This is the extended BookReader that is to be called BEFORE IIAB.
-  drupal_add_js("$barnard_islandora_path/js/compound_book_reader.js",
-    [
-      'group' => JS_LIBRARY,
-      'weight' => -5,
-    ]
-  );
-  // This just replaces the default with ours: it hides additional items, and
-  // is not required for functionality.
-  drupal_add_js("$barnard_islandora_path/js/barnard_islandora_internet_archive_bookreader.js");
 }
 
 /*****
