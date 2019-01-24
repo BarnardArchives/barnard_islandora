@@ -60,6 +60,18 @@ function bc_islandora_config($form, &$form_state) {
     '#default_value' => variable_get('bc_islandora_scrapbook_pid', 'BC15:0'),
     '#description' => t('Barnard College Alumnae Scrapbook Collection PID. Barnard Record Group BC15.'),
   ];
+  $form['bc_islandora_bookreader_initial_thumbs'] = [
+    '#type' => 'textfield',
+    '#title' => t('IIAB: PIDs to initially display as "thumbs".'),
+    '#default_value' => variable_get('bc_islandora_bookreader_initial_thumbs', 'BC15-02:01, BC15-04:36, BC15-04:1'),
+    '#description' => t('Coma separated list of namespaces or PIDs to force to thumbs display in Islandora Internet Archive BookReader.'),
+  ];
+  $form['bc_islandora_bookreader_initial_1up'] = [
+    '#type' => 'textfield',
+    '#title' => t('IIAB: PIDs to initially display as "1up".'),
+    '#default_value' => variable_get('bc_islandora_bookreader_initial_1up', ''),
+    '#description' => t('Coma separated list of namespaces or PIDs to force to 1up display in Islandora Internet Archive BookReader.<br /><strong>Scrapbooks (rg BC15.x) need not apply!</strong>'),
+  ];
   $form['bc_solr_date_facet_format'] = [
     '#type' => 'textfield',
     '#title' => t('PHP date format that Solr should use for the date facet.'),
