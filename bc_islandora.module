@@ -127,6 +127,31 @@ function bc_islandora_menu() {
 }
 
 /**
+ * Implements hook_block_info().
+ */
+function bc_islandora_block_info() {
+  $blocks = [];
+  $blocks['solr_sort_select'] = [
+    'info' => t('Barnard Islandora Solr Sort'),
+    'cache' => DRUPAL_NO_CACHE,
+  ];
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function bc_islandora_block_view($delta = '') {
+  switch($delta) {
+    case 'solr_sort_select':
+      require_once drupal_get_path('module', 'bc_islandora') . '/includes/blocks.inc';
+      $block['content'] = bc_islandora_islandora_solr_sort_select();
+      break;
+  }
+  return $block;
+}
+
+/**
  * Implements hook_theme().
  */
 function bc_islandora_theme($existing, $type, $theme, $path) {
