@@ -25,7 +25,7 @@
         }
       }
     },
-    // Modifies pagination per: 
+    // Modifies pagination per: https://github.com/BarnardArchives/digitalcollections.barnard.edu/issues/74
     // Assumes bootstrap classes are used ".pagination > {.active, .active, .pager-first, pager-last}"
     paginationRedux: {
       run: function() {
@@ -33,10 +33,10 @@
             activePage = islandoraPager.find('li.active'), // active position
             firstPage = islandoraPager.find('li.pager-first > a'), // first item
             lastPage = islandoraPager.find('li.pager-last > a'), // last item
-            lastPageNumber = lastPage.attr('href').match(/.*page=(\d*)/i)[1]; // greatest possible page number
-         // lastPageNumber = $.urlParams(lastPage.attr('href')).page; // greatest possible page number
+            lastPageNumber = lastPage.length ? lastPage.attr('href').match(/.*page=(\d*)/i)[1] : 0; // greatest possible page number
+         // lastPageNumber = $.urlParams(lastPage.attr('href')).page; // greatest possible page number - this requires a newer version of jQuery!
 
-        if (activePage.text() > 4) {
+        if (activePage.text() > 3) {
           firstPage.text('1'); // set the first page text to the number 1.
           firstPage.parent().insertAfter(islandoraPager.find('li.prev')); // move the item forward
         } else {
