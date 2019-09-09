@@ -34,7 +34,7 @@
             firstPage = islandoraPager.find('li.pager-first > a'), // first item
             lastPage = islandoraPager.find('li.pager-last > a'), // last item
             lastPageNumber = lastPage.length ? lastPage.attr('href').match(/.*page=(\d*)/i)[1] : 0; // greatest possible page number
-         // lastPageNumber = $.urlParams(lastPage.attr('href')).page; // greatest possible page number - this requires a newer version of jQuery!
+        // lastPageNumber = $.urlParams(lastPage.attr('href')).page; // greatest possible page number - this requires a newer version of jQuery!
 
         if (activePage.text() > 3) {
           firstPage.text('1'); // set the first page text to the number 1.
@@ -51,10 +51,30 @@
         }
       }
     },
+    solrSearchResultHeading: {
+      run: function () {
+        if ($('.node-type-islandora-solr-content-type').length) return;
+
+        const pageHeading = $('h1.page-header'),
+            islandoraResultCount = $('div#islandora-solr-result-count');
+
+        if (islandoraResultCount.length && pageHeading.length) {
+          const resultCount = islandoraResultCount.text().match(/.*of.(\d*)/i)[1],
+              spanResultCount = $( '<span />' , {
+                id: 'title-bound-solr-result-count',
+                text: resultCount + ' ', // I don't like this, the space should be added elsewhere -BR
+                style: 'font-weight: 900', // this should be removed and done in CSS. -BR
+              });
+          pageHeading.prepend(spanResultCount);
+          islandoraResultCount.hide();
+        }
+      }
+    },
     attach: function (context, settings) {
       this.collections_lp.run();
       this.front_featured.run(settings);
       this.paginationRedux.run();
+      this.solrSearchResultHeading.run();
     }
   };
 }(jQuery));
