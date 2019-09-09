@@ -51,6 +51,7 @@
         }
       }
     },
+    // Modifies search result heading per: https://github.com/BarnardArchives/digitalcollections.barnard.edu/issues/75
     solrSearchResultHeading: {
       run: function () {
         if ($('.node-type-islandora-solr-content-type').length) return;
