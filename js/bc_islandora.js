@@ -26,7 +26,7 @@
       }
     },
     // Modifies pagination per: https://github.com/BarnardArchives/digitalcollections.barnard.edu/issues/74
-    // Assumes bootstrap classes are used ".pagination > {.active, .active, .pager-first, pager-last}"
+    // Assumes bootstrap classes are used ".pagination > {.active, .pager-first, pager-last}"
     paginationRedux: {
       run: function() {
         const islandoraPager = $('ul.pagination'), // Grab the pagination item and hold it.
