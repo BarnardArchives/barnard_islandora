@@ -36,6 +36,7 @@
             lastPageNumber = lastPage.length ? lastPage.attr('href').match(/.*page=(\d*)/i)[1] : 0; // greatest possible page number
         // lastPageNumber = $.urlParams(lastPage.attr('href')).page; // greatest possible page number - this requires a newer version of jQuery!
 
+
         if (activePage.text() > 3) {
           firstPage.text('1'); // set the first page text to the number 1.
           firstPage.parent().insertAfter(islandoraPager.find('li.prev')); // move the item forward
@@ -43,8 +44,12 @@
           firstPage.hide(); // otherwise we don't need it
         }
 
-        if (activePage.text() < (lastPageNumber - 2)) {
-          lastPage.text(lastPageNumber); // set the last page to the last page number
+        if (activePage.text() === '4') {
+          firstPage.parent().next().hide();
+        }
+
+        if (activePage.text() < (lastPageNumber - 1)) {
+          lastPage.text(Number(lastPageNumber) + 1); // set the last page to the last page number
           lastPage.parent().insertBefore(islandoraPager.find('li.next')); // move the item backward
         } else {
           lastPage.hide(); // otherwise we do not need it.
