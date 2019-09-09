@@ -25,9 +25,36 @@
         }
       }
     },
+    // Modifies pagination per: 
+    // Assumes bootstrap classes are used ".pagination > {.active, .active, .pager-first, pager-last}"
+    paginationRedux: {
+      run: function() {
+        const islandoraPager = $('ul.pagination'), // Grab the pagination item and hold it.
+            activePage = islandoraPager.find('li.active'), // active position
+            firstPage = islandoraPager.find('li.pager-first > a'), // first item
+            lastPage = islandoraPager.find('li.pager-last > a'), // last item
+            lastPageNumber = lastPage.attr('href').match(/.*page=(\d*)/i)[1]; // greatest possible page number
+         // lastPageNumber = $.urlParams(lastPage.attr('href')).page; // greatest possible page number
+
+        if (activePage.text() > 4) {
+          firstPage.text('1'); // set the first page text to the number 1.
+          firstPage.parent().insertAfter(islandoraPager.find('li.prev')); // move the item forward
+        } else {
+          firstPage.hide(); // otherwise we don't need it
+        }
+
+        if (activePage.text() < (lastPageNumber - 2)) {
+          lastPage.text(lastPageNumber); // set the last page to the last page number
+          lastPage.parent().insertBefore(islandoraPager.find('li.next')); // move the item backward
+        } else {
+          lastPage.hide(); // otherwise we do not need it.
+        }
+      }
+    },
     attach: function (context, settings) {
       this.collections_lp.run();
       this.front_featured.run(settings);
+      this.paginationRedux.run();
     }
   };
 }(jQuery));
