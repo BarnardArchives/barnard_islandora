@@ -4,3 +4,7 @@ version = 7.x-1.8
 core = 7.x
 stylesheets[all][] = css/bc_islandora.css
 scripts[] = js/bc_islandora.js
+scripts[] = js/bc_pagination.js
+scripts[] = js/bc_solr.js
+
+
